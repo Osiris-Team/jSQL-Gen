@@ -7,7 +7,8 @@ Java SQL code generator. SQL and OOP finally united.
 - Download and run the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest).
 - Create a database, tables and their columns via the GUI.
 - Press `Generate Code` and add the code to your project.
-- The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
+The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
+- Open `Database.java` and fill in your database credentials, and run your app.
 
 ## What?
 - Generates one class/object for each table.
