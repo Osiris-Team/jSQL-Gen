@@ -386,9 +386,9 @@ public class UIController {
             TextField tableName = new TextField(t.name);
             paneTable.getChildren().add(tableName);
             tableName.setTooltip(new Tooltip("The table name. Changes are auto-saved."));
-            tableName.setOnKeyTyped(event -> { // enter pressed event
+            tableName.textProperty().addListener((o, oldVal, newVal)-> { // enter pressed event
                 try {
-                    renameTable(dbName, t.name, tableName.getText());
+                    renameTable(dbName, oldVal, newVal);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -420,6 +420,7 @@ public class UIController {
     }
 
     private void renameTable(String dbName, String oldName, String newName) throws  IOException {
+        System.out.println("Renaming table from '"+oldName+"' to '"+newName+"'.");
         List<Database> list = Data.fetchDatabases();
         Database db = Data.findDatabase(list, dbName);
         if(db==null){
@@ -431,6 +432,7 @@ public class UIController {
         Objects.requireNonNull(t);
         t.name = newName;
         Data.updateDatabases(list);
+        System.out.println("OK!");
     }
 
     private void addNewTable(String dbName, String tableName) throws  IOException {
@@ -494,9 +496,9 @@ public class UIController {
             if(Objects.equals(col.name, "id")) colName.setDisable(true);
             colName.setPromptText("Column name");
             colName.setTooltip(new Tooltip("Column name. Changes are auto-saved."));
-            colName.setOnKeyTyped(event -> { // enter pressed event
+            colName.textProperty().addListener((o, oldVal, newVal) -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, col.name, colName.getText(), col.definition, colComment.getText());
+                    updateColumn(listColumns, dbName, t.name, oldVal, newVal, col.definition, colComment.getText());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -507,9 +509,9 @@ public class UIController {
             if(Objects.equals(col.name, "id")) colDefinition.setDisable(true);
             colDefinition.setPromptText("Column definition");
             colDefinition.setTooltip(new Tooltip("Column definition. Changes are auto-saved."));
-            colDefinition.setOnKeyTyped(event -> {
+            colDefinition.textProperty().addListener((o, oldVal, newVal) -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, colName.getText(), colName.getText(), colDefinition.getText(), colComment.getText());
+                    updateColumn(listColumns, dbName, t.name, colName.getText(), colName.getText(), newVal, colComment.getText());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -520,9 +522,9 @@ public class UIController {
             if(Objects.equals(col.name, "id")) colComment.setDisable(true);
             colComment.setPromptText("Column comment");
             colComment.setTooltip(new Tooltip("Column comment. Changes are auto-saved."));
-            colComment.setOnKeyTyped(event -> {
+            colComment.textProperty().addListener((o, oldVal, newVal) -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, colName.getText(), colName.getText(), colDefinition.getText(), colComment.getText());
+                    updateColumn(listColumns, dbName, t.name, colName.getText(), colName.getText(), colDefinition.getText(), newVal);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -543,6 +545,7 @@ public class UIController {
     }
 
     private void updateColumn(VBox listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws  IOException {
+        System.out.println("Updating column...");
         List<Database> list = Data.fetchDatabases();
         Database db = Data.findDatabase(list, dbName);
         if(db==null){
@@ -553,10 +556,13 @@ public class UIController {
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, oldName);
         Objects.requireNonNull(col);
+        System.out.println("OLD: "+col.name+" "+col.definition+" "+col.comment);
         col.name = newName;
         col.definition = newDefinition;
         col.comment = newComment;
+        System.out.println("NEW: "+col.name+" "+col.definition+" "+col.comment);
         Data.updateDatabases(list);
+        System.out.println("OK!");
     }
 
     private void addNewColumn(VBox listColumns, String dbName, String tableName, String columnName, String columnDefinition) throws  IOException {
