@@ -12,12 +12,6 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Install dependencies
-      shell: pwsh
-      run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        choco install -y innosetup wixtoolset
-        refreshenv
 
     - uses: actions/checkout@v3
     - name: Set up JDK 16
@@ -26,8 +20,16 @@ jobs:
         java-version: '16'
         distribution: 'temurin'
         cache: maven
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+    # Must install chocolatey and other dependencies in
+    # the same shell as mvn... command (with JavaPackager plugin)
+    # since global PATH variables somehow don't get when running in another shell.
+    - name: Build with Maven/JavaPackager
+      shell: pwsh
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        choco install -y innosetup wixtoolset
+        refreshenv
+        mvn -B package --file pom.xml
 
     - name: Show files.
       run: |
