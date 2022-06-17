@@ -336,7 +336,7 @@ public class UIController {
                                 "Deletes the provided object from the database.\n" +
                                 "*/\n" +
                                 "public static void remove("+t.name+" obj) throws Exception {\n" +
-                                "delete(\"id = \"+obj.id);\n" +
+                                "remove(\"id = \"+obj.id);\n" +
                         "}\n"+
                         "/**\n" +
                         "Deletes the objects that are found by the provided SQL WHERE statement, from the database.\n" +
