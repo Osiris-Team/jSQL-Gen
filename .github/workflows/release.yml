@@ -15,10 +15,8 @@ jobs:
     - name: Install dependencies
       shell: pwsh
       run: |
-        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
-        scoop bucket add extras
-        scoop install inno-setup
-        scoop install wixtoolset
+        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        choco install -y innosetup wixtoolset
 
     - uses: actions/checkout@v3
     - name: Set up JDK 16
@@ -47,3 +45,4 @@ jobs:
           ./target/*.tar.gz
           ./target/*.zip
           ./target/*.jar
+          ./target/*.exe
