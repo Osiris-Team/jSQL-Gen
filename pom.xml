@@ -97,52 +97,7 @@
                     </execution>
                 </executions>
             </plugin>
-                 
-    <plugin>
-    <groupId>io.github.fvarrui</groupId>
-    <artifactId>javapackager</artifactId>
-    <version>1.6.6</version>
-    <configuration>
-        <bundleJre>true</bundleJre>
-        <mainClass>com.osiris.jsqlgen.jsqlgen/com.osiris.jsqlgen.UIApplication</mainClass>
-        <generateInstaller>false</generateInstaller>
-    </configuration>
-    <executions>
-        <execution>
-            <id>bundling-for-windows</id>
-            <phase>package</phase>
-            <goals>
-                <goal>package</goal>
-            </goals>
-            <configuration>
-                <platform>windows</platform>
-                <createZipball>true</createZipball>
-            </configuration>
-        </execution>
-        <execution>
-            <id>bundling-for-linux</id>
-            <phase>package</phase>
-            <goals>
-                <goal>package</goal>
-            </goals>
-            <configuration>
-                <platform>linux</platform>
-                <createTarball>true</createTarball>
-            </configuration>
-        </execution>
-        <execution>
-            <id>bundling-for-mac</id>
-            <phase>package</phase>
-            <goals>
-                <goal>package</goal>
-            </goals>
-            <configuration>
-                <platform>mac</platform>
-                <createTarball>true</createTarball>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+
         </plugins>
              
     </build>
