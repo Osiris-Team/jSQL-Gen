@@ -335,13 +335,13 @@ public class UIController {
                                 "/**\n" +
                                 "Deletes the provided object from the database.\n" +
                                 "*/\n" +
-                                "public static void delete("+t.name+" obj) throws Exception {\n" +
-                                "delete(\"id IS \"+obj.id);\n" +
+                                "public static void remove("+t.name+" obj) throws Exception {\n" +
+                                "delete(\"id = \"+obj.id);\n" +
                         "}\n"+
                         "/**\n" +
                         "Deletes the objects that are found by the provided SQL WHERE statement, from the database.\n" +
                         "*/\n" +
-                        "public static void delete(String where) throws Exception {\n" +
+                        "public static void remove(String where) throws Exception {\n" +
                         "java.util.Objects.requireNonNull(where);\n" +
                         "try (PreparedStatement ps = con.prepareStatement(\n" +
                         "                \"DELETE FROM "+tNameQuoted+" WHERE \"+where)) {\n");// Open try/catch
