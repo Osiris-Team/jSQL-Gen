@@ -12,7 +12,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.7.1</junit.version>
-        <exec.mainClass>dcom.osiris.jsqlgen.Main</exec.mainClass>
+        <exec.mainClass>com.osiris.jsqlgen.Main</exec.mainClass>
     </properties>
 
     <repositories>
