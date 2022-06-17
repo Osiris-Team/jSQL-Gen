@@ -247,7 +247,7 @@ public class UIController {
                 classContentBuilder.append(
                         "\" +\n" +
                         "\" FROM "+tNameQuoted+"\" +\n" +
-                        "where != null ? (\"WHERE \"+where) : \"\")) {\n" + // Open try/catch
+                        "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
                         "ResultSet rs = ps.executeQuery();\n" +
                         "while (rs.next()) {\n" + // Open while
                                 ""+t.name +" obj = new "+t.name+"();\n" +
