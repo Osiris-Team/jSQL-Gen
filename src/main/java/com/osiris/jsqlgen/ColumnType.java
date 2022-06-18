@@ -1,12 +1,12 @@
 package com.osiris.jsqlgen;
 
-public class CoolType {
+public class ColumnType {
     public String[] inSQL;
     public String inJava;
     public String inJBDCSet;
     public String inJBDCGet;
 
-    public CoolType(String[] inSQL, String inJava, String inJBDCSet, String inJBDCGet) {
+    public ColumnType(String[] inSQL, String inJava, String inJBDCSet, String inJBDCGet) {
         this.inSQL = inSQL;
         this.inJava = inJava;
         this.inJBDCSet = inJBDCSet;
@@ -18,60 +18,58 @@ public class CoolType {
      * and can continue with anything else (perfect for SQL DEFINITION strings).
      * @return null if no match found.
      */
-    public static CoolType findBySQLType(String s){
-        CoolType[] types = new CoolType[]{
+    public static ColumnType findBySQLDefinition(String s){
+        ColumnType[] types = new ColumnType[]{
                 BYTE, SHORT, INT, LONG, DECIMAL, FLOAT, DOUBLE,
                 DATE, TIMESTAMP, TIME, YEAR,
                 STRING, BLOB
                 // TODO add new datatype here
         };
-        for (CoolType t : types) {
+        for (ColumnType t : types) {
             for (String sqlTypeName : t.inSQL) {
-                if(startsWithIgnoreCase(s, sqlTypeName))
+                if(UString.startsWithIgnoreCase(s, sqlTypeName))
                     return t;
             }
         }
         return null;
     }
-    private static boolean startsWithIgnoreCase(String s, String query){
-        return s.toLowerCase().startsWith(query.toLowerCase());
-    }
+
 
     // INTEGER TYPES:
-    public static CoolType BYTE = new CoolType(new String[]{"TINYINT", "BYTE"},
+    public static ColumnType BYTE = new ColumnType(new String[]{"TINYINT", "BYTE"},
             "byte","setByte", "getByte");
-    public static CoolType SHORT = new CoolType(new String[]{"SMALLINT"},
+    public static ColumnType SHORT = new ColumnType(new String[]{"SMALLINT"},
             "short", "setShort", "getShort");
-    public static CoolType INT = new CoolType(new String[]{"MEDIUMINT", "INT"},
+    public static ColumnType INT = new ColumnType(new String[]{"MEDIUMINT", "INT"},
             "int", "setInt", "getInt");
-    public static CoolType LONG = new CoolType(new String[]{"BIGINT", "LONG"},
+    public static ColumnType LONG = new ColumnType(new String[]{"BIGINT", "LONG"},
             "long", "setLong", "getLong");
 
     // DECIMAL TYPES:
-    public static CoolType DECIMAL = new CoolType(new String[]{"DECIMAL", "NUMERIC"},
+    public static ColumnType DECIMAL = new ColumnType(new String[]{"DECIMAL", "NUMERIC"},
             "java.math.BigDecimal","setBigDecimal", "getBigDecimal");
 
     // FLOATING POINT TYPES:
-    public static CoolType FLOAT = new CoolType(new String[]{"FLOAT", "REAL"},
+    public static ColumnType FLOAT = new ColumnType(new String[]{"FLOAT", "REAL"},
             "float", "setFloat", "getFloat");
-    public static CoolType DOUBLE = new CoolType(new String[]{"DOUBLE", "DOUBLE PRECISION"},
+    public static ColumnType DOUBLE = new ColumnType(new String[]{"DOUBLE", "DOUBLE PRECISION"},
             "double", "setDouble", "getDouble");
 
     // TIME/DATE TYPES:
-    public static CoolType DATE = new CoolType(new String[]{"DATE", "DATETIME"},
+    public static ColumnType DATE = new ColumnType(new String[]{"DATE", "DATETIME"},
             "java.sql.Date", "setDate", "getDate");
-    public static CoolType TIMESTAMP = new CoolType(new String[]{"TIMESTAMP"},
+    public static ColumnType TIMESTAMP = new ColumnType(new String[]{"TIMESTAMP"},
             "java.sql.Timestamp", "setTimestamp", "getTimestamp");
-    public static CoolType TIME = new CoolType(new String[]{"TIME"},
+    public static ColumnType TIME = new ColumnType(new String[]{"TIME"},
             "java.sql.Time", "setTime", "getTime");
-    public static CoolType YEAR = new CoolType(new String[]{"YEAR"},
+    public static ColumnType YEAR = new ColumnType(new String[]{"YEAR"},
             "int", "setInt", "getInt");
 
     // STRING/TEXT TYPES:
-    public static CoolType STRING = new CoolType(new String[]
+    public static ColumnType STRING = new ColumnType(new String[]
             {"CHAR", "VARCHAR", "BINARY", "VARBINARY", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET"},
             "String", "setString", "getString");
-    public static CoolType BLOB = new CoolType(new String[]{"TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"},
+    public static ColumnType BLOB = new ColumnType(new String[]{"TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"},
             "java.sql.Blob", "setBlob", "getBlob");
 
     // TODO SPATIAL DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html

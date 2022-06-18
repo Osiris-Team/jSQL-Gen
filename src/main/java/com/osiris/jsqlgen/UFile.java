@@ -5,7 +5,7 @@ import org.apache.commons.lang3.SystemUtils;
 import java.io.File;
 import java.io.IOException;
 
-public class UtilsFiles {
+public class UFile {
 
     public static void showInFileManager(File file) throws IOException {
         if(SystemUtils.IS_OS_WINDOWS)
