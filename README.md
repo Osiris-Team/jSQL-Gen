@@ -16,3 +16,7 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 - The generated object contains static methods like `get() delete() update() add() etc...` to interact with the table.
 - The generated object contains fields for each table column `obj.id obj.name etc...`.
 - The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries. 
+
+## Tipps
+- Extend generated objects. This way all your written/additional code will be in a seperate file and it will be easier to update
+the generated object in the future. Also your code will be more organized.
