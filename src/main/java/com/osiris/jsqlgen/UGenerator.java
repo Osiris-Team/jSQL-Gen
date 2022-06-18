@@ -4,8 +4,6 @@ import java.util.List;
 
 public class UGenerator {
 
-
-
     /**
      * Generates Java source code, for the provided table.
      */
@@ -96,7 +94,17 @@ public class UGenerator {
 
         // CREATE GET METHOD:
         classContentBuilder.append("" +
+                "/**\n" +
+                "@return a list containing all objects in this table.\n" +
+                "*/\n" +
                 "public static List<" + t.name + "> get() throws Exception {return get(null);}\n" +
+                "/**\n" +
+                "@return object with the provided id.\n" +
+                "@throws Exception on SQL issues, or if there is no object with the provided id in this table.\n" +
+                "*/\n" +
+                "public static "+t.name+" get(int id) throws Exception {\n" +
+                "return get(\"id = \"+id).get(0);\n" +
+                "}\n" +
                 "/**\n" +
                 "@return a list containing only objects that match the provided SQL WHERE statement.\n" +
                 "if that statement is null, returns all the contents of this table.\n" +
