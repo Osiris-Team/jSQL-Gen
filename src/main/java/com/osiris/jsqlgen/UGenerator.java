@@ -4,6 +4,8 @@ import java.util.List;
 
 public class UGenerator {
 
+
+
     /**
      * Generates Java source code, for the provided table.
      */
@@ -15,7 +17,7 @@ public class UGenerator {
                 throw new Exception("Failed to generate code, because failed to find matching java type of definition '" + col.definition
                         + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
         }
-        Constructor constructor = genContructor(t.name, t.columns);
+        Constructor constructor = genConstructor(t.name, t.columns);
 
         StringBuilder importsBuilder = new StringBuilder();
         importsBuilder.append("import java.util.List;\n" +
@@ -63,7 +65,7 @@ public class UGenerator {
                     "public " + col.type.inJava + " " + col.name + ";\n");
         }
 
-        // CREATE CREATE METHOD:
+        // CREATE CREATE METHODS:
         classContentBuilder.append("" +
                 "/**\n" +
                 "Increments the id and sets it for this object (basically reserves a space in the database).\n" +
@@ -78,6 +80,19 @@ public class UGenerator {
                         "" + t.name + " obj = new " + t.name + "(" + constructor.paramsWithoutTypes + ");\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close create method
+
+        boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
+        if(hasMoreFields){
+            classContentBuilder.append(
+                    "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
+                            + ") {\n" +
+                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.incrementAndGet();\n" +
+                            "" + t.name + " obj = new " + t.name + "();\n" +
+                            "" + genFieldAssignments("obj", t.columns)+"\n"+
+                            "return obj;\n");
+            classContentBuilder.append("}\n\n"); // Close create method
+        }
+
 
         // CREATE GET METHOD:
         classContentBuilder.append("" +
@@ -197,7 +212,7 @@ public class UGenerator {
         return importsBuilder.toString() + classContentBuilder;
     }
 
-    public static Constructor genContructor(String objName, List<Column> columns) {
+    public static Constructor genConstructor(String objName, List<Column> columns) {
         StringBuilder paramsBuilder = new StringBuilder();
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
@@ -228,6 +243,41 @@ public class UGenerator {
             constructor.paramsWithoutTypes = constructor.paramsWithoutTypes.substring(0, constructor.paramsWithoutTypes.length() - 2);
 
         return constructor;
+    }
+
+    public static String genParams(List<Column> columns){
+        StringBuilder paramsBuilder = new StringBuilder();
+        for (Column col : columns) {
+            paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
+        }
+        String params = paramsBuilder.toString();
+        if (params.endsWith(", "))
+            params = params.substring(0, params.length() - 2);
+        return params;
+    }
+
+    public static String genFieldAssignments(List<Column> columns){
+        return genFieldAssignments("this", columns);
+    }
+    public static String genFieldAssignments(String objName, List<Column> columns){
+        StringBuilder fieldsBuilder = new StringBuilder();
+        for (Column col : columns) {
+            fieldsBuilder.append(objName+"." + col.name + "=" + col.name + "; ");
+        }
+        return fieldsBuilder.toString();
+    }
+
+    public static String genOnlyNotNullFieldAssignments(List<Column> columns){
+        return genOnlyNotNullFieldAssignments("this", columns);
+    }
+    public static String genOnlyNotNullFieldAssignments(String objName, List<Column> columns){
+        StringBuilder fieldsBuilder = new StringBuilder();
+        for (Column col : columns) {
+            if (UString.containsIgnoreCase(col.definition, "NOT NULL")) {
+                fieldsBuilder.append(objName+"." + col.name + "=" + col.name + "; ");
+            }
+        }
+        return fieldsBuilder.toString();
     }
 
     public static class Constructor {
