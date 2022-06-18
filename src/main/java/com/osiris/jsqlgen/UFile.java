@@ -8,11 +8,11 @@ import java.io.IOException;
 public class UFile {
 
     public static void showInFileManager(File file) throws IOException {
-        if(SystemUtils.IS_OS_WINDOWS)
-            Runtime.getRuntime().exec("explorer /select, \""+file+"\"");
+        if (SystemUtils.IS_OS_WINDOWS)
+            Runtime.getRuntime().exec("explorer /select, \"" + file + "\"");
         else if (SystemUtils.IS_OS_MAC)
-            Runtime.getRuntime().exec("open -R \""+file+"\"");
+            Runtime.getRuntime().exec("open -R \"" + file + "\"");
         else // LINUX based system
-            Runtime.getRuntime().exec("xdg-open \""+file+"\"");
+            Runtime.getRuntime().exec("xdg-open \"" + file + "\"");
     }
 }

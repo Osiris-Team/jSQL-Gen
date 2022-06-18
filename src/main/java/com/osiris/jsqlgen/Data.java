@@ -8,40 +8,44 @@ import java.util.List;
 import java.util.Objects;
 
 public class Data {
-    public static File dir = new File(System.getProperty("user.home")+"/jSQL-Gen");
-    public static final File file = new File(dir+"/data.yml");
+    public static File dir = new File(System.getProperty("user.home") + "/jSQL-Gen");
+    public static final File file = new File(dir + "/data.yml");
 
-    public Data() throws IOException{
+    public Data() throws IOException {
         super();
     }
+
     public static Column findColumn(List<Column> list, String name) throws IOException {
         for (Column c : list) {
-            if(Objects.equals(name, c.name))
+            if (Objects.equals(name, c.name))
                 return c;
         }
         return null;
     }
+
     public static Table findTable(List<Table> list, String name) throws IOException {
         for (Table t : list) {
-            if(Objects.equals(name, t.name))
+            if (Objects.equals(name, t.name))
                 return t;
         }
         return null;
     }
+
     public static Database findDatabase(List<Database> list, String name) throws IOException {
         for (Database db : list) {
-            if(Objects.equals(name, db.name))
+            if (Objects.equals(name, db.name))
                 return db;
         }
         return null;
     }
+
     public static List<Database> fetchDatabases() throws IOException {
         List<Database> list = new ArrayList<>();
-        synchronized (file){
+        synchronized (file) {
             JsonElement el = JsonParser.parseReader(new FileReader(file));
-            if(el==null || el.isJsonNull()) return list;
+            if (el == null || el.isJsonNull()) return list;
             JsonObject obj = el.getAsJsonObject();
-            if(obj.get("databases") == null) return list;
+            if (obj.get("databases") == null) return list;
             for (JsonElement elDatabase : obj.get("databases").getAsJsonArray()) {
                 JsonObject objDatabase = elDatabase.getAsJsonObject();
                 Database database = new Database();
@@ -54,14 +58,14 @@ public class Data {
                     database.tables.add(table);
                     table.name = objTable.get("name").getAsString();
                     table.columns = new ArrayList<Column>();
-                    for (JsonElement elColumn: objTable.get("columns").getAsJsonArray()) {
+                    for (JsonElement elColumn : objTable.get("columns").getAsJsonArray()) {
                         JsonObject objColumn = elColumn.getAsJsonObject();
                         Column column = new Column();
                         table.columns.add(column);
                         column.name = objColumn.get("name").getAsString();
-                        if(objColumn.get("definition") != null)
+                        if (objColumn.get("definition") != null)
                             column.definition = objColumn.get("definition").getAsString();
-                        if(objColumn.get("comment") != null)
+                        if (objColumn.get("comment") != null)
                             column.comment = objColumn.get("comment").getAsString();
                     }
                 }
@@ -71,7 +75,7 @@ public class Data {
     }
 
     public static void updateDatabases(List<Database> list) throws IOException {
-        synchronized (file){
+        synchronized (file) {
             JsonObject obj = new JsonObject();
             JsonArray arrDatabases = new JsonArray();
             obj.add("databases", arrDatabases);
@@ -96,7 +100,7 @@ public class Data {
                     }
                 }
             }
-            try(BufferedWriter writer = new BufferedWriter(new FileWriter(file))){
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                 writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(obj));
             }
 

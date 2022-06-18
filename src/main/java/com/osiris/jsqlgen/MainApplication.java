@@ -37,6 +37,10 @@ public class MainApplication extends javafx.application.Application {
         }
     }
 
+    public static void main(String[] args) {
+        launch();
+    }
+
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("main.fxml"));
@@ -44,9 +48,5 @@ public class MainApplication extends javafx.application.Application {
         stage.setTitle("jSQL-Gen");
         stage.setScene(scene);
         stage.show();
-    }
-
-    public static void main(String[] args) {
-        launch();
     }
 }
