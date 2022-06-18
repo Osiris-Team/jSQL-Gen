@@ -11,15 +11,14 @@ Java objects, and your columns like your objects' fields.
 The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
 - Open `Database.java` and fill in your database credentials, and run your app.
 
-## What?
+## Features
+- No runtime overhead (unlike other ORMs).
 - Generates one class/object for each table.
 - The generated object contains static methods like `get() delete() update() add() etc...` to interact with the table.
 - The generated object contains fields for each column `obj.id obj.name etc...`.
 - The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries. 
 
 ## Tipps
-- Extend generated objects. This way all your written/additional code will be in a seperate file and it will be easier to update
-the generated object in the future. Also your code will be more organized.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
 in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
