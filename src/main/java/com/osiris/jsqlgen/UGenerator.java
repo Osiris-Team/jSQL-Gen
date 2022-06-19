@@ -16,6 +16,8 @@ public class UGenerator {
                         + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
         }
         Constructor constructor = genConstructor(t.name, t.columns);
+        Constructor minimalConstructor = genMinimalConstructor(t.name, t.columns);
+        boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
 
         StringBuilder importsBuilder = new StringBuilder();
         importsBuilder.append("import java.util.List;\n" +
@@ -50,7 +52,9 @@ public class UGenerator {
 
         // CONSTRUCTORS
         classContentBuilder.append("private " + t.name + "(){}\n");
-        classContentBuilder.append(constructor.asString);
+        classContentBuilder.append(minimalConstructor.asString);
+        if(hasMoreFields)
+            classContentBuilder.append(constructor.asString);
 
         // CREATE FIELDS AKA COLUMNS:
         for (Column col : t.columns) {
@@ -72,14 +76,14 @@ public class UGenerator {
         Column firstCol = t.columns.get(0);
         String idParam = firstCol.type.inJava + " " + firstCol.name + ",";
         classContentBuilder.append(
-                "public static " + t.name + " create(" + constructor.params.replace(idParam, "")
+                "public static " + t.name + " create(" + minimalConstructor.params.replace(idParam, "")
                         + ") {\n" +
                         firstCol.type.inJava + " " + firstCol.name + " = idCounter.incrementAndGet();\n" +
-                        "" + t.name + " obj = new " + t.name + "(" + constructor.paramsWithoutTypes + ");\n" +
+                        "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close create method
 
-        boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
+
         if(hasMoreFields){
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
@@ -221,6 +225,40 @@ public class UGenerator {
     }
 
     public static Constructor genConstructor(String objName, List<Column> columns) {
+        StringBuilder paramsBuilder = new StringBuilder();
+        StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
+        StringBuilder fieldsBuilder = new StringBuilder();
+        for (Column col : columns) {
+            paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
+            paramsWithoutTypesBuilder.append(col.name + ", ");
+            fieldsBuilder.append("this." + col.name + " = " + col.name + ";");
+        }
+        Constructor constructor = new Constructor();
+        constructor.params = paramsBuilder.toString();
+        if (constructor.params.endsWith(", "))
+            constructor.params = constructor.params.substring(0, constructor.params.length() - 2);
+
+        constructor.fieldAssignments = fieldsBuilder.toString();
+
+        constructor.asString = "" +
+                "/**\n" +
+                "Use the static create method instead of this constructor,\n" +
+                "if you plan to add this object to the database in the future, since\n" +
+                "that method fetches and sets/reserves the {@link #id}.\n" +
+                "*/\n" +
+                "public " + objName + " (" + constructor.params + "){\n" + constructor.fieldAssignments + "\n}\n";
+
+        constructor.paramsWithoutTypes = paramsWithoutTypesBuilder.toString();
+        if (constructor.paramsWithoutTypes.endsWith(", "))
+            constructor.paramsWithoutTypes = constructor.paramsWithoutTypes.substring(0, constructor.paramsWithoutTypes.length() - 2);
+
+        return constructor;
+    }
+
+    /**
+     * Generates a constructor with only the not-null fields as parameters.
+     */
+    public static Constructor genMinimalConstructor(String objName, List<Column> columns) {
         StringBuilder paramsBuilder = new StringBuilder();
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
