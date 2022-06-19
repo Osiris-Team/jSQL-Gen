@@ -219,8 +219,21 @@ public class UGenerator {
                         "}\n" // Close try/catch
         );
         classContentBuilder.append("}\n\n"); // Close delete method
-        classContentBuilder.append("}\n"); // Close class
 
+        // CREATE CLONE METHOD
+        classContentBuilder.append("public "+t.name+" clone(){\n" +
+                "return new "+t.name+"(");
+        for (int i = 0; i < t.columns.size(); i++) {
+            Column col = t.columns.get(i);
+            classContentBuilder.append("this."+col.name);
+            if(i != t.columns.size()-1)
+                classContentBuilder.append(",");
+        }
+        classContentBuilder.substring(0, classContentBuilder.length()-1);
+        classContentBuilder.append(");\n}\n");
+
+
+        classContentBuilder.append("}\n"); // Close class
         return importsBuilder.toString() + classContentBuilder;
     }
 
