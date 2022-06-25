@@ -100,7 +100,7 @@ public class SuggestionTextField extends TextField {
         //List of "suggestions"
         List<CustomMenuItem> menuItems = new LinkedList<>();
         //List size - 10 or founded suggestions count
-        int count = entries.size();
+        int count = searchResult.size();
         if(maxEntries > 0){
             count = Math.min(searchResult.size(), maxEntries);
         }
