@@ -163,21 +163,26 @@ public class MainController {
             dir.mkdirs();
             File databaseFile = new File(dir + "/Database.java");
             databaseFile.createNewFile();
-            Files.writeString(databaseFile.toPath(), "public class Database{\n" +
+            Files.writeString(databaseFile.toPath(), "" +
+                    "import java.sql.Connection;\n" +
+                    "import java.sql.DriverManager;\n" +
+                    "import java.sql.SQLException;\n" +
+                    "import java.sql.Statement;\n\n" +
+                    "public class Database{\n" +
                     "// TODO: Insert credentials and update url.\n" +
                     "public static String rawUrl = \"jdbc:mysql://localhost/\";\n" +
                     "public static String url = \"jdbc:mysql://localhost/" + db.name + "\";\n" +
                     "public static String name = \""+db.name+"\";\n" +
                     "public static String username;\n" +
-                    "public static String password;\n" +
-                    "}\n\n" +
-                    "static {\n" +
+                    "public static String password;\n\n" +
+                    "public static void create() {\n" +
                     "try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
                     "Statement s = c.createStatement();) {\n" +
                     "s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
                     "} catch (SQLException e) {\n" +
                     "throw new RuntimeException(e);\n" +
                     "}\n" +
+                    "}\n\n"+
                     "}\n\n");
             files.add(databaseFile);
             for (Table t : db.tables) {
