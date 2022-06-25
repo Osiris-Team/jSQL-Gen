@@ -1,5 +1,7 @@
 package com.osiris.jsqlgen;
 
+import java.util.Collection;
+
 public class ColumnType {
     // INTEGER TYPES:
     public static ColumnType BYTE = new ColumnType(new String[]{"TINYINT", "BYTE"},
@@ -33,6 +35,14 @@ public class ColumnType {
             "String", "setString", "getString");
     public static ColumnType BLOB = new ColumnType(new String[]{"TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"},
             "java.sql.Blob", "setBlob", "getBlob");
+
+
+    public static ColumnType[] allTypes = new ColumnType[]{
+            BYTE, SHORT, INT, LONG, DECIMAL, FLOAT, DOUBLE,
+            DATE, TIMESTAMP, TIME, YEAR,
+            STRING, BLOB
+            // TODO add new datatype here
+    };
     public String[] inSQL;
     public String inJava;
     public String inJBDCSet;
@@ -52,13 +62,7 @@ public class ColumnType {
      * @return null if no match found.
      */
     public static ColumnType findBySQLDefinition(String s) {
-        ColumnType[] types = new ColumnType[]{
-                BYTE, SHORT, INT, LONG, DECIMAL, FLOAT, DOUBLE,
-                DATE, TIMESTAMP, TIME, YEAR,
-                STRING, BLOB
-                // TODO add new datatype here
-        };
-        for (ColumnType t : types) {
+        for (ColumnType t : allTypes) {
             for (String sqlTypeName : t.inSQL) {
                 if (UString.startsWithIgnoreCase(s, sqlTypeName))
                     return t;

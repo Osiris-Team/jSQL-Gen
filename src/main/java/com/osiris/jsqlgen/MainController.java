@@ -165,10 +165,20 @@ public class MainController {
             databaseFile.createNewFile();
             Files.writeString(databaseFile.toPath(), "public class Database{\n" +
                     "// TODO: Insert credentials and update url.\n" +
+                    "public static String rawUrl = \"jdbc:mysql://localhost/\";\n" +
                     "public static String url = \"jdbc:mysql://localhost/" + db.name + "\";\n" +
+                    "public static String name = \""+db.name+"\";\n" +
                     "public static String username;\n" +
                     "public static String password;\n" +
-                    "}\n");
+                    "}\n\n" +
+                    "static {\n" +
+                    "try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
+                    "Statement s = c.createStatement();) {\n" +
+                    "s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
+                    "} catch (SQLException e) {\n" +
+                    "throw new RuntimeException(e);\n" +
+                    "}\n" +
+                    "}\n\n");
             files.add(databaseFile);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");
@@ -307,7 +317,10 @@ public class MainController {
                 }
             });
             TextField colName = new TextField(col.name);
-            TextField colDefinition = new TextField(col.definition);
+            SuggestionTextField colDefinition = new SuggestionTextField(col.definition);
+            for (ColumnType colType : ColumnType.allTypes) {
+                colDefinition.getEntries().addAll(List.of(colType.inSQL));
+            }
             TextField colComment = new TextField(col.comment);
 
             item.getChildren().add(colName);
