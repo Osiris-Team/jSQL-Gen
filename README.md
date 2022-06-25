@@ -16,7 +16,11 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 - Generates one class/object for each table.
 - The generated object contains static methods like `get() delete() update() add() etc...` to interact with the table.
 - The generated object contains fields for each column `obj.id obj.name etc...`.
-- The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries. 
+- The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
+
+#### UI
+- Simple UI to design databases within minutes.
+- Autosuggestions for field definitions.
 
 ## Tipps
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
