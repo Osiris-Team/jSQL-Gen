@@ -110,10 +110,14 @@ public class UGenerator {
                 "return get(\"id = \"+id).get(0);\n" +
                 "}\n" +
                 "/**\n" +
+                "Example: <br>\n" +
+                "get(\"username=? AND age=?\", \"Peter\", 33);  <br>\n" +
+                "@param where can be null. Your SQL WHERE statement (without the leading WHERE).\n" +
+                "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "@return a list containing only objects that match the provided SQL WHERE statement.\n" +
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
-                "public static List<" + t.name + "> get(String where) throws Exception {\n" +
+                "public static List<" + t.name + "> get(String where, Object... whereValues) throws Exception {\n" +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"SELECT ");
@@ -125,6 +129,11 @@ public class UGenerator {
                 "\" +\n" +
                         "\" FROM " + tNameQuoted + "\" +\n" +
                         "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
+                        "if(where!=null && whereValues!=null)\n" +
+                        "for (int i = 0; i < whereValues.length; i++) {\n" +
+                        "Object val = whereValues[i];\n" +
+                        "ps.setObject(i+1, val);\n" +
+                        "}\n" +
                         "ResultSet rs = ps.executeQuery();\n" +
                         "while (rs.next()) {\n" + // Open while
                         "" + t.name + " obj = new " + t.name + "();\n" +
