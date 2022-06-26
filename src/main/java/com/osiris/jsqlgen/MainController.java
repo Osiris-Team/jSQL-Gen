@@ -175,14 +175,32 @@ public class MainController {
                     "public static String name = \""+db.name+"\";\n" +
                     "public static String username;\n" +
                     "public static String password;\n\n" +
-                    "public static void create() {\n" +
-                    "try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
-                    "Statement s = c.createStatement();) {\n" +
-                    "s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
-                    "} catch (SQLException e) {\n" +
-                    "throw new RuntimeException(e);\n" +
-                    "}\n" +
-                    "}\n\n"+
+                    "    public static void create() {\n" +
+                    "\n" +
+                    "        // Do the below to avoid \"No suitable driver found...\" exception \n" +
+                    "        String driverClassName = \"com.mysql.cj.jdbc.Driver\";\n" +
+                    "        try {\n" +
+                    "            Class<?> driverClass = Class.forName(driverClassName);\n" +
+                    "            Objects.requireNonNull(driverClass);\n" +
+                    "        } catch (ClassNotFoundException e) {\n" +
+                    "            try {\n" +
+                    "                driverClassName = \"com.mysql.jdbc.Driver\"; // Try deprecated driver as fallback\n" +
+                    "                Class<?> driverClass = Class.forName(driverClassName);\n" +
+                    "                Objects.requireNonNull(driverClass);\n" +
+                    "            } catch (ClassNotFoundException ex) {\n" +
+                    "                System.err.println(\"Failed to find critical database driver class: \"+driverClassName);\n" +
+                    "                ex.printStackTrace();\n" +
+                    "            }\n" +
+                    "        }\n" +
+                    "\n" +
+                    "        // Create database if not exists\n" +
+                    "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
+                    "            Statement s = c.createStatement();) {\n" +
+                    "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
+                    "        } catch (SQLException e) {\n" +
+                    "            throw new RuntimeException(e);\n" +
+                    "        }\n" +
+                    "    }\n"+
                     "}\n\n");
             files.add(databaseFile);
             for (Table t : db.tables) {
