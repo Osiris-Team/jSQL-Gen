@@ -217,14 +217,22 @@ public class UGenerator {
                 "remove(\"id = \"+obj.id);\n" +
                 "}\n" +
                 "/**\n" +
+                "Example: <br>\n" +
+                "remove(\"username=?\", \"Peter\"); <br>\n" +
                 "Deletes the objects that are found by the provided SQL WHERE statement, from the database.\n" +
+                "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "*/\n" +
-                "public static void remove(String where) throws Exception {\n" +
+                "public static void remove(String where, Object... whereValues) throws Exception {\n" +
                 "java.util.Objects.requireNonNull(where);\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"DELETE FROM " + tNameQuoted + " WHERE \"+where)) {\n");// Open try/catch
         classContentBuilder.append(
-                "ps.executeUpdate();\n" +
+                "if(whereValues != null)\n" +
+                        "                for (int i = 0; i < whereValues.length; i++) {\n" +
+                        "                    Object val = whereValues[i];\n" +
+                        "                    ps.setObject(i+1, val);\n" +
+                        "                }\n" +
+                        "ps.executeUpdate();\n" +
                         "}\n" // Close try/catch
         );
         classContentBuilder.append("}\n\n"); // Close delete method
