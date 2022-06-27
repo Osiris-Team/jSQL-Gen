@@ -11,12 +11,9 @@ import java.sql.SQLException;
 
 public class SQLTestServerTest {
     @Test
-    void test() throws ManagedProcessException, SQLException {
+    void test() throws ManagedProcessException, SQLException, InterruptedException {
         SQLTestServer db = SQLTestServer.buildAndRun();
-        System.out.println(db.getUrl());
-        try(Connection con = DriverManager.getConnection(db.getUrl(), "root", "");
-            PreparedStatement s = con.prepareStatement("CREATE DATABASE IF NOT EXISTS `test`")){
-            s.executeUpdate();
-        }
+        //while(true)
+        //    Thread.sleep(1000);
     }
 }

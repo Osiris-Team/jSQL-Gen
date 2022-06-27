@@ -35,7 +35,8 @@ public class UGenerator {
                 "try (Statement s = con.createStatement()) {\n" +
                 "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).name // EXPECTS ID
                 + " " + t.columns.get(0).definition + ")\");\n");
-        for (Column col : t.columns) {
+        for (int i = 1; i < t.columns.size(); i++) { // Skip first column (id) to avoid "SQLSyntaxErrorException: Multiple primary key defined"
+            Column col = t.columns.get(i);
             classContentBuilder.append("try{s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN " + col.name + " " + col.definition + "\");}catch(Exception ignored){}\n");
             classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.name + " " + col.definition + "\");\n");
         }
