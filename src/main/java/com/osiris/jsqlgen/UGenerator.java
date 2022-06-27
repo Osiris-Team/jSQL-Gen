@@ -36,8 +36,8 @@ public class UGenerator {
                 "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).name // EXPECTS ID
                 + " " + t.columns.get(0).definition + ")\");\n");
         for (Column col : t.columns) {
-            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN IF NOT EXISTS " + col.name + " " + col.definition + "\");\n");
-            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY IF EXISTS " + col.name + " " + col.definition + "\");\n");
+            classContentBuilder.append("try{s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN " + col.name + " " + col.definition + "\");}catch(Exception ignored){}\n");
+            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.name + " " + col.definition + "\");\n");
         }
         classContentBuilder.append(
                 "}\n" +
