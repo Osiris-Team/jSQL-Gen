@@ -3,17 +3,21 @@ package com.osiris.jsqlgen;
 import ch.vorburger.exec.ManagedProcessException;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.Instant;
 
 
 public class SQLTestServerTest {
     @Test
     void test() throws ManagedProcessException, SQLException, InterruptedException {
         SQLTestServer db = SQLTestServer.buildAndRun();
-        //while(true)
-        //    Thread.sleep(1000);
+        while(true) {
+            System.out.println(Instant.now().toString());
+            System.out.println("url: "+db.getUrl()+" running: "+db.isRunning());
+            try(Connection conn = DriverManager.getConnection(db.getUrl()+"velocityauth", "root", "root");){
+                DBTablePrinter.printTable(conn, "FailedLogin");
+            }
+            Thread.sleep(30000);
+        }
     }
 }
