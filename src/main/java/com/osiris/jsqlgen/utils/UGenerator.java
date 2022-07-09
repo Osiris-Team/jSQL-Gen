@@ -75,8 +75,10 @@ public class UGenerator {
         // CREATE CREATE METHODS:
         classContentBuilder.append("" +
                 "/**\n" +
-                "Increments the id and sets it for this object (basically reserves a space in the database).\n" +
-                "@return object with latest id. Should be added to the database next by you.\n" +
+                "Creates and returns an object that can be added to this table.\n" +
+                "Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).\n" +
+                "Note that the parameters of this method represent \"NOT NULL\" fields in the table and thus should not be null.\n" +
+                "Also note that this method will NOT add the object to the table.\n" +
                 "*/\n");
         Column firstCol = t.columns.get(0);
         String idParam = firstCol.type.inJava + " " + firstCol.name + ",";
@@ -90,6 +92,12 @@ public class UGenerator {
 
 
         if (hasMoreFields) {
+            classContentBuilder.append("" +
+                    "/**\n" +
+                    "Creates and returns an object that can be added to this table.\n" +
+                    "Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).\n" +
+                    "Note that this method will NOT add the object to the table.\n" +
+                    "*/\n");
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
                             + ") {\n" +
@@ -98,6 +106,37 @@ public class UGenerator {
                             "" + genFieldAssignments("obj", t.columns) + "\n" +
                             "return obj;\n");
             classContentBuilder.append("}\n\n"); // Close create method
+        }
+
+        classContentBuilder.append("" +
+                "/**\n" +
+                "Convenience method for creating and directly adding a new object to the table.\n" +
+                "Note that the parameters of this method represent \"NOT NULL\" fields in the table and thus should not be null.\n" +
+                "*/\n");
+        classContentBuilder.append(
+                "public static " + t.name + " createAndAdd(" + minimalConstructor.params.replace(idParam, "")
+                        + ") {\n" +
+                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
+                        "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        "add(obj);\n" +
+                        "return obj;\n");
+        classContentBuilder.append("}\n\n"); // Close method
+
+
+        if (hasMoreFields) {
+            classContentBuilder.append("" +
+                    "/**\n" +
+                    "Convenience method for creating and directly adding a new object to the table.\n" +
+                    "*/\n");
+            classContentBuilder.append(
+                    "public static " + t.name + " createAndAdd(" + genParams(t.columns).replace(idParam, "")
+                            + ") {\n" +
+                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
+                            "" + t.name + " obj = new " + t.name + "();\n" +
+                            "" + genFieldAssignments("obj", t.columns) + "\n" +
+                            "add(obj);\n" +
+                            "return obj;\n");
+            classContentBuilder.append("}\n\n"); // Close method
         }
 
 
