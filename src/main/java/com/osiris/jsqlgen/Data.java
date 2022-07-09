@@ -45,7 +45,7 @@ public class Data {
     public static List<Database> fetchDatabases() throws IOException {
         List<Database> list = new ArrayList<>();
         synchronized (file) {
-            if(!file.exists()){
+            if (!file.exists()) {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
             }
@@ -83,7 +83,7 @@ public class Data {
 
     public static void updateDatabases(List<Database> list) throws IOException {
         synchronized (file) {
-            if(!file.exists()){
+            if (!file.exists()) {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
             }

@@ -24,14 +24,13 @@ public class SuggestionTextField extends TextField {
     //Local variables
     //entries to autocomplete
     private final SortedSet<String> entries;
-    //popup GUI
-    private ContextMenu entriesPopup;
-
     /**
      * The maximum amount of entries to show.
      * No limit if set to a negative number or 0 (default).
      */
     public int maxEntries = 0;
+    //popup GUI
+    private final ContextMenu entriesPopup;
 
 
     public SuggestionTextField() {
@@ -48,6 +47,22 @@ public class SuggestionTextField extends TextField {
         setText(txt);
     }
 
+    /**
+     * Build TextFlow with selected text. Return "case" dependent.
+     *
+     * @param text   - string with text
+     * @param filter - string to select in text
+     * @return - TextFlow
+     */
+    public static TextFlow buildTextFlow(String text, String filter) {
+        int filterIndex = text.toLowerCase().indexOf(filter.toLowerCase());
+        Text textBefore = new Text(text.substring(0, filterIndex));
+        Text textAfter = new Text(text.substring(filterIndex + filter.length()));
+        Text textFilter = new Text(text.substring(filterIndex, filterIndex + filter.length())); //instead of "filter" to keep all "case sensitive"
+        textFilter.setFill(Color.ORANGE);
+        textFilter.setFont(Font.font("Helvetica", FontWeight.BOLD, 12));
+        return new TextFlow(textBefore, textFilter, textAfter);
+    }
 
     /**
      * "Suggestion" specific listners
@@ -64,9 +79,9 @@ public class SuggestionTextField extends TextField {
 
         //Hide always by focus-in (optional) and out
         focusedProperty().addListener((observableValue, oldValue, newValue) -> {
-            if(!oldValue && newValue){
+            if (!oldValue && newValue) {
                 showSuggestions("");
-            } else{
+            } else {
                 entriesPopup.hide();
             }
         });
@@ -90,7 +105,6 @@ public class SuggestionTextField extends TextField {
         }
     }
 
-
     /**
      * Populate the entry set with the given search results. Display is limited to 10 entries, for performance.
      *
@@ -101,7 +115,7 @@ public class SuggestionTextField extends TextField {
         List<CustomMenuItem> menuItems = new LinkedList<>();
         //List size - 10 or founded suggestions count
         int count = searchResult.size();
-        if(maxEntries > 0){
+        if (maxEntries > 0) {
             count = Math.min(searchResult.size(), maxEntries);
         }
         //Build list as set of labels
@@ -128,27 +142,11 @@ public class SuggestionTextField extends TextField {
     }
 
     /**
-     * Build TextFlow with selected text. Return "case" dependent.
-     *
-     * @param text - string with text
-     * @param filter - string to select in text
-     * @return - TextFlow
-     */
-    public static TextFlow buildTextFlow(String text, String filter) {
-        int filterIndex = text.toLowerCase().indexOf(filter.toLowerCase());
-        Text textBefore = new Text(text.substring(0, filterIndex));
-        Text textAfter = new Text(text.substring(filterIndex + filter.length()));
-        Text textFilter = new Text(text.substring(filterIndex,  filterIndex + filter.length())); //instead of "filter" to keep all "case sensitive"
-        textFilter.setFill(Color.ORANGE);
-        textFilter.setFont(Font.font("Helvetica", FontWeight.BOLD, 12));
-        return new TextFlow(textBefore, textFilter, textAfter);
-    }
-
-
-    /**
      * Get the existing set of autocomplete entries.
      *
      * @return The existing autocomplete entries.
      */
-    public SortedSet<String> getEntries() { return entries; }
+    public SortedSet<String> getEntries() {
+        return entries;
+    }
 }

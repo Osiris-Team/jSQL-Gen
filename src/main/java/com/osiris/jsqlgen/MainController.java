@@ -178,7 +178,7 @@ public class MainController {
                     "// TODO: Insert credentials and update url.\n" +
                     "public static String rawUrl = \"jdbc:mysql://localhost/\";\n" +
                     "public static String url = \"jdbc:mysql://localhost/" + db.name + "\";\n" +
-                    "public static String name = \""+db.name+"\";\n" +
+                    "public static String name = \"" + db.name + "\";\n" +
                     "public static String username;\n" +
                     "public static String password;\n\n" +
                     "    public static void create() {\n" +
@@ -206,7 +206,7 @@ public class MainController {
                     "        } catch (SQLException e) {\n" +
                     "            throw new RuntimeException(e);\n" +
                     "        }\n" +
-                    "    }\n"+
+                    "    }\n" +
                     "}\n\n");
             files.add(databaseFile);
             for (Table t : db.tables) {

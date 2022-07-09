@@ -58,7 +58,7 @@ public class UGenerator {
         // CONSTRUCTORS
         classContentBuilder.append("private " + t.name + "(){}\n");
         classContentBuilder.append(minimalConstructor.asString);
-        if(hasMoreFields)
+        if (hasMoreFields)
             classContentBuilder.append(constructor.asString);
 
         // CREATE FIELDS AKA COLUMNS:
@@ -89,13 +89,13 @@ public class UGenerator {
         classContentBuilder.append("}\n\n"); // Close create method
 
 
-        if(hasMoreFields){
+        if (hasMoreFields) {
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
                             + ") {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                             "" + t.name + " obj = new " + t.name + "();\n" +
-                            "" + genFieldAssignments("obj", t.columns)+"\n"+
+                            "" + genFieldAssignments("obj", t.columns) + "\n" +
                             "return obj;\n");
             classContentBuilder.append("}\n\n"); // Close create method
         }
@@ -111,7 +111,7 @@ public class UGenerator {
                 "@return object with the provided id.\n" +
                 "@throws Exception on SQL issues, or if there is no object with the provided id in this table.\n" +
                 "*/\n" +
-                "public static "+t.name+" get(int id) throws Exception {\n" +
+                "public static " + t.name + " get(int id) throws Exception {\n" +
                 "return get(\"id = \"+id).get(0);\n" +
                 "}\n" +
                 "/**\n" +
@@ -243,15 +243,15 @@ public class UGenerator {
         classContentBuilder.append("}\n\n"); // Close delete method
 
         // CREATE CLONE METHOD
-        classContentBuilder.append("public "+t.name+" clone(){\n" +
-                "return new "+t.name+"(");
+        classContentBuilder.append("public " + t.name + " clone(){\n" +
+                "return new " + t.name + "(");
         for (int i = 0; i < t.columns.size(); i++) {
             Column col = t.columns.get(i);
-            classContentBuilder.append("this."+col.name);
-            if(i != t.columns.size()-1)
+            classContentBuilder.append("this." + col.name);
+            if (i != t.columns.size() - 1)
                 classContentBuilder.append(",");
         }
-        classContentBuilder.substring(0, classContentBuilder.length()-1);
+        classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(");\n}\n");
 
         // CREATE TOPRINTSTRING METHOD
@@ -259,9 +259,9 @@ public class UGenerator {
                 "return  \"\"");
         for (int i = 0; i < t.columns.size(); i++) {
             Column col = t.columns.get(i);
-            classContentBuilder.append("+\""+col.name+"=\"+this."+col.name+"+\" \"");
+            classContentBuilder.append("+\"" + col.name + "=\"+this." + col.name + "+\" \"");
         }
-        classContentBuilder.substring(0, classContentBuilder.length()-1);
+        classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(";\n}\n");
 
 
@@ -336,7 +336,7 @@ public class UGenerator {
         return constructor;
     }
 
-    public static String genParams(List<Column> columns){
+    public static String genParams(List<Column> columns) {
         StringBuilder paramsBuilder = new StringBuilder();
         for (Column col : columns) {
             paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
@@ -347,25 +347,27 @@ public class UGenerator {
         return params;
     }
 
-    public static String genFieldAssignments(List<Column> columns){
+    public static String genFieldAssignments(List<Column> columns) {
         return genFieldAssignments("this", columns);
     }
-    public static String genFieldAssignments(String objName, List<Column> columns){
+
+    public static String genFieldAssignments(String objName, List<Column> columns) {
         StringBuilder fieldsBuilder = new StringBuilder();
         for (Column col : columns) {
-            fieldsBuilder.append(objName+"." + col.name + "=" + col.name + "; ");
+            fieldsBuilder.append(objName + "." + col.name + "=" + col.name + "; ");
         }
         return fieldsBuilder.toString();
     }
 
-    public static String genOnlyNotNullFieldAssignments(List<Column> columns){
+    public static String genOnlyNotNullFieldAssignments(List<Column> columns) {
         return genOnlyNotNullFieldAssignments("this", columns);
     }
-    public static String genOnlyNotNullFieldAssignments(String objName, List<Column> columns){
+
+    public static String genOnlyNotNullFieldAssignments(String objName, List<Column> columns) {
         StringBuilder fieldsBuilder = new StringBuilder();
         for (Column col : columns) {
             if (UString.containsIgnoreCase(col.definition, "NOT NULL")) {
-                fieldsBuilder.append(objName+"." + col.name + "=" + col.name + "; ");
+                fieldsBuilder.append(objName + "." + col.name + "=" + col.name + "; ");
             }
         }
         return fieldsBuilder.toString();
