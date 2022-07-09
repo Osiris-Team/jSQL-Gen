@@ -1,5 +1,11 @@
 package com.osiris.jsqlgen;
 
+import com.osiris.jsqlgen.model.Column;
+import com.osiris.jsqlgen.model.ColumnType;
+import com.osiris.jsqlgen.model.Database;
+import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.utils.UFile;
+import com.osiris.jsqlgen.utils.UGenerator;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

@@ -1,4 +1,4 @@
-package com.osiris.jsqlgen;
+package com.osiris.jsqlgen.utils;
 
 public class UString {
     public static boolean startsWithIgnoreCase(String s, String query) {

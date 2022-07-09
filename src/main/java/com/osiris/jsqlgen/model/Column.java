@@ -1,4 +1,4 @@
-package com.osiris.jsqlgen;
+package com.osiris.jsqlgen.model;
 
 public class Column {
     public String name;

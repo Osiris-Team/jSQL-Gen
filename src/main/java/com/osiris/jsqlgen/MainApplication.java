@@ -1,5 +1,7 @@
 package com.osiris.jsqlgen;
 
+import com.osiris.jsqlgen.utils.AsyncReader;
+import com.osiris.jsqlgen.utils.MyTeeOutputStream;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;

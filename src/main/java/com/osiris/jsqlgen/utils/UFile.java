@@ -1,4 +1,4 @@
-package com.osiris.jsqlgen;
+package com.osiris.jsqlgen.utils;
 
 import org.apache.commons.lang3.SystemUtils;
 

@@ -1,6 +1,9 @@
 package com.osiris.jsqlgen;
 
 import com.google.gson.*;
+import com.osiris.jsqlgen.model.Column;
+import com.osiris.jsqlgen.model.Database;
+import com.osiris.jsqlgen.model.Table;
 
 import java.io.*;
 import java.util.ArrayList;

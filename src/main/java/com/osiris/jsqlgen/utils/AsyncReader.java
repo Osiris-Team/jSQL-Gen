@@ -6,7 +6,7 @@
  * of the MIT-License. Consult the "LICENSE" file for details.
  */
 
-package com.osiris.jsqlgen;
+package com.osiris.jsqlgen.utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;

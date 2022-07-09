@@ -1,4 +1,4 @@
-package com.osiris.jsqlgen;
+package com.osiris.jsqlgen.model;
 
 import java.util.ArrayList;
 
