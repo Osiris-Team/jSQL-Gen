@@ -45,6 +45,10 @@ public class Data {
     public static List<Database> fetchDatabases() throws IOException {
         List<Database> list = new ArrayList<>();
         synchronized (file) {
+            if(!file.exists()){
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
             JsonElement el = JsonParser.parseReader(new FileReader(file));
             if (el == null || el.isJsonNull()) return list;
             JsonObject obj = el.getAsJsonObject();
@@ -79,6 +83,10 @@ public class Data {
 
     public static void updateDatabases(List<Database> list) throws IOException {
         synchronized (file) {
+            if(!file.exists()){
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
             JsonObject obj = new JsonObject();
             JsonArray arrDatabases = new JsonArray();
             obj.add("databases", arrDatabases);

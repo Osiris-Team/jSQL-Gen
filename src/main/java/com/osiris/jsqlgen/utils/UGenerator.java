@@ -39,16 +39,17 @@ public class UGenerator {
                 "try (Statement s = con.createStatement()) {\n" +
                 "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).name // EXPECTS ID
                 + " " + t.columns.get(0).definition + ")\");\n");
-        for (Column col : t.columns) {
-            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN IF NOT EXISTS " + col.name + " " + col.definition + "\");\n");
-            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY IF EXISTS " + col.name + " " + col.definition + "\");\n");
+        for (int i = 1; i < t.columns.size(); i++) { // Skip first column (id) to avoid "SQLSyntaxErrorException: Multiple primary key defined"
+            Column col = t.columns.get(i);
+            classContentBuilder.append("try{s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN " + col.name + " " + col.definition + "\");}catch(Exception ignored){}\n");
+            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.name + " " + col.definition + "\");\n");
         }
         classContentBuilder.append(
                 "}\n" +
                         "" +
                         "try (PreparedStatement ps = con.prepareStatement(\"SELECT id FROM " + tNameQuoted + " ORDER BY id DESC LIMIT 1\")) {\n" +
                         "ResultSet rs = ps.executeQuery();\n" +
-                        "if (rs.next()) idCounter.set(rs.getInt(1));\n" +
+                        "if (rs.next()) idCounter.set(rs.getInt(1) + 1);\n" +
                         "}\n" +
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
@@ -82,7 +83,7 @@ public class UGenerator {
         classContentBuilder.append(
                 "public static " + t.name + " create(" + minimalConstructor.params.replace(idParam, "")
                         + ") {\n" +
-                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.incrementAndGet();\n" +
+                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                         "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close create method
@@ -92,7 +93,7 @@ public class UGenerator {
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
                             + ") {\n" +
-                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.incrementAndGet();\n" +
+                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                             "" + t.name + " obj = new " + t.name + "();\n" +
                             "" + genFieldAssignments("obj", t.columns)+"\n"+
                             "return obj;\n");
@@ -252,6 +253,16 @@ public class UGenerator {
         }
         classContentBuilder.substring(0, classContentBuilder.length()-1);
         classContentBuilder.append(");\n}\n");
+
+        // CREATE TOPRINTSTRING METHOD
+        classContentBuilder.append("public String toPrintString(){\n" +
+                "return  \"\"");
+        for (int i = 0; i < t.columns.size(); i++) {
+            Column col = t.columns.get(i);
+            classContentBuilder.append("+\""+col.name+"=\"+this."+col.name+"+\" \"");
+        }
+        classContentBuilder.substring(0, classContentBuilder.length()-1);
+        classContentBuilder.append(";\n}\n");
 
 
         classContentBuilder.append("}\n"); // Close class
