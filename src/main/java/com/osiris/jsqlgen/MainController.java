@@ -181,6 +181,7 @@ public class MainController {
                     "public static String name = \"" + db.name + "\";\n" +
                     "public static String username;\n" +
                     "public static String password;\n\n" +
+                    "static{create();} // Create database if not exists\n" +
                     "    public static void create() {\n" +
                     "\n" +
                     "        // Do the below to avoid \"No suitable driver found...\" exception \n" +
