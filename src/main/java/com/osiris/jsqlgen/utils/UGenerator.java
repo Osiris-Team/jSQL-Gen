@@ -460,9 +460,9 @@ public class UGenerator {
                 "         */\n" +
                 "        public void remove() throws Exception {\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                return "+table.name+".remove(\"WHERE \"+sqlBuilder.toString(), whereObjects.toArray());\n" +
+                "                "+table.name+".remove(\"WHERE \"+sqlBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return "+table.name+".remove(sqlBuilder.toString(), (Object[]) null);\n" +
+                "                "+table.name+".remove(sqlBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
