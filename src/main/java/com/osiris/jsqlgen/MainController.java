@@ -210,6 +210,10 @@ public class MainController {
                     "    }\n" +
                     "}\n\n");
             files.add(databaseFile);
+            File whereFile = new File(dir + "/WHERE.java");
+            whereFile.createNewFile();
+            Files.writeString(whereFile.toPath(), UGenerator.generateWhereClass());
+            files.add(whereFile);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");
                 javaFile.createNewFile();

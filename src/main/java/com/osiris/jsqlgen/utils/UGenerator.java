@@ -100,7 +100,7 @@ public class UGenerator {
                     "*/\n");
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
-                            + ") {\n" +
+                            + ") throws Exception {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                             "" + t.name + " obj = new " + t.name + "();\n" +
                             "" + genFieldAssignments("obj", t.columns) + "\n" +
@@ -115,7 +115,7 @@ public class UGenerator {
                 "*/\n");
         classContentBuilder.append(
                 "public static " + t.name + " createAndAdd(" + minimalConstructor.params.replace(idParam, "")
-                        + ") {\n" +
+                        + ") throws Exception {\n" +
                         firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                         "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "add(obj);\n" +
@@ -130,7 +130,7 @@ public class UGenerator {
                     "*/\n");
             classContentBuilder.append(
                     "public static " + t.name + " createAndAdd(" + genParams(t.columns).replace(idParam, "")
-                            + ") {\n" +
+                            + ") throws Exception {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                             "" + t.name + " obj = new " + t.name + "();\n" +
                             "" + genFieldAssignments("obj", t.columns) + "\n" +
@@ -303,9 +303,19 @@ public class UGenerator {
         classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(";\n}\n");
 
+        for (Column col : t.columns) {
+            classContentBuilder.append(
+                    "public static WHERE where"+firstToUpperCase(col.name)+"() {\n" +
+                            "return new WHERE(\""+col.name+"\");\n"+
+                            "}\n");
+        }
 
         classContentBuilder.append("}\n"); // Close class
         return importsBuilder.toString() + classContentBuilder;
+    }
+
+    private static String firstToUpperCase(String s){
+        return (""+s.charAt(0)).toUpperCase()+s.substring(1);
     }
 
     public static Constructor genConstructor(String objName, List<Column> columns) {
@@ -410,6 +420,10 @@ public class UGenerator {
             }
         }
         return fieldsBuilder.toString();
+    }
+
+    public static String generateWhereClass() {
+        return "";
     }
 
     public static class Constructor {
