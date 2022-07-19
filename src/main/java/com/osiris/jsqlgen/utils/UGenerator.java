@@ -309,6 +309,7 @@ public class UGenerator {
                             "return new WHERE(\""+col.name+"\");\n"+
                             "}\n");
         }
+        classContentBuilder.append(generateWhereClass(t));
 
         classContentBuilder.append("}\n"); // Close class
         return importsBuilder.toString() + classContentBuilder;
@@ -422,8 +423,220 @@ public class UGenerator {
         return fieldsBuilder.toString();
     }
 
-    public static String generateWhereClass() {
-        return "";
+    public static String generateWhereClass(Table table) {
+        return "public static class WHERE {\n" +
+                "        /**\n" +
+                "         * Remember to prepend WHERE on the final SQL statement.\n" +
+                "         * This is not done by this class due to performance reasons. <p>\n" +
+                "         * <p>\n" +
+                "         * Note that it excepts the generated SQL string to be used by a {@link java.sql.PreparedStatement}\n" +
+                "         * to protect against SQL-Injection. <p>\n" +
+                "         * <p>\n" +
+                "         * Also note that the SQL query gets optimized by the database automatically,\n" +
+                "         * thus It's recommended to make queries as readable as possible and\n" +
+                "         * not worry that much about performance.\n" +
+                "         */\n" +
+                "        public StringBuilder sqlBuilder = new StringBuilder();\n" +
+                "        List<Object> whereObjects = new ArrayList<>();\n" +
+                "        private final String columnName;\n" +
+                "        public WHERE(String columnName) {\n" +
+                "            this.columnName = columnName;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * Executes the generated SQL statement\n" +
+                "         * and returns a list of objects matching the query.\n" +
+                "         */\n" +
+                "        public List<"+table.name+"> get() throws Exception {\n" +
+                "            if(!whereObjects.isEmpty())\n" +
+                "                return "+table.name+".get(\"WHERE \"+sqlBuilder.toString(), whereObjects.toArray());\n" +
+                "            else\n" +
+                "                return "+table.name+".get(sqlBuilder.toString(), (Object[]) null);\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * AND (...) <br>\n" +
+                "         */\n" +
+                "        public WHERE and(WHERE where) {\n" +
+                "            sqlBuilder.append(\"AND (\").append(where.sqlBuilder).append(\")\");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * OR (...) <br>\n" +
+                "         */\n" +
+                "        public WHERE or(WHERE where) {\n" +
+                "            sqlBuilder.append(\"OR (\").append(where.sqlBuilder).append(\")\");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName = ? <br>\n" +
+                "         */\n" +
+                "        public WHERE is(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" = ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName IN (?,?,...) <br>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_in.asp\">https://www.w3schools.com/mysql/mysql_in.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE is(Object... objects) {\n" +
+                "            String s = \"\";\n" +
+                "            for (Object obj : objects) {\n" +
+                "                s += \"?,\";\n" +
+                "                whereObjects.add(obj);\n" +
+                "            }\n" +
+                "            s = s.substring(0, s.length() - 1); // Remove last ,\n" +
+                "            sqlBuilder.append(columnName).append(\" IN (\" + s + \") \");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName <> ? <br>\n" +
+                "         */\n" +
+                "        public WHERE isNot(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" <> ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName IS NULL <br>\n" +
+                "         */\n" +
+                "        public WHERE isNull() {\n" +
+                "            sqlBuilder.append(columnName).append(\" IS NULL \");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName IS NOT NULL <br>\n" +
+                "         */\n" +
+                "        public WHERE isNotNull() {\n" +
+                "            sqlBuilder.append(columnName).append(\" IS NOT NULL \");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName LIKE ? <br>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE like(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" LIKE ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName NOT LIKE ? <br>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE notLike(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" NOT LIKE ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName > ? <br>\n" +
+                "         */\n" +
+                "        public WHERE biggerThan(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" > ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName < ? <br>\n" +
+                "         */\n" +
+                "        public WHERE smallerThan(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" < ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName >= ? <br>\n" +
+                "         */\n" +
+                "        public WHERE biggerOrEqual(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" >= ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName <= ? <br>\n" +
+                "         */\n" +
+                "        public WHERE smallerOrEqual(Object obj) {\n" +
+                "            sqlBuilder.append(columnName).append(\" <= ? \");\n" +
+                "            whereObjects.add(obj);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * columnName BETWEEN ? AND ? <br>\n" +
+                "         */\n" +
+                "        public WHERE between(Object obj1, Object obj2) {\n" +
+                "            sqlBuilder.append(columnName).append(\" BETWEEN ? AND ? \");\n" +
+                "            whereObjects.add(obj1);\n" +
+                "            whereObjects.add(obj2);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * ORDER BY columnName ASC <br>\n" +
+                "         * <p style=\"color:red\">\n" +
+                "         * If the below is not followed, SQL errors are expected. <br>\n" +
+                "         * - Should only be called once. <br>\n" +
+                "         * - Called from the top most where statement. <br>\n" +
+                "         * - Last method (or before {@link #limit(int)}. <br>\n" +
+                "         * </p>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE smallestFirst() {\n" +
+                "            sqlBuilder.append(\"ORDER BY \").append(columnName + \" ASC \");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * ORDER BY columnName DESC <br>\n" +
+                "         * <p style=\"color:red\">\n" +
+                "         * If the below is not followed, SQL errors are expected. <br>\n" +
+                "         * - Should only be called once. <br>\n" +
+                "         * - Called from the top most where statement. <br>\n" +
+                "         * - Last method (or before {@link #limit(int)}. <br>\n" +
+                "         * </p>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE biggestFirst() {\n" +
+                "            sqlBuilder.append(\"ORDER BY \").append(columnName + \" DESC \");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * LIMIT number <br>\n" +
+                "         * <p style=\"color:red\">\n" +
+                "         * If the below is not followed, SQL errors are expected. <br>\n" +
+                "         * - Should only be called once. <br>\n" +
+                "         * - Called from the top most where statement. <br>\n" +
+                "         * - Last method. <br>\n" +
+                "         * </p>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_limit.asp\">https://www.w3schools.com/mysql/mysql_limit.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE limit(int num) {\n" +
+                "            sqlBuilder.append(\"LIMIT \").append(num + \" \");\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "\n" +
+                "    }";
     }
 
     public static class Constructor {
