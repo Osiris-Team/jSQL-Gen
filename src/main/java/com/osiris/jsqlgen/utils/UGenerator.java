@@ -455,6 +455,17 @@ public class UGenerator {
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
+                "         * Executes the generated SQL statement\n" +
+                "         * and removes the objects matching the query.\n" +
+                "         */\n" +
+                "        public void remove() throws Exception {\n" +
+                "            if(!whereObjects.isEmpty())\n" +
+                "                return "+table.name+".remove(\"WHERE \"+sqlBuilder.toString(), whereObjects.toArray());\n" +
+                "            else\n" +
+                "                return "+table.name+".remove(sqlBuilder.toString(), (Object[]) null);\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
                 "         * AND (...) <br>\n" +
                 "         */\n" +
                 "        public WHERE and(WHERE where) {\n" +
