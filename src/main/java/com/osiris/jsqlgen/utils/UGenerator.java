@@ -7,6 +7,7 @@ import com.osiris.jsqlgen.model.Table;
 import java.util.List;
 
 public class UGenerator {
+    public static boolean isDebug = false;
 
     /**
      * Generates Java source code, for the provided table.
@@ -162,6 +163,7 @@ public class UGenerator {
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
                 "public static List<" + t.name + "> get(String where, Object... whereValues) throws Exception {\n" +
+                        (isDebug ? "System.err.println(\"get: \"+where);\n" : "") +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"SELECT ");
@@ -267,6 +269,7 @@ public class UGenerator {
                 "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "*/\n" +
                 "public static void remove(String where, Object... whereValues) throws Exception {\n" +
+                (isDebug ? "System.err.println(\"remove: \"+where);\n" : "") +
                 "java.util.Objects.requireNonNull(where);\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"DELETE FROM " + tNameQuoted + " WHERE \"+where)) {\n");// Open try/catch
@@ -437,6 +440,8 @@ public class UGenerator {
                 "         * not worry that much about performance.\n" +
                 "         */\n" +
                 "        public StringBuilder sqlBuilder = new StringBuilder();\n" +
+                "        public StringBuilder orderByBuilder = new StringBuilder();\n" +
+                "        public StringBuilder limitBuilder = new StringBuilder();\n" +
                 "        List<Object> whereObjects = new ArrayList<>();\n" +
                 "        private final String columnName;\n" +
                 "        public WHERE(String columnName) {\n" +
@@ -448,10 +453,12 @@ public class UGenerator {
                 "         * and returns a list of objects matching the query.\n" +
                 "         */\n" +
                 "        public List<"+table.name+"> get() throws Exception {\n" +
+                "            String orderBy = orderByBuilder.toString();\n" +
+                "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                return "+table.name+".get(\"WHERE \"+sqlBuilder.toString(), whereObjects.toArray());\n" +
+                "                return "+table.name+".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return "+table.name+".get(sqlBuilder.toString(), (Object[]) null);\n" +
+                "                return "+table.name+".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
@@ -459,17 +466,24 @@ public class UGenerator {
                 "         * and removes the objects matching the query.\n" +
                 "         */\n" +
                 "        public void remove() throws Exception {\n" +
+                "            String orderBy = orderByBuilder.toString();\n" +
+                "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                "+table.name+".remove(\"WHERE \"+sqlBuilder.toString(), whereObjects.toArray());\n" +
+                "                "+table.name+".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                "+table.name+".remove(sqlBuilder.toString(), (Object[]) null);\n" +
+                "                "+table.name+".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
                 "         * AND (...) <br>\n" +
                 "         */\n" +
                 "        public WHERE and(WHERE where) {\n" +
-                "            sqlBuilder.append(\"AND (\").append(where.sqlBuilder).append(\")\");\n" +
+                "            String sql = where.sqlBuilder.toString();\n" +
+                "            if(!sql.isEmpty()) {\n" +
+                "            sqlBuilder.append(\"AND (\").append(sql).append(\") \");\n" +
+                "            whereObjects.addAll(where.whereObjects);\n" +
+                "            }\n" +
+                "            orderByBuilder.append(where.orderByBuilder.toString());\n" +
                 "            return this;\n" +
                 "        }\n" +
                 "\n" +
@@ -477,7 +491,12 @@ public class UGenerator {
                 "         * OR (...) <br>\n" +
                 "         */\n" +
                 "        public WHERE or(WHERE where) {\n" +
-                "            sqlBuilder.append(\"OR (\").append(where.sqlBuilder).append(\")\");\n" +
+                "            String sql = where.sqlBuilder.toString();\n" +
+                "            if(!sql.isEmpty()) {\n" +
+                "            sqlBuilder.append(\"OR (\").append(sql).append(\") \");\n" +
+                "            whereObjects.addAll(where.whereObjects);\n" +
+                "            }\n" +
+                "            orderByBuilder.append(where.orderByBuilder.toString());\n" +
                 "            return this;\n" +
                 "        }\n" +
                 "\n" +
@@ -600,50 +619,32 @@ public class UGenerator {
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
-                "         * ORDER BY columnName ASC <br>\n" +
-                "         * <p style=\"color:red\">\n" +
-                "         * If the below is not followed, SQL errors are expected. <br>\n" +
-                "         * - Should only be called once. <br>\n" +
-                "         * - Called from the top most where statement. <br>\n" +
-                "         * - Last method (or before {@link #limit(int)}. <br>\n" +
-                "         * </p>\n" +
+                "         * columnName ASC, <br>\n" +
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
                 "         */\n" +
                 "        public WHERE smallestFirst() {\n" +
-                "            sqlBuilder.append(\"ORDER BY \").append(columnName + \" ASC \");\n" +
+                "            orderByBuilder.append(columnName + \" ASC, \");\n" +
                 "            return this;\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
-                "         * ORDER BY columnName DESC <br>\n" +
-                "         * <p style=\"color:red\">\n" +
-                "         * If the below is not followed, SQL errors are expected. <br>\n" +
-                "         * - Should only be called once. <br>\n" +
-                "         * - Called from the top most where statement. <br>\n" +
-                "         * - Last method (or before {@link #limit(int)}. <br>\n" +
-                "         * </p>\n" +
+                "         * columnName DESC, <br>\n" +
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
                 "         */\n" +
                 "        public WHERE biggestFirst() {\n" +
-                "            sqlBuilder.append(\"ORDER BY \").append(columnName + \" DESC \");\n" +
+                "            orderByBuilder.append(columnName + \" DESC, \");\n" +
                 "            return this;\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
                 "         * LIMIT number <br>\n" +
-                "         * <p style=\"color:red\">\n" +
-                "         * If the below is not followed, SQL errors are expected. <br>\n" +
-                "         * - Should only be called once. <br>\n" +
-                "         * - Called from the top most where statement. <br>\n" +
-                "         * - Last method. <br>\n" +
-                "         * </p>\n" +
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_limit.asp\">https://www.w3schools.com/mysql/mysql_limit.asp</a>\n" +
                 "         */\n" +
                 "        public WHERE limit(int num) {\n" +
-                "            sqlBuilder.append(\"LIMIT \").append(num + \" \");\n" +
+                "            limitBuilder.append(\"LIMIT \").append(num + \" \");\n" +
                 "            return this;\n" +
                 "        }\n" +
                 "\n" +

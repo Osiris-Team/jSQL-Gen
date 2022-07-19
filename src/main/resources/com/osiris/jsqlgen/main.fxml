@@ -44,7 +44,7 @@
                       </Tab>
                     </tabs>
                   </TabPane>
-                  <CheckBox layoutX="437.0" layoutY="46.0" mnemonicParsing="false" text="Tables in one file" />
+                  <CheckBox fx:id="isDebug" layoutX="437.0" layoutY="46.0" mnemonicParsing="false" text="Debug" />
                    <ChoiceBox fx:id="choiceTable" layoutX="437.0" layoutY="14.0" prefWidth="150.0" />
                   <ListView fx:id="listTables" layoutX="14.0" layoutY="14.0" prefHeight="162.0" prefWidth="416.0" />
                </children>

@@ -37,6 +37,8 @@ public class MainController {
     private ListView<VBox> listTables;
     @FXML
     private TabPane tabsCode;
+    @FXML
+    private CheckBox isDebug;
 
     public MainController() {
         MainApplication.asyncIn.listeners.add(line -> {
@@ -66,6 +68,9 @@ public class MainController {
                 if (!databases.isEmpty()) {
                     choiceTable.setValue(databases.get(0).name);
                 }
+                isDebug.setOnAction(event -> {
+                    UGenerator.isDebug = isDebug.isSelected();
+                });
             } catch (Exception e) {
                 e.printStackTrace();
             }
