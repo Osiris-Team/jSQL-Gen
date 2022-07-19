@@ -12,7 +12,10 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 - Open `Database.java` and fill in your database credentials, and run your app.
 
 ## Features
-- No runtime overhead (unlike other ORMs).
+- No runtime overhead for class generation (unlike other ORMs).
+- Helper/Optional WHERE class for generating SQL queries.
+
+#### How?
 - Generates one class/object for each table.
 - The generated object contains static methods like `get() delete() update() add() etc...` to interact with the table.
 - The generated object contains fields for each column `obj.id obj.name etc...`.
