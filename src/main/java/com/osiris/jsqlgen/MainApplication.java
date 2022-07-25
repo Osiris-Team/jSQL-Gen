@@ -12,18 +12,14 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class MainApplication extends javafx.application.Application {
     public static MyTeeOutputStream outErr;
@@ -65,6 +61,7 @@ public class MainApplication extends javafx.application.Application {
     private Button btnDeleteDatabase = new Button("Delete");
     private Button btnImportDatabase = new Button("Import");
     private Button btnExportDatabase = new Button("Export");
+    private Button btnShowData = new Button("Show data");
     private TextArea txtLogs = new TextArea();
     // Database panel
     private MyScroll lyDatabase = new MyScroll(new VBox());
@@ -174,9 +171,16 @@ public class MainApplication extends javafx.application.Application {
             popup.getContent().add(ly);
             popup.show(this.stage);
         });
+        btnShowData.setOnMouseClicked(click -> {
+            try {
+                showData();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
 
         lyHome.addRow().add(dbName, btnCreateDatabase, btnDeleteDatabase);
-        lyHome.addRow().add(btnImportDatabase, btnExportDatabase);
+        lyHome.addRow().add(btnImportDatabase, btnExportDatabase, btnShowData);
         FX.widthFull(txtLogs);
         lyHome.addRow().add(txtLogs);
     }
@@ -376,6 +380,9 @@ public class MainApplication extends javafx.application.Application {
             VBox wrapperTable = new VBox();
             listTables.getItems().add(wrapperTable);
             FlowPane paneTable = new FlowPane();
+            paneTable.setBackground(new Background(new BackgroundFill(
+                    new Color(new Random().nextFloat(), new Random().nextFloat(), new Random().nextFloat(), 0.7),
+                    null, null)));
             wrapperTable.getChildren().add(paneTable);
             Button btnRemove = new Button("Delete");
             paneTable.getChildren().add(btnRemove);
