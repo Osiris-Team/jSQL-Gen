@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -55,7 +56,7 @@ public class MainApplication extends javafx.application.Application {
     public static void main(String[] args) {
         launch();
     }
-
+    private Stage stage;
     private TabPane lyRoot = new TabPane();
     // Home panel
     private MyScroll lyHome = new MyScroll(new VBox());
@@ -75,6 +76,7 @@ public class MainApplication extends javafx.application.Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        this.stage = stage;
         stage.setTitle("jSQL-Gen");
         lyRoot.getTabs().add(new MyTab("Home", lyHome).closable(false));
         lyRoot.getTabs().add(new MyTab("Database", lyDatabase).closable(false));
@@ -144,11 +146,33 @@ public class MainApplication extends javafx.application.Application {
 
         btnImportDatabase.setTooltip(new Tooltip("Imports a json file or text and either overrides the existing database or creates a new one."));
         btnImportDatabase.setOnMouseClicked(click -> {
-            //TODO
+            Popup popup = new Popup();
+
+            MyScroll ly = new MyScroll(new VBox());
+            FX.heightPercentScreen(ly, 10);
+            FX.widthPercentScreen(ly, 20);
+            Button btnClose = new Button("Close");
+            ly.addRow().add(btnClose);
+            btnClose.setOnMouseClicked(click2 -> popup.hide());
+            ly.addRow().add(new Label("Currently in todo, will be available soon..."));
+
+            popup.getContent().add(ly);
+            popup.show(this.stage);
         });
         btnExportDatabase.setTooltip(new Tooltip("Exports the selected database in json format, which later can be imported again."));
         btnExportDatabase.setOnMouseClicked(click -> {
-            //TODO
+            Popup popup = new Popup();
+
+            MyScroll ly = new MyScroll(new VBox());
+            FX.heightPercentScreen(ly, 10);
+            FX.widthPercentScreen(ly, 20);
+            Button btnClose = new Button("Close");
+            ly.addRow().add(btnClose);
+            btnClose.setOnMouseClicked(click2 -> popup.hide());
+            ly.addRow().add(new Label("Currently in todo, will be available soon..."));
+
+            popup.getContent().add(ly);
+            popup.show(this.stage);
         });
 
         lyHome.addRow().add(dbName, btnCreateDatabase, btnDeleteDatabase);

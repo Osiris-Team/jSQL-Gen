@@ -3,6 +3,7 @@ package com.osiris.jsqlgen.utils;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
+import javafx.stage.Screen;
 
 import java.util.Objects;
 
@@ -137,6 +138,32 @@ public class FX {
                 target.setPrefHeight(height);
                 target.resize(target.getWidth(), height);
             });
+        });
+    }
+
+    public static void widthPercentScreen(Node n, int widthPercent){
+        Platform.runLater(() -> {
+            Region target = (Region) n;
+            double width = (Screen.getPrimary().getBounds().getWidth() / 100 * widthPercent)
+                    - target.paddingProperty().get().getRight();
+
+            target.setMaxWidth(width);
+            //target.setMinWidth(width);
+            target.setPrefWidth(width);
+            target.resize(width, target.getHeight());
+        });
+    }
+
+    public static void heightPercentScreen(Node n, int heightPercent){
+        Platform.runLater(() -> {
+            Region target = (Region) n;
+            double height = Screen.getPrimary().getBounds().getHeight() / 100 * heightPercent
+                    - target.paddingProperty().get().getBottom();
+
+            target.setMaxHeight(height);
+            //target.setMinHeight(height);
+            target.setPrefHeight(height);
+            target.resize(target.getWidth(), height);
         });
     }
 }
