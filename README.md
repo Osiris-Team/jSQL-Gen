@@ -12,8 +12,6 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 - Open `Database.java` and fill in your database credentials, and run your app.
 
 ## Features
-- No runtime overhead for class generation (unlike other ORMs).
-- Helper/Optional WHERE class for generating simple and complex SQL queries.
 
 #### How?
 - Generates one class/object for each table.
@@ -24,6 +22,13 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 #### UI
 - Simple UI to design databases within minutes.
 - Autosuggestions for field definitions.
+
+#### Pros
+- No runtime overhead for class generation (unlike other ORMs).
+- Helper/Optional WHERE class for generating simple and complex SQL queries.
+
+#### Cons
+- Updating existing tables is a bit rough (you need to look out for removed "not null fields").
 
 ## Tipps
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
