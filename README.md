@@ -28,7 +28,7 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 - Helper/Optional WHERE class for generating simple and complex SQL queries.
 
 #### Cons
-- Updating existing tables is a bit rough (you need to look out for removed "not null fields").
+- Updating existing tables is a bit rough (removed fields must be also removed manually from the database, especially "not null fields").
 
 ## Tipps
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
