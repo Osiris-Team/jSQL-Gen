@@ -22,6 +22,7 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
 - Helper/Optional WHERE class for generating simple and complex SQL queries.
+- Secured by default against SQL-Injection by using prepared statements.
 - Simple UI to design databases within minutes.
 - Autosuggestions for field definitions.
 
