@@ -9,7 +9,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -70,6 +69,7 @@ public class MainApplication extends javafx.application.Application {
     private TabPane tabsCode = new TabPane();
     private Button btnGenerate = new Button("Generate Code");
     private CheckBox isDebug = new CheckBox("Debug");
+    private CheckBox isNoExceptions = new CheckBox("No exceptions");
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -109,8 +109,15 @@ public class MainApplication extends javafx.application.Application {
                 if (!databases.isEmpty()) {
                     choiceDatabase.setValue(databases.get(0).name);
                 }
+                isDebug.setTooltip(new MyTooltip("If selected generates additional debug logging to the error stream."));
                 isDebug.setOnAction(event -> {
-                    UGenerator.isDebug = isDebug.isSelected();
+                    JavaCodeGenerator.isDebug = isDebug.isSelected();
+                });
+                isNoExceptions.setTooltip(new MyTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
+                        " which means that all methods of a generated class can be used outside of try/catch blocks."));
+                isNoExceptions.setSelected(true);
+                isNoExceptions.setOnAction(event -> {
+                    JavaCodeGenerator.isNoExceptions = isNoExceptions.isSelected();
                 });
             } catch (Exception e) {
                 e.printStackTrace();
@@ -200,7 +207,7 @@ public class MainApplication extends javafx.application.Application {
         FX.widthPercent(listTables, 100);
         FX.heightPercentWindow(listTables, 70);
         lyDatabase.addRow().add(listTables);
-        lyDatabase.addRow().add(btnGenerate, isDebug);
+        lyDatabase.addRow().add(btnGenerate, isDebug, isNoExceptions);
         FX.widthPercentWindow(tabsCode, 70);
         FX.widthFull(tabsCode);
         lyDatabase.addRow().add(tabsCode);
@@ -362,7 +369,7 @@ public class MainApplication extends javafx.application.Application {
                 File javaFile = new File(dir + "/" + t.name + ".java");
                 javaFile.createNewFile();
                 files.add(javaFile);
-                Files.writeString(javaFile.toPath(), UGenerator.generate(t));
+                Files.writeString(javaFile.toPath(), JavaCodeGenerator.generate(t));
             }
         }
         return files;
