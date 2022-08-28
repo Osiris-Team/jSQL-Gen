@@ -25,6 +25,8 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 - Secured by default against SQL-Injection by using prepared statements.
 - Simple UI to design databases within minutes.
 - Autosuggestions for field definitions.
+- Name your tables/columns however you like since internally names are encapsulated in backticks.
+
 
 #### Cons
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
