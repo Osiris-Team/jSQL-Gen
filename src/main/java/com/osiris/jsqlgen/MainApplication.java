@@ -576,7 +576,7 @@ public class MainApplication extends javafx.application.Application {
         Column col = Data.findColumn(t.columns, oldName);
         Objects.requireNonNull(col);
         System.out.println("OLD: " + col.name + " " + col.definition + " " + col.comment);
-        col.name = newName;
+        col.updateName(newName);
         col.definition = newDefinition;
         col.comment = newComment;
         System.out.println("NEW: " + col.name + " " + col.definition + " " + col.comment);
@@ -593,9 +593,8 @@ public class MainApplication extends javafx.application.Application {
         }
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
-        Column col = new Column();
+        Column col = new Column(columnName);
         t.columns.add(col);
-        col.name = columnName;
         col.definition = columnDefinition;
         Data.updateDatabases(list);
         updateColumnsList(listColumns, dbName, tableName);

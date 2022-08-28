@@ -13,7 +13,8 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 
 ## Features
 - No runtime overhead for class generation (unlike other ORMs).
-- Helper/Optional WHERE class for generating simple and complex SQL queries.
+- Helper/Optional WHERE class for generating simple or complex SQL queries.
+- Name your tables/columns however you like since internally names are encapsulated in backticks.
 
 #### How?
 - Generates one class/object for each table.

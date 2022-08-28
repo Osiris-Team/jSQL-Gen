@@ -67,9 +67,8 @@ public class Data {
                     table.columns = new ArrayList<Column>();
                     for (JsonElement elColumn : objTable.get("columns").getAsJsonArray()) {
                         JsonObject objColumn = elColumn.getAsJsonObject();
-                        Column column = new Column();
+                        Column column = new Column(objColumn.get("name").getAsString());
                         table.columns.add(column);
-                        column.name = objColumn.get("name").getAsString();
                         if (objColumn.get("definition") != null)
                             column.definition = objColumn.get("definition").getAsString();
                         if (objColumn.get("comment") != null)

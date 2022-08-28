@@ -47,12 +47,12 @@ public class JavaCodeGenerator {
                 "try{\n" +
                 "con = java.sql.DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
                 "try (Statement s = con.createStatement()) {\n" +
-                "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).name // EXPECTS ID
+                "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).nameQuoted // EXPECTS ID
                 + " " + t.columns.get(0).definition + ")\");\n");
         for (int i = 1; i < t.columns.size(); i++) { // Skip first column (id) to avoid "SQLSyntaxErrorException: Multiple primary key defined"
             Column col = t.columns.get(i);
-            classContentBuilder.append("try{s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN " + col.name + " " + col.definition + "\");}catch(Exception ignored){}\n");
-            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.name + " " + col.definition + "\");\n");
+            classContentBuilder.append("try{s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN " + col.nameQuoted + " " + col.definition + "\");}catch(Exception ignored){}\n");
+            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.nameQuoted + " " + col.definition + "\");\n");
         }
         classContentBuilder.append(
                 "}\n" +
@@ -181,9 +181,9 @@ public class JavaCodeGenerator {
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"SELECT ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
-            classContentBuilder.append(t.columns.get(i).name + ",");
+            classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
-        classContentBuilder.append(t.columns.get(t.columns.size() - 1).name);
+        classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
         classContentBuilder.append(
                 "\" +\n" +
                         "\" FROM " + tNameQuoted + "\" +\n" +
@@ -219,11 +219,10 @@ public class JavaCodeGenerator {
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"UPDATE " + tNameQuoted + " SET ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
-            classContentBuilder.append(t.columns.get(i).name + "=?,");
+            classContentBuilder.append(t.columns.get(i).nameQuoted + "=?,");
         }
-        classContentBuilder.append(t.columns.get(t.columns.size() - 1).name + "=?");
-        classContentBuilder.append(
-                "\")) {\n" // Open try/catch
+        classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted + "=?");
+        classContentBuilder.append(" WHERE id=\"+obj.id)) {\n" // Open try/catch
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
@@ -245,9 +244,9 @@ public class JavaCodeGenerator {
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"INSERT INTO " + tNameQuoted + " (");
         for (int i = 0; i < t.columns.size() - 1; i++) {
-            classContentBuilder.append(t.columns.get(i).name + ",");
+            classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
-        classContentBuilder.append(t.columns.get(t.columns.size() - 1).name);
+        classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
         classContentBuilder.append(") VALUES (");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append("?,");
@@ -322,7 +321,7 @@ public class JavaCodeGenerator {
         for (Column col : t.columns) {
             classContentBuilder.append(
                     "public static WHERE where"+firstToUpperCase(col.name)+"() {\n" +
-                            "return new WHERE(\""+col.name+"\");\n"+
+                            "return new WHERE(\""+col.nameQuoted+"\");\n"+
                             "}\n");
         }
         classContentBuilder.append(generateWhereClass(t));

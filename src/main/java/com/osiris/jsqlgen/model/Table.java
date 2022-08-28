@@ -7,8 +7,7 @@ public class Table {
     public ArrayList<Column> columns = new ArrayList<>();
 
     public Table() {
-        Column idColumn = new Column();
-        idColumn.name = "id";
+        Column idColumn = new Column("id");
         idColumn.definition = "INT NOT NULL PRIMARY KEY";
         columns.add(idColumn);
     }
