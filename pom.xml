@@ -147,6 +147,8 @@
                         <configuration>
                             <platform>windows</platform>
                             <createZipball>true</createZipball>
+                            <generateInstaller>true</generateInstaller>
+                            <forceInstaller>true</forceInstaller>
                         </configuration>
                     </execution>
                 </executions>
