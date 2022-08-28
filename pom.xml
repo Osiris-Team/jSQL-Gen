@@ -146,6 +146,8 @@
                         </goals>
                         <configuration>
                             <platform>windows</platform>
+                            <bundleJre>true</bundleJre>
+                            <customizedJre>true</customizedJre>
                             <createZipball>true</createZipball>
                             <generateInstaller>true</generateInstaller>
                             <forceInstaller>true</forceInstaller>
