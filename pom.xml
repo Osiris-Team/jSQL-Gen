@@ -139,18 +139,14 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>bundling-for-windows</id>
                         <phase>package</phase>
                         <goals>
                             <goal>package</goal>
                         </goals>
                         <configuration>
-                            <platform>windows</platform>
+                            <mainClass>${exec.mainClass}</mainClass>
                             <bundleJre>true</bundleJre>
-                            <customizedJre>true</customizedJre>
-                            <createZipball>true</createZipball>
-                            <generateInstaller>true</generateInstaller>
-                            <forceInstaller>true</forceInstaller>
+                            <customizedJre>false</customizedJre>
                         </configuration>
                     </execution>
                 </executions>
