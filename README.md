@@ -63,4 +63,4 @@ of the class represents one row.
 in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
 - When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory. 
-Lazy loading (#10) not implemented yet.
+Lazy loading (https://github.com/Osiris-Team/jSQL-Gen/issues/10) not implemented yet.
