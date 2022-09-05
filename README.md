@@ -62,3 +62,5 @@ of the class represents one row.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
 in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
+- When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory. 
+Lazy loading (#10) not implemented yet.
