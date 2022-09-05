@@ -16,6 +16,9 @@ The generated code/files can also be found in the `generated` folder (press `Sho
 I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
 the generated code into my project. Then I can do the following:
 ```java
+// The first time you use Person, the database, Person table 
+// and its columns will be created if needed.
+
 // Inserting rows:
 Person john = Person.create("John", 34); // id gets automatically set and incremented
 Person.add(john);
