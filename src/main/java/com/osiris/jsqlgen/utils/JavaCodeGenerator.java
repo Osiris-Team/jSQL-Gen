@@ -4,6 +4,7 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Table;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 public class JavaCodeGenerator {
@@ -206,6 +207,24 @@ public class JavaCodeGenerator {
                         (isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n")+ // Close try/catch
                         "return list;\n");
         classContentBuilder.append("}\n\n"); // Close get method
+
+        // CREATE COUNT METHOD:
+        classContentBuilder.append("" +
+                "public static int count(String where, Object... whereValues) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                (isDebug ? "System.err.println(\"count: \"+where);\n" : "") +
+                "try (PreparedStatement ps = con.prepareStatement(\n" +
+                "                \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
+                        "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
+                        "if(where!=null && whereValues!=null)\n" +
+                        "for (int i = 0; i < whereValues.length; i++) {\n" +
+                        "Object val = whereValues[i];\n" +
+                        "ps.setObject(i+1, val);\n" +
+                        "}\n"+
+                        "ResultSet rs = ps.executeQuery();\n" +
+                        "if (rs.next()) return rs.getInt(\"recordCount\");\n"+
+                        (isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n")+ // Close try/catch
+                        "return 0;\n");
+        classContentBuilder.append("}\n\n"); // Close count method
 
 
         // CREATE UPDATE METHOD:
@@ -471,6 +490,19 @@ public class JavaCodeGenerator {
                 "                return "+table.name+".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
                 "                return "+table.name+".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * Executes the generated SQL statement\n" +
+                "         * and returns the size of the list of objects matching the query.\n" +
+                "         */\n" +
+                "        public int count() "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "            String orderBy = orderByBuilder.toString();\n" +
+                "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
+                "            if(!whereObjects.isEmpty())\n" +
+                "                return "+table.name+".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "            else\n" +
+                "                return "+table.name+".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +

@@ -14,7 +14,7 @@ public class SQLTestServerTest {
         while(true) {
             System.out.println(Instant.now().toString());
             System.out.println("url: "+db.getUrl()+" running: "+db.isRunning());
-            try(Connection conn = DriverManager.getConnection(db.getUrl()+"velocityauth", "root", "root");){
+            try(Connection conn = DriverManager.getConnection(db.getUrl()+"velocity", "root", "root");){
                 DBTablePrinter.printTable(conn, "FailedLogin");
             }
             Thread.sleep(30000);
