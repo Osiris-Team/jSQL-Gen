@@ -48,6 +48,9 @@ of the class represents one row.
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
+- (TODO) Cached results for ultra-fast data retrieval 
+(cache gets cleared after INSERT/UPDATE/DELETE operations and is
+simply a map with SQL statements mapped to their results lists).
 - Helper/Optional WHERE class for generating simple and complex SQL queries.
 - Secured by default against SQL-Injection by using prepared statements.
 - Simple UI to design databases within minutes.
@@ -64,3 +67,7 @@ in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
 - When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory. 
 Lazy loading (https://github.com/Osiris-Team/jSQL-Gen/issues/10) not implemented yet.
+
+## Details
+### Cached Results
+

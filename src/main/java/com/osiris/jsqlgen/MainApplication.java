@@ -6,8 +6,10 @@ import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.*;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventType;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -51,6 +53,7 @@ public class MainApplication extends javafx.application.Application {
     public static void main(String[] args) {
         launch();
     }
+
     private Stage stage;
     private TabPane lyRoot = new TabPane();
     // Home panel
