@@ -5,7 +5,7 @@ it possible to use SQL databases without writing one line of SQL.
 ![image](https://user-images.githubusercontent.com/59899645/195866082-e0602e28-dad0-4321-b9e5-318645caa17f.png)
 
 ## Usage
-- Install the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest) (.exe for Window, other platforms not yet supported).
+- Install the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest) (.exe for Windows, other platforms not yet supported).
 - Create a database, tables and their columns via the GUI. Its recommended to name your tables like you name your regular
 Java objects, and your columns like your objects' fields.
 - Press `Generate Code` and add the code to your project.
