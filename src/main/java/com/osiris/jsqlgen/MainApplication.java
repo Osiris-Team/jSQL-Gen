@@ -1,5 +1,10 @@
 package com.osiris.jsqlgen;
 
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
@@ -18,7 +23,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -27,7 +31,6 @@ import org.controlsfx.control.Notifications;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class MainApplication extends javafx.application.Application {
@@ -268,7 +271,7 @@ public class MainApplication extends javafx.application.Application {
         });
         chooserJavaProjectDir.setTitle("Select Java project directory");
         btnChooseJavaProjectDir.setTooltip(new Tooltip("Select the directory of your Java project. Classes then will be generated there" +
-                " together with a copy of the schema."));
+                " together with a copy of the schema. Everything gets overwritten, except critical information in the database class."));
         btnChooseJavaProjectDir.setOnMouseClicked(click -> {
             try{
                 List<Database> databases = Data.fetchDatabases();
@@ -402,7 +405,7 @@ public class MainApplication extends javafx.application.Application {
     /**
      * Returns a list of files (.java) that were generated.
      */
-    public List<File> generateCode(List<Database> databases, File outputDir, boolean tablesInOneFile) throws Exception {
+    public <T extends Node> List<File> generateCode(List<Database> databases, File outputDir, boolean tablesInOneFile) throws Exception {
         Objects.requireNonNull(databases);
         Objects.requireNonNull(outputDir);
         if (outputDir.isFile())
@@ -420,6 +423,26 @@ public class MainApplication extends javafx.application.Application {
                 Files.copy(Data.file.toPath(), jsonData.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             File databaseFile = new File(dir + "/Database.java");
+            String rawUrl = "jdbc:mysql://localhost/";
+            String url = "jdbc:mysql://localhost/" + db.name;
+            String username = "";
+            String password = "";
+            if(databaseFile.exists()){
+                CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
+                for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
+                    VariableDeclarator var = field.getVariable(0);
+                    if(var.getInitializer().isPresent()){
+                        if(Objects.equals(var.getName().asString(), "rawUrl"))
+                            rawUrl = var.getInitializer().get().asStringLiteralExpr().asString();
+                        else if(Objects.equals(var.getName().asString(), "url"))
+                            url = var.getInitializer().get().asStringLiteralExpr().asString();
+                        else if(Objects.equals(var.getName().asString(), "username"))
+                            username = var.getInitializer().get().asStringLiteralExpr().asString();
+                        else if(Objects.equals(var.getName().asString(), "password"))
+                            password = var.getInitializer().get().asStringLiteralExpr().asString();
+                    }
+                }
+            }
             databaseFile.createNewFile();
             Files.writeString(databaseFile.toPath(), "" +
                     (db.javaProjectDir != null ? "package com.osiris.jsqlgen."+db.name+";\n" : "") +
@@ -430,11 +453,11 @@ public class MainApplication extends javafx.application.Application {
                     "import java.util.Objects;\n\n" +
                     "public class Database{\n" +
                     "// TODO: Insert credentials and update url.\n" +
-                    "public static String rawUrl = \"jdbc:mysql://localhost/\";\n" +
-                    "public static String url = \"jdbc:mysql://localhost/" + db.name + "\";\n" +
+                    "public static String rawUrl = \""+rawUrl+"\";\n" +
+                    "public static String url = \""+ url + "\";\n" +
                     "public static String name = \"" + db.name + "\";\n" +
-                    "public static String username;\n" +
-                    "public static String password;\n\n" +
+                    "public static String username = \""+username+"\";\n" +
+                    "public static String password = \""+password+"\";\n\n" +
                     "static{create();} // Create database if not exists\n" +
                     "    public static void create() {\n" +
                     "\n" +
