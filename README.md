@@ -38,26 +38,25 @@ Person.whereName().is("John").remove(); // Removes all rows where the name equal
 ```
 
 ## How?
-- Generates one class for each table.
-- The generated class contains static methods like `get() delete() update() add() etc...` to interact with the table.
-- The generated class contains fields for each column `obj.id obj.name etc...`, which means that each instance/object
+Generates one class for each table.
+The generated class contains static methods like `get() delete() update() add() etc...` to interact with the table
+and fields for each column `obj.id obj.name etc...`, which means that each instance/object
 of the class represents one row.
-- The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 
 ## Features
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
-- Cached results for ultra-fast data retrieval 
+- (Optional) Cached results for ultra-fast data retrieval 
 (cache gets cleared after INSERT/UPDATE/DELETE operations and is
 simply a map with SQL statements mapped to their results lists).
-- Helper/Optional WHERE class for generating simple and complex SQL queries.
+- (Optional) Helper WHERE class for generating simple and complex SQL queries.
 - Secured by default against SQL-Injection by using prepared statements.
 - Simple UI to design databases within minutes.
 - Autosuggestions for field definitions.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
 - Easily use multiple databases in a single project.
-
+- The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 
 #### Cons
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
@@ -68,7 +67,3 @@ in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
 - When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory. 
 Lazy loading (https://github.com/Osiris-Team/jSQL-Gen/issues/10) not implemented yet.
-
-## Details
-### Cached Results
-
