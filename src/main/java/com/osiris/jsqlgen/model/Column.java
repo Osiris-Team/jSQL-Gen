@@ -13,6 +13,6 @@ public class Column {
 
     public void updateName(String newName) {
         this.name = newName;
-        this.nameQuoted = "`"+newName+"`";
+        this.nameQuoted = "`" + newName + "`";
     }
 }

@@ -24,13 +24,13 @@ public class SuggestionTextField extends TextField {
     //Local variables
     //entries to autocomplete
     private final SortedSet<String> entries;
+    //popup GUI
+    private final ContextMenu entriesPopup;
     /**
      * The maximum amount of entries to show.
      * No limit if set to a negative number or 0 (default).
      */
     public int maxEntries = 0;
-    //popup GUI
-    private final ContextMenu entriesPopup;
 
 
     public SuggestionTextField() {

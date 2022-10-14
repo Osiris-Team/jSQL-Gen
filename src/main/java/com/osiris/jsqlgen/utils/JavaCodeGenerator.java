@@ -4,7 +4,6 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Table;
 
-import java.sql.ResultSet;
 import java.util.List;
 
 public class JavaCodeGenerator {
@@ -35,7 +34,7 @@ public class JavaCodeGenerator {
         StringBuilder classContentBuilder = new StringBuilder();
         classContentBuilder.append("/**\n" +
                 "Generated class by <a href=\"https://github.com/Osiris-Team/jSQL-Gen\">jSQL-Gen</a>\n" +
-                "that contains static methods for fetching/updating data from the \""+t.name+"\" table.\n" +
+                "that contains static methods for fetching/updating data from the \"" + t.name + "\" table.\n" +
                 "A single object/instance of this class represents a single row in the table\n" +
                 "and data can be accessed via its public fields. <p>\n" +
                 "Its not recommended to modify this class but it should be OK to add new methods to it.\n" +
@@ -111,7 +110,7 @@ public class JavaCodeGenerator {
                     "*/\n");
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
-                            + ") "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                            + ") " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                             "" + t.name + " obj = new " + t.name + "();\n" +
                             "" + genFieldAssignments("obj", t.columns) + "\n" +
@@ -126,7 +125,7 @@ public class JavaCodeGenerator {
                 "*/\n");
         classContentBuilder.append(
                 "public static " + t.name + " createAndAdd(" + minimalConstructor.params.replace(idParam, "")
-                        + ") "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                        + ") " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                         firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                         "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "add(obj);\n" +
@@ -141,7 +140,7 @@ public class JavaCodeGenerator {
                     "*/\n");
             classContentBuilder.append(
                     "public static " + t.name + " createAndAdd(" + genParams(t.columns).replace(idParam, "")
-                            + ") "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                            + ") " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
                             "" + t.name + " obj = new " + t.name + "();\n" +
                             "" + genFieldAssignments("obj", t.columns) + "\n" +
@@ -156,16 +155,16 @@ public class JavaCodeGenerator {
                 "/**\n" +
                 "@return a list containing all objects in this table.\n" +
                 "*/\n" +
-                "public static List<" + t.name + "> get() "+(isNoExceptions ? "" : "throws Exception")+" {return get(null);}\n" +
+                "public static List<" + t.name + "> get() " + (isNoExceptions ? "" : "throws Exception") + " {return get(null);}\n" +
                 "/**\n" +
                 "@return object with the provided id or null if there is no object with the provided id in this table.\n" +
                 "@throws Exception on SQL issues.\n" +
                 "*/\n" +
-                "public static " + t.name + " get(int id) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "public static " + t.name + " get(int id) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "try{\n" +
                 "return get(\"id = \"+id).get(0);\n" +
                 "}catch(IndexOutOfBoundsException ignored){}\n" +
-                (isNoExceptions ? "catch(Exception e){throw new RuntimeException(e);}\n" : "")+ // Close try/catch
+                (isNoExceptions ? "catch(Exception e){throw new RuntimeException(e);}\n" : "") + // Close try/catch
                 "return null;\n" + // Close tr
                 "}\n" +
                 "/**\n" +
@@ -176,8 +175,8 @@ public class JavaCodeGenerator {
                 "@return a list containing only objects that match the provided SQL WHERE statement (no matches = empty list).\n" +
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
-                "public static List<" + t.name + "> get(String where, Object... whereValues) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
-                        (isDebug ? "System.err.println(\"get: \"+where);\n" : "") +
+                "public static List<" + t.name + "> get(String where, Object... whereValues) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
+                (isDebug ? "System.err.println(\"get: \"+where);\n" : "") +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"SELECT ");
@@ -193,7 +192,7 @@ public class JavaCodeGenerator {
                         "for (int i = 0; i < whereValues.length; i++) {\n" +
                         "Object val = whereValues[i];\n" +
                         "ps.setObject(i+1, val);\n" +
-                        "}\n"+
+                        "}\n" +
                         "ResultSet rs = ps.executeQuery();\n" +
                         "while (rs.next()) {\n" + // Open while
                         "" + t.name + " obj = new " + t.name + "();\n" +
@@ -204,26 +203,26 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "}\n" + // Close while
-                        (isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n")+ // Close try/catch
+                        (isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                         "return list;\n");
         classContentBuilder.append("}\n\n"); // Close get method
 
         // CREATE COUNT METHOD:
         classContentBuilder.append("" +
-                "public static int count(String where, Object... whereValues) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "public static int count(String where, Object... whereValues) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 (isDebug ? "System.err.println(\"count: \"+where);\n" : "") +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
-                        "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
-                        "if(where!=null && whereValues!=null)\n" +
-                        "for (int i = 0; i < whereValues.length; i++) {\n" +
-                        "Object val = whereValues[i];\n" +
-                        "ps.setObject(i+1, val);\n" +
-                        "}\n"+
-                        "ResultSet rs = ps.executeQuery();\n" +
-                        "if (rs.next()) return rs.getInt(\"recordCount\");\n"+
-                        (isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n")+ // Close try/catch
-                        "return 0;\n");
+                "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
+                "if(where!=null && whereValues!=null)\n" +
+                "for (int i = 0; i < whereValues.length; i++) {\n" +
+                "Object val = whereValues[i];\n" +
+                "ps.setObject(i+1, val);\n" +
+                "}\n" +
+                "ResultSet rs = ps.executeQuery();\n" +
+                "if (rs.next()) return rs.getInt(\"recordCount\");\n" +
+                (isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
+                "return 0;\n");
         classContentBuilder.append("}\n\n"); // Close count method
 
 
@@ -234,7 +233,7 @@ public class JavaCodeGenerator {
                 "and updates all its fields.\n" +
                 "@throws Exception when failed to find by id or other SQL issues.\n" +
                 "*/\n" +
-                "public static void update(" + t.name + " obj) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "public static void update(" + t.name + " obj) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"UPDATE " + tNameQuoted + " SET ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
@@ -259,7 +258,7 @@ public class JavaCodeGenerator {
                 "/**\n" +
                 "Adds the provided object to the database (note that the id is not checked for duplicates).\n" +
                 "*/\n" +
-                "public static void add(" + t.name + " obj) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "public static void add(" + t.name + " obj) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"INSERT INTO " + tNameQuoted + " (");
         for (int i = 0; i < t.columns.size() - 1; i++) {
@@ -290,7 +289,7 @@ public class JavaCodeGenerator {
                 "/**\n" +
                 "Deletes the provided object from the database.\n" +
                 "*/\n" +
-                "public static void remove(" + t.name + " obj) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "public static void remove(" + t.name + " obj) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "remove(\"id = \"+obj.id);\n" +
                 "}\n" +
                 "/**\n" +
@@ -299,7 +298,7 @@ public class JavaCodeGenerator {
                 "Deletes the objects that are found by the provided SQL WHERE statement, from the database.\n" +
                 "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "*/\n" +
-                "public static void remove(String where, Object... whereValues) "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "public static void remove(String where, Object... whereValues) " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 (isDebug ? "System.err.println(\"remove: \"+where);\n" : "") +
                 "java.util.Objects.requireNonNull(where);\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
@@ -339,8 +338,8 @@ public class JavaCodeGenerator {
 
         for (Column col : t.columns) {
             classContentBuilder.append(
-                    "public static WHERE where"+firstToUpperCase(col.name)+"() {\n" +
-                            "return new WHERE(\""+col.nameQuoted+"\");\n"+
+                    "public static WHERE where" + firstToUpperCase(col.name) + "() {\n" +
+                            "return new WHERE(\"" + col.nameQuoted + "\");\n" +
                             "}\n");
         }
         classContentBuilder.append(generateWhereClass(t));
@@ -349,8 +348,8 @@ public class JavaCodeGenerator {
         return importsBuilder.toString() + classContentBuilder;
     }
 
-    private static String firstToUpperCase(String s){
-        return (""+s.charAt(0)).toUpperCase()+s.substring(1);
+    private static String firstToUpperCase(String s) {
+        return ("" + s.charAt(0)).toUpperCase() + s.substring(1);
     }
 
     public static Constructor genConstructor(String objName, List<Column> columns) {
@@ -483,39 +482,39 @@ public class JavaCodeGenerator {
                 "         * Executes the generated SQL statement\n" +
                 "         * and returns a list of objects matching the query.\n" +
                 "         */\n" +
-                "        public List<"+table.name+"> get() "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "        public List<" + table.name + "> get() " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "            String orderBy = orderByBuilder.toString();\n" +
                 "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                return "+table.name+".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "                return " + table.name + ".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return "+table.name+".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                return " + table.name + ".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
                 "         * Executes the generated SQL statement\n" +
                 "         * and returns the size of the list of objects matching the query.\n" +
                 "         */\n" +
-                "        public int count() "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "        public int count() " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "            String orderBy = orderByBuilder.toString();\n" +
                 "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                return "+table.name+".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "                return " + table.name + ".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return "+table.name+".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                return " + table.name + ".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
                 "         * Executes the generated SQL statement\n" +
                 "         * and removes the objects matching the query.\n" +
                 "         */\n" +
-                "        public void remove() "+(isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "        public void remove() " + (isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "            String orderBy = orderByBuilder.toString();\n" +
                 "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                "+table.name+".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "                " + table.name + ".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                "+table.name+".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                " + table.name + ".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +

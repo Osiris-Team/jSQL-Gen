@@ -1,9 +1,6 @@
 package com.osiris.jsqlgen.utils.flexlayout;
 
 import com.osiris.jsqlgen.utils.FX;
-import com.osiris.jsqlgen.utils.MyScroll;
-import com.osiris.jsqlgen.utils.MyThread;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -11,7 +8,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
 import org.apache.commons.collections4.iterators.ReverseListIterator;
 
 import java.util.*;
@@ -19,12 +15,21 @@ import java.util.*;
 /**
  * Created by TB on 11.10.16.
  */
-public class FlexBox extends Pane
-{
+public class FlexBox extends Pane {
+    private static final String ORDER_CONSTRAINT = "flexbox-order";
+    private static final String GROW_CONSTRAINT = "flexbox-grow";
+    private final SimpleDoubleProperty horizontalSpace = new SimpleDoubleProperty(0);
+    private final SimpleDoubleProperty verticalSpace = new SimpleDoubleProperty(0);
+    private final SimpleObjectProperty<FlexBoxDirection> direction = new SimpleObjectProperty<FlexBoxDirection>(FlexBoxDirection.ROW);
+    private double computedMinHeight;
+    private boolean performingLayout = false;
+    private Orientation bias;
+    private boolean biasDirty = true;
+    private boolean verbose = false;
+    private final HashMap<Integer, FlexBoxRow> grid = new HashMap<Integer, FlexBoxRow>();
     public FlexBox() {
         this(8);
     }
-
     public FlexBox(int gapInPixel) {
         setHorizontalSpace(gapInPixel);
         setVerticalSpace(gapInPixel);
@@ -33,87 +38,6 @@ public class FlexBox extends Pane
         FX.widthFull(this);
     }
 
-    public FlexBox add(Node node){
-        getChildren().add(node);
-        return this;
-    }
-
-    public FlexBox add(Node... nodes){
-        for (Node node : nodes) {
-            add(node);
-        }
-        return this;
-    }
-
-    private SimpleDoubleProperty horizontalSpace = new SimpleDoubleProperty(0);
-    private SimpleDoubleProperty verticalSpace = new SimpleDoubleProperty(0);
-    private SimpleObjectProperty<FlexBoxDirection> direction = new SimpleObjectProperty<FlexBoxDirection>(FlexBoxDirection.ROW);
-    private double computedMinHeight;
-    private boolean performingLayout = false;
-    private Orientation bias;
-    private boolean biasDirty = true;
-    private boolean verbose = false;
-    private static final String ORDER_CONSTRAINT = "flexbox-order";
-    private static final String GROW_CONSTRAINT = "flexbox-grow";
-
-    public boolean isVerbose()
-    {
-        return verbose;
-    }
-
-    public void setVerbose(boolean verbose)
-    {
-        this.verbose = verbose;
-    }
-
-    public FlexBoxDirection getDirection()
-    {
-        return direction.get();
-    }
-
-    public SimpleObjectProperty<FlexBoxDirection> directionProperty()
-    {
-        return direction;
-    }
-
-    public void setDirection(FlexBoxDirection direction)
-    {
-        this.direction.set(direction);
-    }
-
-    public double getHorizontalSpace()
-    {
-        return horizontalSpace.get();
-    }
-
-    public SimpleDoubleProperty horizontalSpaceProperty()
-    {
-        return horizontalSpace;
-    }
-
-    public void setHorizontalSpace(double horizontalSpace)
-    {
-        this.horizontalSpace.set(horizontalSpace);
-    }
-
-    public double getVerticalSpace()
-    {
-        return verticalSpace.get();
-    }
-
-    public SimpleDoubleProperty verticalSpaceProperty()
-    {
-        return verticalSpace;
-    }
-
-    public void setVerticalSpace(double verticalSpace)
-    {
-        this.verticalSpace.set(verticalSpace);
-    }
-
-    private HashMap<Integer, FlexBoxRow> grid = new HashMap<Integer, FlexBoxRow>();
-
-
     /**
      * By default, flex items are laid out in the source order.
      * However, the order property controls the order in which they appear in the flex container.
@@ -121,20 +45,15 @@ public class FlexBox extends Pane
      * @param child the child of an FlexBox
      * @param value the order in which the child appear in the flex container
      */
-    public static void setOrder(Node child, int value)
-    {
+    public static void setOrder(Node child, int value) {
         setConstraint(child, ORDER_CONSTRAINT, value);
     }
 
-    public static int getOrder(Node child)
-    {
+    public static int getOrder(Node child) {
         Object constraint = getConstraint(child, ORDER_CONSTRAINT);
-        if (constraint == null)
-        {
+        if (constraint == null) {
             return 0;
-        }
-        else
-        {
+        } else {
             return (int) constraint;
         }
     }
@@ -149,71 +68,108 @@ public class FlexBox extends Pane
      * @param child the child of an FlexBox
      * @param value grow proportion
      */
-    public static void setGrow(Node child, double value)
-    {
+    public static void setGrow(Node child, double value) {
         setConstraint(child, GROW_CONSTRAINT, value);
     }
 
-    public static double getGrow(Node child)
-    {
+    public static double getGrow(Node child) {
         Object o = getConstraint(child, GROW_CONSTRAINT);
-        if (o == null)
-        {
+        if (o == null) {
             return 1;
-        }
-        else
-        {
+        } else {
             return (double) o;
         }
     }
 
-    static void setConstraint(Node node, Object key, Object value)
-    {
-        if (value == null)
-        {
+    static void setConstraint(Node node, Object key, Object value) {
+        if (value == null) {
             node.getProperties().remove(key);
-        }
-        else
-        {
+        } else {
             node.getProperties().put(key, value);
         }
-        if (node.getParent() != null)
-        {
+        if (node.getParent() != null) {
             node.getParent().requestLayout();
         }
     }
 
-    static Object getConstraint(Node node, Object key)
-    {
-        if (node.hasProperties())
-        {
+    static Object getConstraint(Node node, Object key) {
+        if (node.hasProperties()) {
             Object value = node.getProperties().get(key);
-            if (value != null)
-            {
-                return value;
-            }
+            return value;
         }
         return null;
     }
 
+    public FlexBox add(Node node) {
+        getChildren().add(node);
+        return this;
+    }
+
+    public FlexBox add(Node... nodes) {
+        for (Node node : nodes) {
+            add(node);
+        }
+        return this;
+    }
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    public FlexBoxDirection getDirection() {
+        return direction.get();
+    }
+
+    public void setDirection(FlexBoxDirection direction) {
+        this.direction.set(direction);
+    }
+
+    public SimpleObjectProperty<FlexBoxDirection> directionProperty() {
+        return direction;
+    }
+
+    public double getHorizontalSpace() {
+        return horizontalSpace.get();
+    }
+
+    public void setHorizontalSpace(double horizontalSpace) {
+        this.horizontalSpace.set(horizontalSpace);
+    }
+
+    public SimpleDoubleProperty horizontalSpaceProperty() {
+        return horizontalSpace;
+    }
+
+    public double getVerticalSpace() {
+        return verticalSpace.get();
+    }
+
+    public void setVerticalSpace(double verticalSpace) {
+        this.verticalSpace.set(verticalSpace);
+    }
+
+    public SimpleDoubleProperty verticalSpaceProperty() {
+        return verticalSpace;
+    }
 
     @Override
-    protected double computeMinHeight(double width)
-    {
+    protected double computeMinHeight(double width) {
         //return super.computeMinHeight(width);
         return computedMinHeight;
     }
 
     @Override
-    protected double computePrefHeight(double width)
-    {
+    protected double computePrefHeight(double width) {
 //        return super.computePrefHeight(width);
         return computedMinHeight;
     }
 
     @Override
-    protected void layoutChildren()
-    {
+    protected void layoutChildren() {
         //System.out.println("layoutChildren");
         //super.layoutChildren();
 
@@ -226,10 +182,8 @@ public class FlexBox extends Pane
         /**
          * First we transform all Nodes to a FlexBoxItem for caching purposes.
          */
-        for (Node node : getManagedChildren())
-        {
-            if (node.isVisible())
-            {
+        for (Node node : getManagedChildren()) {
+            if (node.isVisible()) {
                 nodesList.add(new FlexBoxItem(node));
             }
         }
@@ -237,21 +191,18 @@ public class FlexBox extends Pane
         if (getDirection().equals(FlexBoxDirection.ROW) || getDirection().equals(FlexBoxDirection.ROW_REVERSE))    //todo:
         {
             layoutChildrenForRowDirection(nodesList);
-        }
-        else if (getDirection().equals(FlexBoxDirection.COLUMN) || getDirection().equals(FlexBoxDirection.COLUMN_REVERSE))   //todo:
+        } else if (getDirection().equals(FlexBoxDirection.COLUMN) || getDirection().equals(FlexBoxDirection.COLUMN_REVERSE))   //todo:
         {
             layoutChildrenForColumnDirection(nodesList);
         }
 
         long duration = System.nanoTime() - timeStart;
-        if (verbose)
-        {
+        if (verbose) {
             System.out.println(String.format("# layout duration: %d ms", duration / 1000));
         }
     }
 
-    private void layoutChildrenForColumnDirection(List<FlexBoxItem> nodesList)
-    {
+    private void layoutChildrenForColumnDirection(List<FlexBoxItem> nodesList) {
         double w = getWidth();
         int noNodes = nodesList.size();
         double growWidth = w - getPadding().getLeft() - getPadding().getRight();
@@ -261,17 +212,13 @@ public class FlexBox extends Pane
         int i = 0;
 
         ListIterator<Node> nodeIterator = null;
-        if (getDirection().equals(FlexBoxDirection.COLUMN_REVERSE))
-        {
+        if (getDirection().equals(FlexBoxDirection.COLUMN_REVERSE)) {
             nodeIterator = new ReverseListIterator<Node>(getManagedChildren());
-        }
-        else
-        {
+        } else {
             nodeIterator = getManagedChildren().listIterator();
         }
 
-        for (FlexBoxItem flexBoxItem : nodesList)
-        {
+        for (FlexBoxItem flexBoxItem : nodesList) {
             FlexBoxRow flexBoxRow = new FlexBoxRow();
             flexBoxRow.addFlexBoxItem(flexBoxItem);
             addToGrid(row, flexBoxRow);
@@ -279,8 +226,7 @@ public class FlexBox extends Pane
             i++;
         }
 
-        if (verbose)
-        {
+        if (verbose) {
             System.out.println("grid = " + grid);
         }
 
@@ -291,16 +237,14 @@ public class FlexBox extends Pane
         int noGridRows = grid.size();
 
         //iterate all rows and calculate node sizes and positions
-        for (Integer rowIndex : grid.keySet())
-        {
+        for (Integer rowIndex : grid.keySet()) {
             //contains all nodes per row
             FlexBoxRow flexBoxRow = grid.get(rowIndex);
             ArrayList<FlexBoxItem> rowNodes = flexBoxRow.getNodes();
             double rowNodeX2 = 0;
             double lastMaxHeight = 0;
             //iterate node of row
-            for (FlexBoxItem flexBoxItem : rowNodes)
-            {
+            for (FlexBoxItem flexBoxItem : rowNodes) {
                 double rowNodeMinWidth = flexBoxItem.node.minWidth(10);
                 double rowNodeMaxWidth = flexBoxItem.node.maxWidth(10);
                 double rowNodeWidth = Math.min(rowNodeMaxWidth, Math.max(growWidth, rowNodeMinWidth));
@@ -314,16 +258,14 @@ public class FlexBox extends Pane
             }
 
             lastY2 = lastY2 + lastMaxHeight;
-            if (i + 1 < noGridRows)
-            {
+            if (i + 1 < noGridRows) {
                 lastY2 += getVerticalSpace();
             }
             i++;
         }
     }
 
-    private void layoutChildrenForRowDirection(List<FlexBoxItem> nodesList)
-    {
+    private void layoutChildrenForRowDirection(List<FlexBoxItem> nodesList) {
         performingLayout = true;
 
         double w = getWidth();
@@ -338,30 +280,23 @@ public class FlexBox extends Pane
          * Precalculations
          */
         boolean useOrder = false;
-        for (FlexBoxItem flexBoxItem : nodesList)
-        {
+        for (FlexBoxItem flexBoxItem : nodesList) {
             flexBoxItem.minWidth = flexBoxItem.node.minWidth(10);
             flexBoxItem.order = getOrder(flexBoxItem.node);
-            if (flexBoxItem.order != 0)
-            {
+            if (flexBoxItem.order != 0) {
                 useOrder = true;
             }
             flexBoxItem.grow = getGrow(flexBoxItem.node);
         }
 
-        if (useOrder)
-        {
-            Collections.sort(nodesList, new Comparator<FlexBoxItem>()
-            {
+        if (useOrder) {
+            Collections.sort(nodesList, new Comparator<FlexBoxItem>() {
                 @Override
-                public int compare(FlexBoxItem item1, FlexBoxItem item2)
-                {
+                public int compare(FlexBoxItem item1, FlexBoxItem item2) {
                     return ((Integer) item1.order).compareTo(item2.order);
                 }
             });
-        }
-        else
-        {
+        } else {
             nodesList = FXCollections.observableArrayList(nodesList);
         }
 
@@ -372,20 +307,17 @@ public class FlexBox extends Pane
         addToGrid(row, flexBoxRow);
 
 
-        for (FlexBoxItem flexBoxItem : nodesList)
-        {
+        for (FlexBoxItem flexBoxItem : nodesList) {
             double nodeWidth = Math.max(growWidth, flexBoxItem.minWidth);
             nodeWidth = flexBoxItem.minWidth;
             minWidthSum += nodeWidth;
 
             //is there one more node?
-            if (i + 1 < noNodes)
-            {
+            if (i + 1 < noNodes) {
                 minWidthSum += getHorizontalSpace();
             }
 
-            if ((int) minWidthSum > (int) w)
-            {
+            if ((int) minWidthSum > (int) w) {
                 row++;
                 flexBoxRow = new FlexBoxRow();
                 addToGrid(row, flexBoxRow);
@@ -406,8 +338,7 @@ public class FlexBox extends Pane
          * iterate grid to calculate node sizes and positions
          * iterate grid-rows first
          */
-        for (Integer rowIndex : grid.keySet())
-        {
+        for (Integer rowIndex : grid.keySet()) {
             //contains all nodes per row
             flexBoxRow = grid.get(rowIndex);
             ArrayList<FlexBoxItem> rowNodes = flexBoxRow.getNodes();
@@ -417,12 +348,9 @@ public class FlexBox extends Pane
             double flexGrowCellWidth = remainingWidth / flexBoxRow.flexGrowSum;
 
             ListIterator<FlexBoxItem> rowNodexIterator = null;
-            if (getDirection().equals(FlexBoxDirection.ROW_REVERSE))
-            {
+            if (getDirection().equals(FlexBoxDirection.ROW_REVERSE)) {
                 rowNodexIterator = new ReverseListIterator<FlexBoxItem>(rowNodes);
-            }
-            else
-            {
+            } else {
                 rowNodexIterator = rowNodes.listIterator();
             }
 
@@ -430,8 +358,7 @@ public class FlexBox extends Pane
             double lastMaxHeight = 0;
 
             //iterate nodes of row
-            while (rowNodexIterator.hasNext())
-            {
+            while (rowNodexIterator.hasNext()) {
                 FlexBoxItem flexBoxItem = rowNodexIterator.next();
                 Node rowNode = flexBoxItem.node;
 
@@ -447,8 +374,7 @@ public class FlexBox extends Pane
             }
 
             lastY2 = lastY2 + lastMaxHeight;
-            if (i + 1 < noGridRows)
-            {
+            if (i + 1 < noGridRows) {
                 lastY2 += getVerticalSpace();
             }
             i++;
@@ -464,10 +390,8 @@ public class FlexBox extends Pane
 
 
     @Override
-    public void requestLayout()
-    {
-        if (performingLayout)
-        {
+    public void requestLayout() {
+        if (performingLayout) {
             return;
         }
         biasDirty = true;
@@ -476,8 +400,7 @@ public class FlexBox extends Pane
 
     }
 
-    private void addToGrid(int row, FlexBoxRow flexBoxRow)
-    {
+    private void addToGrid(int row, FlexBoxRow flexBoxRow) {
         grid.put(row, flexBoxRow);
     }
 }

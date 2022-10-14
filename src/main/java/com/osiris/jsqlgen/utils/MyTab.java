@@ -11,7 +11,7 @@ public class MyTab {
         tab.setContent(content);
     }
 
-    public Tab closable(boolean val){
+    public Tab closable(boolean val) {
         tab.closableProperty().set(val);
         return tab;
     }

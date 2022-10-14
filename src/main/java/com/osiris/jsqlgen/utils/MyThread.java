@@ -8,11 +8,11 @@ public class MyThread {
     public static Executor cachedPool = Executors.newCachedThreadPool();
     public static Executor singlePool = Executors.newSingleThreadExecutor();
 
-    public static void runAsync(Runnable runnable){
+    public static void runAsync(Runnable runnable) {
         cachedPool.execute(runnable);
     }
 
-    public static void runAsyncSingle(Runnable runnable){
+    public static void runAsyncSingle(Runnable runnable) {
         singlePool.execute(runnable);
     }
 }

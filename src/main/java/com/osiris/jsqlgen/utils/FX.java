@@ -1,8 +1,6 @@
 package com.osiris.jsqlgen.utils;
 
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
@@ -13,13 +11,15 @@ import javafx.stage.Stage;
 import java.util.Objects;
 
 public class FX {
-    public static void sizeFull(Node n){
+    public static void sizeFull(Node n) {
         updateSize(n, 100, 100);
     }
-    public static void widthFull(Node n){
+
+    public static void widthFull(Node n) {
         widthPercent(n, 100);
     }
-    public static void heightFull(Node n){
+
+    public static void heightFull(Node n) {
         heightPercent(n, 100);
     }
 
@@ -28,23 +28,23 @@ public class FX {
         heightPercent(n, heightPercent);
     }
 
-    public static void widthPercent(Node n, int widthPercent){
+    public static void widthPercent(Node n, int widthPercent) {
         ChangeListener<Number> changeListener = new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                if(n.getParent() == null) {
+                if (n.getParent() == null) {
                     observableValue.removeListener(this);
                     return;
                 }
                 _widthPercent(n, widthPercent);
             }
         };
-        if(n.getParent()==null)
+        if (n.getParent() == null)
             MyThread.runAsync(() -> {
-                try{
+                try {
                     for (int i = 0; i < 100; i++) {
                         Thread.sleep(100);
-                        if(n.getParent() != null) break;
+                        if (n.getParent() != null) break;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -56,7 +56,7 @@ public class FX {
                     _widthPercent(n, widthPercent);
                 });
             });
-        else{
+        else {
             _widthPercent(n, widthPercent);
             Stage stage = (Stage) n.getScene().getWindow();
             stage.widthProperty().addListener(changeListener);
@@ -66,7 +66,7 @@ public class FX {
         }
     }
 
-    private static void _widthPercent(Node n, int widthPercent){
+    private static void _widthPercent(Node n, int widthPercent) {
         Platform.runLater(() -> {
             Objects.requireNonNull(n.getParent());
             Region parent = (Region) n.getParent();
@@ -85,23 +85,23 @@ public class FX {
         });
     }
 
-    public static void heightPercent(Node n, int heightPercent){
+    public static void heightPercent(Node n, int heightPercent) {
         ChangeListener<Number> changeListener = new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                if(n.getParent() == null) {
+                if (n.getParent() == null) {
                     observableValue.removeListener(this);
                     return;
                 }
                 _heightPercent(n, heightPercent);
             }
         };
-        if(n.getParent()==null)
+        if (n.getParent() == null)
             MyThread.runAsync(() -> {
-                try{
+                try {
                     for (int i = 0; i < 100; i++) {
                         Thread.sleep(100);
-                        if(n.getParent() != null) break;
+                        if (n.getParent() != null) break;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -109,13 +109,13 @@ public class FX {
                 _heightPercent(n, heightPercent);
                 n.getScene().heightProperty().addListener(changeListener);
             });
-        else{
+        else {
             _heightPercent(n, heightPercent);
             n.getScene().heightProperty().addListener(changeListener);
         }
     }
 
-    private static void _heightPercent(Node n, int heightPercent){
+    private static void _heightPercent(Node n, int heightPercent) {
         Platform.runLater(() -> {
             Objects.requireNonNull(n.getParent());
             Region parent = (Region) n.getParent();
@@ -134,12 +134,12 @@ public class FX {
         });
     }
 
-    public static void widthPercentWindow(Node n, int widthPercent){
+    public static void widthPercentWindow(Node n, int widthPercent) {
         MyThread.runAsyncSingle(() -> {
-            try{
+            try {
                 for (int i = 0; i < 100; i++) {
                     Thread.sleep(100);
-                    if(n.getParent() != null) break;
+                    if (n.getParent() != null) break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -164,12 +164,12 @@ public class FX {
         });
     }
 
-    public static void heightPercentWindow(Node n, int heightPercent){
+    public static void heightPercentWindow(Node n, int heightPercent) {
         MyThread.runAsyncSingle(() -> {
-            try{
+            try {
                 for (int i = 0; i < 100; i++) {
                     Thread.sleep(100);
-                    if(n.getParent() != null) break;
+                    if (n.getParent() != null) break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -193,7 +193,7 @@ public class FX {
         });
     }
 
-    public static void widthPercentScreen(Node n, int widthPercent){
+    public static void widthPercentScreen(Node n, int widthPercent) {
         Platform.runLater(() -> {
             Region target = (Region) n;
             double width = (Screen.getPrimary().getBounds().getWidth() / 100 * widthPercent)
@@ -206,7 +206,7 @@ public class FX {
         });
     }
 
-    public static void heightPercentScreen(Node n, int heightPercent){
+    public static void heightPercentScreen(Node n, int heightPercent) {
         Platform.runLater(() -> {
             Region target = (Region) n;
             double height = Screen.getPrimary().getBounds().getHeight() / 100 * heightPercent
