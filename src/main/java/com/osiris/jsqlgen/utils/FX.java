@@ -6,7 +6,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
 import javafx.stage.Screen;
-import javafx.stage.Stage;
 
 import java.util.Objects;
 
@@ -50,19 +49,11 @@ public class FX {
                     e.printStackTrace();
                 }
                 _widthPercent(n, widthPercent);
-                Stage stage = (Stage) n.getScene().getWindow();
-                stage.widthProperty().addListener(changeListener);
-                stage.maximizedProperty().addListener(observable -> {
-                    _widthPercent(n, widthPercent);
-                });
+                n.getScene().widthProperty().addListener(changeListener);
             });
         else {
             _widthPercent(n, widthPercent);
-            Stage stage = (Stage) n.getScene().getWindow();
-            stage.widthProperty().addListener(changeListener);
-            stage.maximizedProperty().addListener(observable -> {
-                _widthPercent(n, widthPercent);
-            });
+            n.getScene().widthProperty().addListener(changeListener);
         }
     }
 

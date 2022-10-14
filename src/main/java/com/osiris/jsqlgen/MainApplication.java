@@ -75,8 +75,6 @@ public class MainApplication extends javafx.application.Application {
     private final ListView<VBox> listTables = new ListView<>();
     private final TabPane tabsCode = new TabPane();
     private final Button btnGenerate = new Button("Generate Code");
-    private final CheckBox isDebug = new CheckBox("Debug");
-    private final CheckBox isNoExceptions = new CheckBox("No exceptions");
     private final Button btnChooseJavaProjectDir = new Button("Project-Dir");
     private final DirectoryChooser chooserJavaProjectDir = new DirectoryChooser();
 
@@ -169,20 +167,9 @@ public class MainApplication extends javafx.application.Application {
                     }
                 });
                 updateChoiceDatabase();
-                List<Database> databases = Data.fetchDatabases();
-                if (!databases.isEmpty()) {
-                    choiceDatabase.setValue(databases.get(0).name);
+                if (!Data.databases.isEmpty()) {
+                    choiceDatabase.setValue(Data.databases.get(0).name);
                 }
-                isDebug.setTooltip(new MyTooltip("If selected generates additional debug logging to the error stream."));
-                isDebug.setOnAction(event -> {
-                    JavaCodeGenerator.isDebug = isDebug.isSelected();
-                });
-                isNoExceptions.setTooltip(new MyTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
-                        " which means that all methods of a generated class can be used outside of try/catch blocks."));
-                isNoExceptions.setSelected(true);
-                isNoExceptions.setOnAction(event -> {
-                    JavaCodeGenerator.isNoExceptions = isNoExceptions.isSelected();
-                });
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -253,6 +240,7 @@ public class MainApplication extends javafx.application.Application {
         lyHome.addRow().add(dbName, btnCreateDatabase, btnDeleteDatabase);
         lyHome.addRow().add(btnImportDatabase, btnExportDatabase, btnShowData);
         FX.widthFull(txtLogs);
+        FX.heightPercent(txtLogs, 70);
         lyHome.addRow().add(txtLogs);
     }
 
@@ -271,8 +259,7 @@ public class MainApplication extends javafx.application.Application {
                 " together with a copy of the schema. Everything gets overwritten, except critical information in the database class."));
         btnChooseJavaProjectDir.setOnMouseClicked(click -> {
             try {
-                List<Database> databases = Data.fetchDatabases();
-                Database database = Data.findDatabase(databases, choiceDatabase.getValue());
+                Database database = Data.getDatabase(choiceDatabase.getValue());
                 if (database == null)
                     throw new Exception("Failed to find database '" + choiceDatabase.getValue() + "', make sure you created and selected one before.");
                 if (database.javaProjectDir != null)
@@ -281,11 +268,7 @@ public class MainApplication extends javafx.application.Application {
                     File selectedFile = chooserJavaProjectDir.showDialog(stage);
                     if (selectedFile != null) {
                         database.javaProjectDir = selectedFile;
-                        try {
-                            Data.updateDatabases(databases);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        Data.save();
                     }
                     System.out.println("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
                 });
@@ -294,11 +277,11 @@ public class MainApplication extends javafx.application.Application {
             }
         });
 
-        lyDatabase.addRow().add(choiceDatabase);
+        lyDatabase.addRow().add(choiceDatabase, btnChooseJavaProjectDir);
         FX.widthPercent(listTables, 100);
         FX.heightPercentWindow(listTables, 70);
         lyDatabase.addRow().add(listTables);
-        lyDatabase.addRow().add(btnGenerate, isDebug, isNoExceptions, btnChooseJavaProjectDir);
+        lyDatabase.addRow().add(btnGenerate);
         FX.widthPercentWindow(tabsCode, 70);
         FX.widthFull(tabsCode);
         lyDatabase.addRow().add(tabsCode);
@@ -309,29 +292,16 @@ public class MainApplication extends javafx.application.Application {
             System.err.println("Provided database name cannot be null or empty!");
             return;
         }
-        List<Database> databases = Data.fetchDatabases();
-        Database database = null;
-        for (Database db : databases) {
-            if (db.name.equals(dbName)) {
-                database = db;
-                break;
-            }
-        }
-        if (database == null) {
-            System.err.println("Failed to find '" + dbName + "' database in " + Data.file);
-            return;
-        }
         updateTablesList(dbName);
     }
 
     public void updateChoiceDatabase() throws IOException {
-        List<Database> databases = Data.fetchDatabases();
         ObservableList<String> list = null;
         String lastValue = choiceDatabase.getValue();
         if (choiceDatabase.getItems() != null) list = choiceDatabase.getItems();
         else list = FXCollections.observableArrayList();
         list.clear();
-        for (Database db : databases) {
+        for (Database db : Data.databases) {
             list.add(db.name);
         }
         choiceDatabase.setItems(list);
@@ -344,11 +314,10 @@ public class MainApplication extends javafx.application.Application {
             System.err.println("Database name cannot be null or empty!");
             return;
         }
-        List<Database> updatedList = Data.fetchDatabases();
         Database db = new Database();
         db.name = dbName.getText();
-        updatedList.add(db);
-        Data.updateDatabases(updatedList);
+        Data.databases.add(db);
+        Data.save();
         updateChoiceDatabase();
         System.out.println("Successfully added new database named '" + db.name + "'.");
     }
@@ -358,14 +327,9 @@ public class MainApplication extends javafx.application.Application {
             System.err.println("Database name cannot be null or empty!");
             return;
         }
-        List<Database> databases = Data.fetchDatabases();
-        Database db = Data.findDatabase(databases, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "', thus deletion failed!");
-            return;
-        }
-        databases.remove(db);
-        Data.updateDatabases(databases);
+        Database db = Data.getDatabase(dbName);
+        Data.databases.remove(db);
+        Data.save();
         updateChoiceDatabase();
         System.out.println("Successfully deleted database named '" + db.name + "'.");
     }
@@ -378,7 +342,7 @@ public class MainApplication extends javafx.application.Application {
     public void generateCode() throws IOException {
         System.out.println("Generating code...");
         try {
-            List<File> files = generateCode(Collections.singletonList(Data.findDatabase(Data.fetchDatabases(), choiceDatabase.getValue())),
+            List<File> files = generateCode(Collections.singletonList(Data.getDatabase(choiceDatabase.getValue())),
                     new File(Data.dir + "/generated"), true);
             System.out.println("Generated code/files: ");
             for (File f : files) {
@@ -498,16 +462,12 @@ public class MainApplication extends javafx.application.Application {
 
     private void updateTablesList(String dbName) throws IOException {
         listTables.getItems().clear();
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         for (Table t : db.tables) {
             VBox wrapperTable = new VBox();
             listTables.getItems().add(wrapperTable);
             FlowPane paneTable = new FlowPane();
+            paneTable.setHgap(10);
             paneTable.setBackground(new Background(new BackgroundFill(
                     new Color(new Random().nextFloat(), new Random().nextFloat(), new Random().nextFloat(), 0.7),
                     null, null)));
@@ -530,6 +490,32 @@ public class MainApplication extends javafx.application.Application {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            });
+            final CheckBox isDebug = new CheckBox("Debug");
+            paneTable.getChildren().add(isDebug);
+            isDebug.setTooltip(new MyTooltip("If selected generates additional debug logging to the error stream."));
+            isDebug.setSelected(t.isDebug);
+            isDebug.setOnAction(event -> {
+                t.isDebug = isDebug.isSelected();
+                Data.save();
+            });
+
+            final CheckBox isNoExceptions = new CheckBox("No exceptions");
+            paneTable.getChildren().add(isNoExceptions);
+            isNoExceptions.setTooltip(new MyTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
+                    " which means that all methods of a generated class can be used outside of try/catch blocks."));
+            isNoExceptions.setSelected(t.isNoExceptions);
+            isNoExceptions.setOnAction(event -> {
+                t.isNoExceptions = isNoExceptions.isSelected();
+                Data.save();
+            });
+
+            final CheckBox isCache = new CheckBox("Cache");
+            paneTable.getChildren().add(isCache);
+            isCache.setSelected(t.isCache);
+            isCache.setOnAction(event -> {
+                t.isCache = isCache.isSelected();
+                Data.save();
             });
 
             VBox listColumns = new VBox();
@@ -559,57 +545,37 @@ public class MainApplication extends javafx.application.Application {
 
     private void renameTable(String dbName, String oldName, String newName) throws IOException {
         System.out.println("Renaming table from '" + oldName + "' to '" + newName + "'.");
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Objects.requireNonNull(oldName);
         Table t = Data.findTable(db.tables, oldName);
         Objects.requireNonNull(t);
         t.name = newName;
-        Data.updateDatabases(list);
+        Data.save();
         System.out.println("OK!");
     }
 
     private void addNewTable(String dbName, String tableName) throws IOException {
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Table t = new Table();
         db.tables.add(t);
         t.name = tableName;
-        Data.updateDatabases(list);
+        Data.save();
         updateTablesList(dbName);
     }
 
     private void deleteTable(String dbName, String tableName) throws IOException {
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         db.tables.remove(t);
-        Data.updateDatabases(list);
+        Data.save();
         updateTablesList(dbName);
     }
 
 
     private void updateColumnsList(VBox listColumns, String dbName, String tableName) throws IOException {
         listColumns.getChildren().clear();
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         for (Column col : t.columns) {
@@ -686,12 +652,7 @@ public class MainApplication extends javafx.application.Application {
 
     private void updateColumn(VBox listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws IOException {
         System.out.println("Updating column...");
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, oldName);
@@ -701,39 +662,29 @@ public class MainApplication extends javafx.application.Application {
         col.definition = newDefinition;
         col.comment = newComment;
         System.out.println("NEW: " + col.name + " " + col.definition + " " + col.comment);
-        Data.updateDatabases(list);
+        Data.save();
         System.out.println("OK!");
     }
 
     private void addNewColumn(VBox listColumns, String dbName, String tableName, String columnName, String columnDefinition) throws IOException {
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = new Column(columnName);
         t.columns.add(col);
         col.definition = columnDefinition;
-        Data.updateDatabases(list);
+        Data.save();
         updateColumnsList(listColumns, dbName, tableName);
     }
 
     private void deleteColumn(VBox listColumns, String dbName, String tableName, String columnName) throws IOException {
-        List<Database> list = Data.fetchDatabases();
-        Database db = Data.findDatabase(list, dbName);
-        if (db == null) {
-            System.err.println("Failed to find database named '" + dbName + "' in " + Data.file);
-            return;
-        }
+        Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, columnName);
         Objects.requireNonNull(col);
         t.columns.remove(col);
-        Data.updateDatabases(list);
+        Data.save();
         updateColumnsList(listColumns, dbName, tableName);
     }
 }

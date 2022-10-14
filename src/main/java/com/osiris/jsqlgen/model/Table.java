@@ -5,6 +5,9 @@ import java.util.ArrayList;
 public class Table {
     public String name;
     public ArrayList<Column> columns = new ArrayList<>();
+    public boolean isDebug = false;
+    public boolean isNoExceptions = true;
+    public boolean isCache = false;
 
     public Table() {
         Column idColumn = new Column("id");

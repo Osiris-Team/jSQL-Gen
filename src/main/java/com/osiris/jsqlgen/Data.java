@@ -9,13 +9,39 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Data {
     public static File dir = new File(System.getProperty("user.home") + "/jSQL-Gen");
     public static final File file = new File(dir + "/data.yml");
+    public static final CopyOnWriteArrayList<Database> databases;
+    private static AtomicBoolean save = new AtomicBoolean(false);
+
+    public static void save(){
+        save.set(true);
+    }
 
     static {
-
+        try{
+            databases = fetchDatabases();
+            new Thread(() -> {
+                try{
+                    while (true){
+                        Thread.sleep(1000);
+                        if(save.get()){
+                            updateDatabases(databases);
+                            System.out.println("Saved/Updated data.");
+                            save.set(false);
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Data() throws IOException {
@@ -30,7 +56,11 @@ public class Data {
         return null;
     }
 
-    public static Table findTable(List<Table> list, String name) throws IOException {
+    public static Table findTable(Database db, String name){
+        return findTable(db.tables, name);
+    }
+
+    public static Table findTable(List<Table> list, String name) {
         for (Table t : list) {
             if (Objects.equals(name, t.name))
                 return t;
@@ -38,16 +68,20 @@ public class Data {
         return null;
     }
 
-    public static Database findDatabase(List<Database> list, String name) throws IOException {
+    public static Database getDatabase(String name){
+        return getDatabase(databases, name);
+    }
+
+    public static Database getDatabase(List<Database> list, String name) {
         for (Database db : list) {
             if (Objects.equals(name, db.name))
                 return db;
         }
-        return null;
+        throw new NullPointerException("Failed to find database named '" + name + "' in " + Data.file);
     }
 
-    public static List<Database> fetchDatabases() throws IOException {
-        List<Database> list = new ArrayList<>();
+    private static CopyOnWriteArrayList<Database> fetchDatabases() throws IOException {
+        CopyOnWriteArrayList<Database> list = new CopyOnWriteArrayList<>();
         synchronized (file) {
             if (!file.exists()) {
                 file.getParentFile().mkdirs();
@@ -70,6 +104,12 @@ public class Data {
                     Table table = new Table();
                     database.tables.add(table);
                     table.name = objTable.get("name").getAsString();
+                    if (objTable.get("isDebug") != null)
+                        table.isDebug = objTable.get("isDebug").getAsBoolean();
+                    if (objTable.get("isNoExceptions") != null)
+                        table.isNoExceptions = objTable.get("isNoExceptions").getAsBoolean();
+                    if (objTable.get("isCache") != null)
+                        table.isCache = objTable.get("isCache").getAsBoolean();
                     table.columns = new ArrayList<Column>();
                     for (JsonElement elColumn : objTable.get("columns").getAsJsonArray()) {
                         JsonObject objColumn = elColumn.getAsJsonObject();
@@ -86,7 +126,7 @@ public class Data {
         return list;
     }
 
-    public static void updateDatabases(List<Database> list) throws IOException {
+    private static void updateDatabases(List<Database> list) throws IOException {
         synchronized (file) {
             if (!file.exists()) {
                 file.getParentFile().mkdirs();
@@ -101,6 +141,7 @@ public class Data {
                 dbObj.addProperty("name", database.name);
                 if (database.javaProjectDir != null)
                     dbObj.addProperty("javaProjectDir", database.javaProjectDir.getAbsolutePath());
+
                 JsonArray arrTables = new JsonArray();
                 dbObj.add("tables", arrTables);
                 for (Table table : database.tables) {
@@ -108,6 +149,10 @@ public class Data {
                     JsonObject tableObj = new JsonObject();
                     arrTables.add(tableObj);
                     tableObj.addProperty("name", table.name);
+                    dbObj.addProperty("isDebug", table.isDebug);
+                    dbObj.addProperty("isNoExceptions", table.isNoExceptions);
+                    dbObj.addProperty("isCache", table.isCache);
+
                     tableObj.add("columns", arrColumns);
                     for (Column column : table.columns) {
                         JsonObject columnObj = new JsonObject();
