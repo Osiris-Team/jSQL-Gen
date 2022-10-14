@@ -38,7 +38,7 @@ public class Data {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            });
+            }).start();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

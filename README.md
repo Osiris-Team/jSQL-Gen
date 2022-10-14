@@ -48,7 +48,7 @@ of the class represents one row.
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
-- (TODO) Cached results for ultra-fast data retrieval 
+- Cached results for ultra-fast data retrieval 
 (cache gets cleared after INSERT/UPDATE/DELETE operations and is
 simply a map with SQL statements mapped to their results lists).
 - Helper/Optional WHERE class for generating simple and complex SQL queries.

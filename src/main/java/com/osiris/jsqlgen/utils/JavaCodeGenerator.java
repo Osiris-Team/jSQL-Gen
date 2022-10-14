@@ -26,7 +26,8 @@ public class JavaCodeGenerator {
         StringBuilder importsBuilder = new StringBuilder();
         importsBuilder.append("import java.util.List;\n" +
                 "import java.util.ArrayList;\n" +
-                "import java.sql.*;\n");
+                "import java.sql.*;\n" +
+                "import java.util.Arrays;\n");
         importsBuilder.append("\n");
 
         StringBuilder classContentBuilder = new StringBuilder();
@@ -36,7 +37,12 @@ public class JavaCodeGenerator {
                 "A single object/instance of this class represents a single row in the table\n" +
                 "and data can be accessed via its public fields. <p>\n" +
                 "Its not recommended to modify this class but it should be OK to add new methods to it.\n" +
-                "If modifications are really needed create a pull request directly to jSQL-Gen instead.\n" +
+                "If modifications are really needed create a pull request directly to jSQL-Gen instead. <br>\n" +
+                (t.isDebug ? "DEBUG is enabled, thus debug information will be printed out to System.err. <br>\n": "") +
+                (t.isNoExceptions ? "NO EXCEPTIONS is enabled which makes it possible to use this methods outside of try/catch" +
+                        " blocks because SQL errors will be caught and thrown as runtime exceptions instead. <br>\n": "") +
+                (t.isCache ? "CACHE is enabled, note that now the results of get() are not thread safe anymore, because it could be the same list from the" +
+                        " request before. <br>\n": "") +
                 "*/\n" +
                 "public class " + t.name + "{\n"); // Open class
         classContentBuilder.append("private static java.sql.Connection con;\n");
@@ -61,7 +67,35 @@ public class JavaCodeGenerator {
                         "}\n" +
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
-                        "}\n");
+                        "}\n\n");
+
+        if(t.isCache)
+            classContentBuilder.append("    private static final List<CachedResult> cachedResults = new ArrayList<>();\n" +
+                    "    private static class CachedResult {\n" +
+                    "        public final String sql;\n" +
+                    "        public final Object[] whereValues;\n" +
+                    "        public final List<"+t.name+"> results;\n" +
+                    "        public CachedResult(String sql, Object[] whereValues, List<"+t.name+"> results) {\n" +
+                    "            this.sql = sql;\n" +
+                    "            this.whereValues = whereValues;\n" +
+                    "            this.results = results;\n" +
+                    "        }\n" +
+                    "    }\n" +
+                    "    private static CachedResult cacheContains(String sql, Object[] whereValues){\n" +
+                    "        synchronized (cachedResults){\n" +
+                    "            for (CachedResult cr : cachedResults) {\n" +
+                    "                if(cr.sql.equals(sql) && Arrays.equals(cr.whereValues, whereValues)){\n" +
+                    "                    return cr;\n" +
+                    "                }\n" +
+                    "            }\n" +
+                    "        }\n" +
+                    "        return null;\n" +
+                    "    }\n" +
+                    "    public static void clearCache(){\n" +
+                    "        synchronized (cachedResults){ // Invalidate cache\n" +
+                    "            cachedResults.clear();\n" +
+                    "        }\n" +
+                    "    }\n\n");
 
         // CONSTRUCTORS
         classContentBuilder.append("private " + t.name + "(){}\n");
@@ -81,13 +115,14 @@ public class JavaCodeGenerator {
         }
 
         // CREATE CREATE METHODS:
-        classContentBuilder.append("" +
-                "/**\n" +
-                "Creates and returns an object that can be added to this table.\n" +
-                "Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).\n" +
-                "Note that the parameters of this method represent \"NOT NULL\" fields in the table and thus should not be null.\n" +
-                "Also note that this method will NOT add the object to the table.\n" +
-                "*/\n");
+        classContentBuilder.append("""
+                /**
+                Creates and returns an object that can be added to this table.
+                Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
+                Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+                Also note that this method will NOT add the object to the table.
+                */
+                """);
         Column firstCol = t.columns.get(0);
         String idParam = firstCol.type.inJava + " " + firstCol.name + ",";
         classContentBuilder.append(
@@ -174,18 +209,19 @@ public class JavaCodeGenerator {
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
                 "public static List<" + t.name + "> get(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                (t.isDebug ? "System.err.println(\"get: \"+where);\n" : "") +
-                "List<" + t.name + "> list = new ArrayList<>();\n" +
-                "try (PreparedStatement ps = con.prepareStatement(\n" +
-                "                \"SELECT ");
+                "String sql = \"SELECT ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
         classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
-        classContentBuilder.append(
-                "\" +\n" +
+        classContentBuilder.append("\" +\n" +
                         "\" FROM " + tNameQuoted + "\" +\n" +
-                        "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
+                        "(where != null ? (\"WHERE \"+where) : \"\");\n"+
+                (t.isDebug ? "System.err.println(\"get: \"+where);\n" : "") +
+                (t.isCache ? "synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);\n" +
+                        "if(cachedResult != null) return cachedResult.results;\n" : "") +
+                "List<" + t.name + "> list = new ArrayList<>();\n" +
+                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" + // Open try/catch
                         "if(where!=null && whereValues!=null)\n" +
                         "for (int i = 0; i < whereValues.length; i++) {\n" +
                         "Object val = whereValues[i];\n" +
@@ -202,7 +238,10 @@ public class JavaCodeGenerator {
         classContentBuilder.append(
                 "}\n" + // Close while
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                        "return list;\n");
+                        (t.isCache ? """
+                                cachedResults.add(new CachedResult(sql, whereValues, list));
+                                return list;}
+                                """ : "return list;\n")); // Close synchronized block if isCache
         classContentBuilder.append("}\n\n"); // Close get method
 
         // CREATE COUNT METHOD:
@@ -248,6 +287,7 @@ public class JavaCodeGenerator {
                 "ps.executeUpdate();\n" +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") // Close try/catch
         );
+        if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close update method
 
 
@@ -279,6 +319,7 @@ public class JavaCodeGenerator {
                 "ps.executeUpdate();\n" +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") // Close try/catch
         );
+        if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close add method
 
 
@@ -310,6 +351,7 @@ public class JavaCodeGenerator {
                         "ps.executeUpdate();\n" +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") // Close try/catch
         );
+        if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close delete method
 
         // CREATE CLONE METHOD

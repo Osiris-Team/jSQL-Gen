@@ -170,14 +170,13 @@ public class MainApplication extends javafx.application.Application {
                 if (!Data.databases.isEmpty()) {
                     choiceDatabase.setValue(Data.databases.get(0).name);
                 }
+                // Layout stuff
+                layoutHome();
+                layoutDatabase();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-
-        // Layout stuff
-        layoutHome();
-        layoutDatabase();
     }
 
     private void layoutHome() {
