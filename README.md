@@ -2,7 +2,7 @@
 Java SQL (JDBC) code generator with GUI. Removes boilerplate code and makes
 it possible to use SQL databases without writing one line of SQL.
 
-![](https://preview.redd.it/d4cc3ja872691.png?width=1154&format=png&auto=webp&s=9b0ecaecaf6087a4d4b9ecb065da587e782d62f5)
+![image](https://user-images.githubusercontent.com/59899645/195866082-e0602e28-dad0-4321-b9e5-318645caa17f.png)
 
 ## Usage
 - Install the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest).
