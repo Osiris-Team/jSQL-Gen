@@ -56,6 +56,7 @@ simply a map with SQL statements mapped to their results lists).
 - Simple UI to design databases within minutes.
 - Autosuggestions for field definitions.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
+- Easily use multiple databases in a single project.
 
 
 #### Cons

@@ -1,11 +1,14 @@
 package com.osiris.jsqlgen.utils;
 
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
 import javafx.stage.Screen;
+import javafx.stage.Stage;
 
 import java.util.Objects;
 
@@ -26,6 +29,16 @@ public class FX {
     }
 
     public static void widthPercent(Node n, int widthPercent){
+        ChangeListener<Number> changeListener = new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
+                if(n.getParent() == null) {
+                    observableValue.removeListener(this);
+                    return;
+                }
+                _widthPercent(n, widthPercent);
+            }
+        };
         if(n.getParent()==null)
             MyThread.runAsync(() -> {
                 try{
@@ -37,28 +50,18 @@ public class FX {
                     e.printStackTrace();
                 }
                 _widthPercent(n, widthPercent);
-                n.getScene().widthProperty().addListener(new ChangeListener<Number>() {
-                    @Override
-                    public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                        if(n.getParent() == null) {
-                            observableValue.removeListener(this);
-                            return;
-                        }
-                        _widthPercent(n, widthPercent);
-                    }
+                Stage stage = (Stage) n.getScene().getWindow();
+                stage.widthProperty().addListener(changeListener);
+                stage.maximizedProperty().addListener(observable -> {
+                    _widthPercent(n, widthPercent);
                 });
             });
         else{
             _widthPercent(n, widthPercent);
-            n.getScene().widthProperty().addListener(new ChangeListener<Number>() {
-                @Override
-                public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                    if(n.getParent() == null) {
-                        observableValue.removeListener(this);
-                        return;
-                    }
-                    _widthPercent(n, widthPercent);
-                }
+            Stage stage = (Stage) n.getScene().getWindow();
+            stage.widthProperty().addListener(changeListener);
+            stage.maximizedProperty().addListener(observable -> {
+                _widthPercent(n, widthPercent);
             });
         }
     }
@@ -83,6 +86,16 @@ public class FX {
     }
 
     public static void heightPercent(Node n, int heightPercent){
+        ChangeListener<Number> changeListener = new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
+                if(n.getParent() == null) {
+                    observableValue.removeListener(this);
+                    return;
+                }
+                _heightPercent(n, heightPercent);
+            }
+        };
         if(n.getParent()==null)
             MyThread.runAsync(() -> {
                 try{
@@ -94,29 +107,11 @@ public class FX {
                     e.printStackTrace();
                 }
                 _heightPercent(n, heightPercent);
-                n.getScene().heightProperty().addListener(new ChangeListener<Number>() {
-                    @Override
-                    public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                        if(n.getParent() == null) {
-                            observableValue.removeListener(this);
-                            return;
-                        }
-                        _heightPercent(n, heightPercent);
-                    }
-                });
+                n.getScene().heightProperty().addListener(changeListener);
             });
         else{
             _heightPercent(n, heightPercent);
-            n.getScene().heightProperty().addListener(new ChangeListener<Number>() {
-                @Override
-                public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                    if(n.getParent() == null) {
-                        observableValue.removeListener(this);
-                        return;
-                    }
-                    _heightPercent(n, heightPercent);
-                }
-            });
+            n.getScene().heightProperty().addListener(changeListener);
         }
     }
 

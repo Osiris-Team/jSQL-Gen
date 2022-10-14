@@ -7,19 +7,27 @@ import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.*;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventType;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import org.controlsfx.control.Notifications;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class MainApplication extends javafx.application.Application {
@@ -73,6 +81,8 @@ public class MainApplication extends javafx.application.Application {
     private Button btnGenerate = new Button("Generate Code");
     private CheckBox isDebug = new CheckBox("Debug");
     private CheckBox isNoExceptions = new CheckBox("No exceptions");
+    private Button btnChooseJavaProjectDir = new Button("Project-Dir");
+    private DirectoryChooser chooserJavaProjectDir = new DirectoryChooser();
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -85,18 +95,69 @@ public class MainApplication extends javafx.application.Application {
         stage.centerOnScreen();
         stage.show(); // RootPane has full window width and height
 
+        List<String> newLines = new ArrayList<>();
         MainApplication.asyncIn.listeners.add(line -> {
+            synchronized (newLines){
+                newLines.add(line);
+            }
             Platform.runLater(() -> {
                 txtLogs.setText(txtLogs.getText() + line + "\n");
             });
         });
+        List<String> newErrLines = new ArrayList<>();
         MainApplication.asyncInErr.listeners.add(line -> {
+            synchronized (newErrLines){
+                newErrLines.add(line);
+            }
             Platform.runLater(() -> {
                 txtLogs.setText(txtLogs.getText() + "[!] " + line + "\n");
             });
         });
         System.out.println("Registered log listener.");
         System.out.println("Initialised jSQL-Gen successfully!");
+        new Thread(() -> {
+           try{
+               while (true){
+                   Thread.sleep(1000);
+                   synchronized (newLines){
+                       if(!newLines.isEmpty()){
+                           StringBuilder builder = new StringBuilder();
+                           for (String l : newLines) {
+                               builder.append(l + "\n");
+                           }
+                           newLines.clear();
+                           Platform.runLater(() -> {
+                               Notifications.create()
+                                       .title("jSQL-Gen | Info")
+                                       .text(builder.toString())
+                                       .position(Pos.BOTTOM_RIGHT)
+                                       .hideAfter(Duration.millis(10000))
+                                       .show();
+                           });
+                       }
+                   }
+                   synchronized (newErrLines){
+                       if(!newErrLines.isEmpty()){
+                           StringBuilder builder = new StringBuilder();
+                           for (String l : newErrLines) {
+                               builder.append(l + "\n");
+                           }
+                           newErrLines.clear();
+                           Platform.runLater(() -> {
+                               Notifications.create()
+                                       .title("jSQL-Gen | Error")
+                                       .text(builder.toString())
+                                       .position(Pos.BOTTOM_RIGHT)
+                                       .hideAfter(Duration.millis(30000))
+                                       .show();
+                           });
+                       }
+                   }
+               }
+           } catch (Exception e) {
+               e.printStackTrace();
+           }
+        }).start();
 
         Platform.runLater(() -> {
             try {
@@ -151,7 +212,7 @@ public class MainApplication extends javafx.application.Application {
             }
         });
 
-        btnImportDatabase.setTooltip(new Tooltip("Imports a json file or text and either overrides the existing database or creates a new one."));
+        btnImportDatabase.setTooltip(new MyTooltip("Imports a json file or text and either overrides the existing database or creates a new one."));
         btnImportDatabase.setOnMouseClicked(click -> {
             Popup popup = new Popup();
 
@@ -205,12 +266,39 @@ public class MainApplication extends javafx.application.Application {
                 e.printStackTrace();
             }
         });
+        chooserJavaProjectDir.setTitle("Select Java project directory");
+        btnChooseJavaProjectDir.setTooltip(new Tooltip("Select the directory of your Java project. Classes then will be generated there" +
+                " together with a copy of the schema."));
+        btnChooseJavaProjectDir.setOnMouseClicked(click -> {
+            try{
+                List<Database> databases = Data.fetchDatabases();
+                Database database = Data.findDatabase(databases, choiceDatabase.getValue());
+                if(database == null)
+                    throw new Exception("Failed to find database '"+choiceDatabase.getValue()+"', make sure you created and selected one before.");
+                if(database.javaProjectDir != null)
+                    chooserJavaProjectDir.setInitialDirectory(database.javaProjectDir);
+                Platform.runLater(() -> {
+                    File selectedFile = chooserJavaProjectDir.showDialog(stage);
+                    if (selectedFile != null) {
+                        database.javaProjectDir = selectedFile;
+                        try {
+                            Data.updateDatabases(databases);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    System.out.println("Set Java project directory for database '"+database.name+"' to: "+database.javaProjectDir);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
 
         lyDatabase.addRow().add(choiceDatabase);
         FX.widthPercent(listTables, 100);
         FX.heightPercentWindow(listTables, 70);
         lyDatabase.addRow().add(listTables);
-        lyDatabase.addRow().add(btnGenerate, isDebug, isNoExceptions);
+        lyDatabase.addRow().add(btnGenerate, isDebug, isNoExceptions, btnChooseJavaProjectDir);
         FX.widthPercentWindow(tabsCode, 70);
         FX.widthFull(tabsCode);
         lyDatabase.addRow().add(tabsCode);
@@ -324,14 +412,22 @@ public class MainApplication extends javafx.application.Application {
         List<File> files = new ArrayList<>();
         for (Database db : databases) {
             File dir = new File(outputDir + "/" + db.name);
+            if(db.javaProjectDir != null) dir = new File(db.javaProjectDir+"/src/main/java/com/osiris/jsqlgen/"+db.name);
             dir.mkdirs();
+            if(db.javaProjectDir != null){
+                File jsonData = new File(dir.getParentFile()+"/data.json");
+                jsonData.createNewFile();
+                Files.copy(Data.file.toPath(), jsonData.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
             File databaseFile = new File(dir + "/Database.java");
             databaseFile.createNewFile();
             Files.writeString(databaseFile.toPath(), "" +
+                    (db.javaProjectDir != null ? "package com.osiris.jsqlgen."+db.name+";\n" : "") +
                     "import java.sql.Connection;\n" +
                     "import java.sql.DriverManager;\n" +
                     "import java.sql.SQLException;\n" +
-                    "import java.sql.Statement;\n\n" +
+                    "import java.sql.Statement;\n" +
+                    "import java.util.Objects;\n\n" +
                     "public class Database{\n" +
                     "// TODO: Insert credentials and update url.\n" +
                     "public static String rawUrl = \"jdbc:mysql://localhost/\";\n" +
@@ -372,7 +468,8 @@ public class MainApplication extends javafx.application.Application {
                 File javaFile = new File(dir + "/" + t.name + ".java");
                 javaFile.createNewFile();
                 files.add(javaFile);
-                Files.writeString(javaFile.toPath(), JavaCodeGenerator.generate(t));
+                Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen."+db.name+";\n" : "") +
+                        JavaCodeGenerator.generate(t));
             }
         }
         return files;

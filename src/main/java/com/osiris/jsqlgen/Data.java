@@ -14,6 +14,10 @@ public class Data {
     public static File dir = new File(System.getProperty("user.home") + "/jSQL-Gen");
     public static final File file = new File(dir + "/data.yml");
 
+    static{
+
+    }
+
     public Data() throws IOException {
         super();
     }
@@ -58,6 +62,8 @@ public class Data {
                 Database database = new Database();
                 list.add(database);
                 database.name = objDatabase.get("name").getAsString();
+                if(objDatabase.get("javaProjectDir") != null)
+                    database.javaProjectDir = new File(objDatabase.get("javaProjectDir").getAsString());
                 database.tables = new ArrayList<Table>();
                 for (JsonElement elTable : objDatabase.get("tables").getAsJsonArray()) {
                     JsonObject objTable = elTable.getAsJsonObject();
@@ -93,6 +99,8 @@ public class Data {
                 JsonObject dbObj = new JsonObject();
                 arrDatabases.add(dbObj);
                 dbObj.addProperty("name", database.name);
+                if(database.javaProjectDir != null)
+                    dbObj.addProperty("javaProjectDir", database.javaProjectDir.getAbsolutePath());
                 JsonArray arrTables = new JsonArray();
                 dbObj.add("tables", arrTables);
                 for (Table table : database.tables) {
