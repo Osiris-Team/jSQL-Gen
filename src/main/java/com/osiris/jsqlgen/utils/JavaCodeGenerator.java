@@ -12,7 +12,7 @@ public class JavaCodeGenerator {
      * Generates Java source code, for the provided table.
      */
     public static String generate(Table t) throws Exception {
-        String tNameQuoted = "`" + t.name + "`";
+        String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         for (Column col : t.columns) {
             col.type = ColumnType.findBySQLDefinition(col.definition);
             if (col.type == null)

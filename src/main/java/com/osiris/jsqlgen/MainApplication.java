@@ -5,6 +5,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.Expression;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
@@ -384,23 +385,28 @@ public class MainApplication extends javafx.application.Application {
                 Files.copy(Data.file.toPath(), jsonData.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             File databaseFile = new File(dir + "/Database.java");
-            String rawUrl = "jdbc:mysql://localhost/";
-            String url = "jdbc:mysql://localhost/" + db.name;
-            String username = "";
-            String password = "";
+            String rawUrl = "\"jdbc:mysql://localhost/\"";
+            String url = "\"jdbc:mysql://localhost/" + db.name+"\"";
+            String username = "\"\"";
+            String password = "\"\"";
             if (databaseFile.exists()) {
                 CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
                 for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
                     VariableDeclarator var = field.getVariable(0);
                     if (var.getInitializer().isPresent()) {
+                        Expression varInit = var.getInitializer().get();
                         if (Objects.equals(var.getName().asString(), "rawUrl"))
-                            rawUrl = var.getInitializer().get().asStringLiteralExpr().asString();
+                            if(varInit.isStringLiteralExpr()) rawUrl = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                            else rawUrl = varInit.toString();
                         else if (Objects.equals(var.getName().asString(), "url"))
-                            url = var.getInitializer().get().asStringLiteralExpr().asString();
+                            if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                            else url = varInit.toString();
                         else if (Objects.equals(var.getName().asString(), "username"))
-                            username = var.getInitializer().get().asStringLiteralExpr().asString();
+                            if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                            else username = varInit.toString();
                         else if (Objects.equals(var.getName().asString(), "password"))
-                            password = var.getInitializer().get().asStringLiteralExpr().asString();
+                            if(varInit.isStringLiteralExpr()) password = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                            else password = varInit.toString();
                     }
                 }
             }
@@ -412,13 +418,17 @@ public class MainApplication extends javafx.application.Application {
                     "import java.sql.SQLException;\n" +
                     "import java.sql.Statement;\n" +
                     "import java.util.Objects;\n\n" +
+                    "/*\n" +
+                    "Auto-generated class containing database credentials.\n" +
+                    "Is used by all table classes to create connections.\n" +
+                    "Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class.\n" +
+                    "*/\n" +
                     "public class Database{\n" +
-                    "// TODO: Insert credentials and update url.\n" +
-                    "public static String rawUrl = \"" + rawUrl + "\";\n" +
-                    "public static String url = \"" + url + "\";\n" +
+                    "public static String rawUrl = " + rawUrl + ";\n" +
+                    "public static String url = " + url + ";\n" +
                     "public static String name = \"" + db.name + "\";\n" +
-                    "public static String username = \"" + username + "\";\n" +
-                    "public static String password = \"" + password + "\";\n\n" +
+                    "public static String username = " + username + ";\n" +
+                    "public static String password = " + password + ";\n\n" +
                     "static{create();} // Create database if not exists\n" +
                     "    public static void create() {\n" +
                     "\n" +
@@ -462,7 +472,9 @@ public class MainApplication extends javafx.application.Application {
     private void updateTablesList(String dbName) throws IOException {
         listTables.getItems().clear();
         Database db = Data.getDatabase(dbName);
-        for (Table t : db.tables) {
+        ArrayList<Table> tables = db.tables;
+        for (int i = 0; i < tables.size(); i++) {
+            Table t = tables.get(i);
             VBox wrapperTable = new VBox();
             listTables.getItems().add(wrapperTable);
             FlowPane paneTable = new FlowPane();
@@ -471,11 +483,26 @@ public class MainApplication extends javafx.application.Application {
                     new Color(new Random().nextFloat(), new Random().nextFloat(), new Random().nextFloat(), 0.7),
                     null, null)));
             wrapperTable.getChildren().add(paneTable);
-            Button btnRemove = new Button("Delete");
-            paneTable.getChildren().add(btnRemove);
-            btnRemove.setOnMouseClicked(event -> {
+            ChoiceBox<String> choiceAction = new ChoiceBox<>();
+            paneTable.getChildren().add(choiceAction);
+            FX.widthPercentScreen(choiceAction, 1);
+            ObservableList<String> list = FXCollections.observableArrayList();
+            list.add("Delete");
+            list.add("Duplicate");
+            choiceAction.setItems(list);
+            int finalI = i;
+            choiceAction.setOnAction(event -> {
                 try {
-                    deleteTable(dbName, t.name);
+                    String command = choiceAction.getValue();
+                    if(command == null || command.isEmpty()) return;
+                    if (command.equals("Delete"))
+                        deleteTable(dbName, t.name);
+                    else if (command.equals("Duplicate")) {
+                        db.tables.add(finalI, t.duplicate());
+                        updateTablesList(dbName);
+                        Data.save();
+                    } else
+                        throw new Exception("Unknown command '" + command + "' to modify table!");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

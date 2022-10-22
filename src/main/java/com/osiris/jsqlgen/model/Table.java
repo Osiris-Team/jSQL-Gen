@@ -14,4 +14,14 @@ public class Table {
         idColumn.definition = "INT NOT NULL PRIMARY KEY";
         columns.add(idColumn);
     }
+
+    public Table duplicate() {
+        Table t = new Table();
+        t.name = "COPY-"+name;
+        t.columns = columns;
+        t.isDebug = isDebug;
+        t.isNoExceptions = isNoExceptions;
+        t.isCache = isCache;
+        return t;
+    }
 }
