@@ -45,11 +45,10 @@ public class JavaCodeGenerator {
                         " request before. <br>\n": "") +
                 "*/\n" +
                 "public class " + t.name + "{\n"); // Open class
-        classContentBuilder.append("private static java.sql.Connection con;\n");
         classContentBuilder.append("private static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
         classContentBuilder.append("static {\n" +
+                "Connection con = Database.getCon();\n" +
                 "try{\n" +
-                "con = java.sql.DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
                 "try (Statement s = con.createStatement()) {\n" +
                 "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).nameQuoted // EXPECTS ID
                 + " " + t.columns.get(0).definition + ")\");\n");
@@ -59,7 +58,7 @@ public class JavaCodeGenerator {
             classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.nameQuoted + " " + col.definition + "\");\n");
         }
         classContentBuilder.append(
-                "}\n" +
+                        "}\n" +
                         "" +
                         "try (PreparedStatement ps = con.prepareStatement(\"SELECT id FROM " + tNameQuoted + " ORDER BY id DESC LIMIT 1\")) {\n" +
                         "ResultSet rs = ps.executeQuery();\n" +
@@ -67,6 +66,7 @@ public class JavaCodeGenerator {
                         "}\n" +
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
+                        "finally {Database.freeCon(con);}\n" +
                         "}\n\n");
 
         if(t.isCache)
@@ -209,6 +209,7 @@ public class JavaCodeGenerator {
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
                 "public static List<" + t.name + "> get(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "Connection con = Database.getCon();\n" +
                 "String sql = \"SELECT ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
@@ -238,6 +239,7 @@ public class JavaCodeGenerator {
         classContentBuilder.append(
                 "}\n" + // Close while
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
+                        "finally{Database.freeCon(con);}\n"+
                         (t.isCache ? """
                                 cachedResults.add(new CachedResult(sql, whereValues, list));
                                 return list;}
@@ -248,6 +250,7 @@ public class JavaCodeGenerator {
         classContentBuilder.append("" +
                 "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 (t.isDebug ? "System.err.println(\"count: \"+where);\n" : "") +
+                "Connection con = Database.getCon();\n"+
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
                 "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
@@ -259,7 +262,8 @@ public class JavaCodeGenerator {
                 "ResultSet rs = ps.executeQuery();\n" +
                 "if (rs.next()) return rs.getInt(\"recordCount\");\n" +
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                "return 0;\n");
+                "finally {Database.freeCon(con);}\n" +
+                        "return 0;\n");
         classContentBuilder.append("}\n\n"); // Close count method
 
 
@@ -271,6 +275,7 @@ public class JavaCodeGenerator {
                 "@throws Exception when failed to find by id or other SQL issues.\n" +
                 "*/\n" +
                 "public static void update(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "Connection con = Database.getCon();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"UPDATE " + tNameQuoted + " SET ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
@@ -285,7 +290,8 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "ps.executeUpdate();\n" +
-                        (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") // Close try/catch
+                        (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
+                "finally{Database.freeCon(con);}\n"
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close update method
@@ -297,6 +303,7 @@ public class JavaCodeGenerator {
                 "Adds the provided object to the database (note that the id is not checked for duplicates).\n" +
                 "*/\n" +
                 "public static void add(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "Connection con = Database.getCon();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"INSERT INTO " + tNameQuoted + " (");
         for (int i = 0; i < t.columns.size() - 1; i++) {
@@ -317,7 +324,8 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "ps.executeUpdate();\n" +
-                        (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") // Close try/catch
+                        (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
+                "finally{Database.freeCon(con);}\n"
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close add method
@@ -340,6 +348,7 @@ public class JavaCodeGenerator {
                 "public static void remove(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 (t.isDebug ? "System.err.println(\"remove: \"+where);\n" : "") +
                 "java.util.Objects.requireNonNull(where);\n" +
+                "Connection con = Database.getCon();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(\n" +
                 "                \"DELETE FROM " + tNameQuoted + " WHERE \"+where)) {\n");// Open try/catch
         classContentBuilder.append(
@@ -349,7 +358,8 @@ public class JavaCodeGenerator {
                         "                    ps.setObject(i+1, val);\n" +
                         "                }\n" +
                         "ps.executeUpdate();\n" +
-                        (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") // Close try/catch
+                        (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
+                        "finally{Database.freeCon(con);}\n"
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close delete method
