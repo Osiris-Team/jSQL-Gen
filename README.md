@@ -47,6 +47,8 @@ of the class represents one row.
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
+- Cached connection pool ensures optimal performance on small and huge databases.
+Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval 
 (cache gets cleared after INSERT/UPDATE/DELETE operations and is
 simply a map with SQL statements mapped to their results lists).
