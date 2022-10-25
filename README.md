@@ -6,11 +6,9 @@ it possible to use SQL databases without writing one line of SQL.
 
 ## Usage
 - Install the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest) (.exe for Windows, other platforms not yet supported).
-- Create a database, tables and their columns via the GUI. Its recommended to name your tables like you name your regular
-Java objects, and your columns like your objects' fields.
-- Press `Generate Code` and add the code to your project (or select a project directory to directly generate it there).
-The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
-- Open `Database.java` and fill in your database credentials, and run your app.
+- Create a database, tables and their columns via the GUI. 
+- Press `Generate Code` and add the code to your project.
+- Open `Database.java`, fill in your database credentials, and run your app.
 
 ## Example
 I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
@@ -65,6 +63,9 @@ simply a map with SQL statements mapped to their results lists).
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
 
 ## Tipps
+- You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
+- Its recommended to name your tables like you name your regular
+Java objects, and your columns like your objects' fields.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
 in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
