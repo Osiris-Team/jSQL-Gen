@@ -53,7 +53,7 @@ Besides that it provides protection against timed out connections.
 (cache gets cleared after INSERT/UPDATE/DELETE operations and is
 simply a map with SQL statements mapped to their results lists).
 - (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
-- Secured by default against SQL-Injection by using prepared statements.
+- Secured against SQL-Injection by using prepared statements.
 - Simple UI to design databases within minutes.
 - Autosuggestions for field definitions.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
