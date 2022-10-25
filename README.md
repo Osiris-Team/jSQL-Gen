@@ -58,7 +58,8 @@ simply a map with SQL statements mapped to their results lists).
 - Autosuggestions for field definitions.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
 - Easily use multiple databases in a single project.
-- The generated code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
+- The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
+- The generated SQL code should be compatible with all types of SQL databases.
 
 #### Cons
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
