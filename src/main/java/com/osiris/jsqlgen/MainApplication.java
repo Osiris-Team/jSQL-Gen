@@ -87,78 +87,87 @@ public class MainApplication extends javafx.application.Application {
     public void start(Stage stage) throws IOException {
         this.stage = stage;
         stage.setTitle("jSQL-Gen");
+        if(Data.instance.window.isMaximized)
+            stage.setMaximized(true);
+        else{
+            stage.setX(Data.instance.window.x);
+            stage.setY(Data.instance.window.y);
+            stage.setWidth(Data.instance.window.width);
+            stage.setHeight(Data.instance.window.height);
+            stage.setMaxWidth(Data.instance.window.width);
+            stage.setMinHeight(Data.instance.window.height);
+        }
         lyRoot.getTabs().add(new MyTab("Home", lyHome).closable(false));
         lyRoot.getTabs().add(new MyTab("Database", lyDatabase).closable(false));
         Scene scene = new Scene(lyRoot, stage.getMaxWidth(), stage.getMaxHeight());
         stage.setScene(scene);
-        stage.centerOnScreen();
         stage.show(); // RootPane has full window width and height
 
-        List<String> newLines = new ArrayList<>();
-        MainApplication.asyncIn.listeners.add(line -> {
-            synchronized (newLines) {
-                newLines.add(line);
-            }
-            Platform.runLater(() -> {
-                txtLogs.setText(txtLogs.getText() + line + "\n");
-            });
-        });
-        List<String> newErrLines = new ArrayList<>();
-        MainApplication.asyncInErr.listeners.add(line -> {
-            synchronized (newErrLines) {
-                newErrLines.add(line);
-            }
-            Platform.runLater(() -> {
-                txtLogs.setText(txtLogs.getText() + "[!] " + line + "\n");
-            });
-        });
-        System.out.println("Registered log listener.");
-        System.out.println("Initialised jSQL-Gen successfully!");
-        new Thread(() -> {
-            try {
-                while (true) {
-                    Thread.sleep(1000);
-                    synchronized (newLines) {
-                        if (!newLines.isEmpty()) {
-                            StringBuilder builder = new StringBuilder();
-                            for (String l : newLines) {
-                                builder.append(l + "\n");
-                            }
-                            newLines.clear();
-                            Platform.runLater(() -> {
-                                Notifications.create()
-                                        .title("jSQL-Gen | Info")
-                                        .text(builder.toString())
-                                        .position(Pos.BOTTOM_RIGHT)
-                                        .hideAfter(Duration.millis(10000))
-                                        .show();
-                            });
-                        }
-                    }
-                    synchronized (newErrLines) {
-                        if (!newErrLines.isEmpty()) {
-                            StringBuilder builder = new StringBuilder();
-                            for (String l : newErrLines) {
-                                builder.append(l + "\n");
-                            }
-                            newErrLines.clear();
-                            Platform.runLater(() -> {
-                                Notifications.create()
-                                        .title("jSQL-Gen | Error")
-                                        .text(builder.toString())
-                                        .position(Pos.BOTTOM_RIGHT)
-                                        .hideAfter(Duration.millis(30000))
-                                        .show();
-                            });
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
-
         Platform.runLater(() -> {
+            List<String> newLines = new ArrayList<>();
+            MainApplication.asyncIn.listeners.add(line -> {
+                synchronized (newLines) {
+                    newLines.add(line);
+                }
+                Platform.runLater(() -> {
+                    txtLogs.setText(txtLogs.getText() + line + "\n");
+                });
+            });
+            List<String> newErrLines = new ArrayList<>();
+            MainApplication.asyncInErr.listeners.add(line -> {
+                synchronized (newErrLines) {
+                    newErrLines.add(line);
+                }
+                Platform.runLater(() -> {
+                    txtLogs.setText(txtLogs.getText() + "[!] " + line + "\n");
+                });
+            });
+            System.out.println("Registered log listener.");
+            System.out.println("Initialised jSQL-Gen successfully!");
+            new Thread(() -> {
+                try {
+                    while (true) {
+                        Thread.sleep(1000);
+                        synchronized (newLines) {
+                            if (!newLines.isEmpty()) {
+                                StringBuilder builder = new StringBuilder();
+                                for (String l : newLines) {
+                                    builder.append(l + "\n");
+                                }
+                                newLines.clear();
+                                Platform.runLater(() -> {
+                                    Notifications.create()
+                                            .title("jSQL-Gen | Info")
+                                            .text(builder.toString())
+                                            .position(Pos.BOTTOM_RIGHT)
+                                            .hideAfter(Duration.millis(10000))
+                                            .show();
+                                });
+                            }
+                        }
+                        synchronized (newErrLines) {
+                            if (!newErrLines.isEmpty()) {
+                                StringBuilder builder = new StringBuilder();
+                                for (String l : newErrLines) {
+                                    builder.append(l + "\n");
+                                }
+                                newErrLines.clear();
+                                Platform.runLater(() -> {
+                                    Notifications.create()
+                                            .title("jSQL-Gen | Error")
+                                            .text(builder.toString())
+                                            .position(Pos.BOTTOM_RIGHT)
+                                            .hideAfter(Duration.millis(30000))
+                                            .show();
+                                });
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
             try {
                 choiceDatabase.setOnAction(event -> { // value changed event
                     try {
@@ -168,8 +177,8 @@ public class MainApplication extends javafx.application.Application {
                     }
                 });
                 updateChoiceDatabase();
-                if (!Data.databases.isEmpty()) {
-                    choiceDatabase.setValue(Data.databases.get(0).name);
+                if (!Data.instance.databases.isEmpty()) {
+                    choiceDatabase.setValue(Data.instance.databases.get(0).name);
                 }
                 // Layout stuff
                 layoutHome();
@@ -177,6 +186,30 @@ public class MainApplication extends javafx.application.Application {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            Runnable runnable = () -> {
+                Data.instance.window.x = stage.getX();
+                Data.instance.window.y = stage.getY();
+                Data.instance.window.width = stage.getWidth();
+                Data.instance.window.height = stage.getHeight();
+                Data.save();
+            };
+            stage.xProperty().addListener((observableValue, number, t1) -> {
+                runnable.run();
+            });
+            stage.yProperty().addListener((observableValue, number, t1) -> {
+                runnable.run();
+            });
+            stage.widthProperty().addListener((obs, oldVal, newVal) -> {
+                runnable.run();
+            });
+            stage.heightProperty().addListener((obs, oldVal, newVal) -> {
+                runnable.run();
+            });
+            stage.maximizedProperty().addListener((observableValue, aBoolean, t1) -> {
+                Data.instance.window.isMaximized = observableValue.getValue();
+                runnable.run();
+            });
         });
     }
 
@@ -301,7 +334,7 @@ public class MainApplication extends javafx.application.Application {
         if (choiceDatabase.getItems() != null) list = choiceDatabase.getItems();
         else list = FXCollections.observableArrayList();
         list.clear();
-        for (Database db : Data.databases) {
+        for (Database db : Data.instance.databases) {
             list.add(db.name);
         }
         choiceDatabase.setItems(list);
@@ -316,7 +349,7 @@ public class MainApplication extends javafx.application.Application {
         }
         Database db = new Database();
         db.name = dbName.getText();
-        Data.databases.add(db);
+        Data.instance.databases.add(db);
         Data.save();
         updateChoiceDatabase();
         System.out.println("Successfully added new database named '" + db.name + "'.");
@@ -328,7 +361,7 @@ public class MainApplication extends javafx.application.Application {
             return;
         }
         Database db = Data.getDatabase(dbName);
-        Data.databases.remove(db);
+        Data.instance.databases.remove(db);
         Data.save();
         updateChoiceDatabase();
         System.out.println("Successfully deleted database named '" + db.name + "'.");
