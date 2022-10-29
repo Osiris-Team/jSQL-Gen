@@ -10,6 +10,14 @@ it possible to use SQL databases without writing one line of SQL.
 3. Press `Generate Code` and add the code to your project.
 4. Open `Database.java`, fill in your database credentials, and run your app.
 
+<p>
+<sub>
+*Select a project directory to directly generate the code in there.
+**Instead of inserting raw, readable crendentials you can provide functions that fetch
+those from a file.
+</sub>
+</p>
+
 ## Example
 I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
 the generated code into my project. Then I can do the following:
