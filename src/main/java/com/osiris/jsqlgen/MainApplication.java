@@ -617,6 +617,10 @@ public class MainApplication extends javafx.application.Application {
 
     private void addNewTable(String dbName, String tableName) throws IOException {
         Database db = Data.getDatabase(dbName);
+        for (Table table : db.tables) {
+            if(table.name.equalsIgnoreCase(tableName))
+                throw new IOException("Table '"+tableName.toLowerCase()+"' already exists for this database!");
+        }
         Table t = new Table();
         db.tables.add(t);
         t.name = tableName;
