@@ -1,5 +1,5 @@
 # jSQL-Gen
-Java SQL (JDBC) code generator with GUI. Removes boilerplate code and makes
+Java SQL (JDBC) code generator with GUI. Removes 100% of the boilerplate code and makes
 it possible to use SQL databases without writing one line of SQL.
 
 ![image](https://user-images.githubusercontent.com/59899645/195866082-e0602e28-dad0-4321-b9e5-318645caa17f.png)
