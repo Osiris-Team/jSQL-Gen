@@ -1,5 +1,5 @@
 # jSQL-Gen
-Java SQL (JDBC) code generator with GUI. Removes boilerplate code and makes
+Java SQL (JDBC) code generator with GUI. Removes 100% of the boilerplate code and makes
 it possible to use SQL databases without writing one line of SQL.
 
 ![image](https://user-images.githubusercontent.com/59899645/195866082-e0602e28-dad0-4321-b9e5-318645caa17f.png)
@@ -9,6 +9,14 @@ it possible to use SQL databases without writing one line of SQL.
 2. Create a database, tables and their columns via the GUI. 
 3. Press `Generate Code` and add the code to your project.
 4. Open `Database.java`, fill in your database credentials, and run your app.
+
+<p>
+<sub>
+*Select a project directory to directly generate the code in there.
+**Instead of inserting raw, readable crendentials you can provide functions that fetch
+those from a file.
+</sub>
+</p>
 
 ## Example
 I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
@@ -64,6 +72,7 @@ simply a map with SQL statements mapped to their results lists).
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
+- Its possible to add additional Java code at the bottom of each generated class (only works when a project directory was selected).
 - Its recommended to name your tables like you name your regular
 Java objects, and your columns like your objects' fields.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
