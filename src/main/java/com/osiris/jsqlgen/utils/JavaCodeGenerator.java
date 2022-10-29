@@ -4,6 +4,9 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Table;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 
 public class JavaCodeGenerator {
@@ -11,7 +14,7 @@ public class JavaCodeGenerator {
     /**
      * Generates Java source code, for the provided table.
      */
-    public static String generate(Table t) throws Exception {
+    public static String generate(File oldGeneratedClass, Table t) throws Exception {
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         for (Column col : t.columns) {
             col.type = ColumnType.findBySQLDefinition(col.definition);
@@ -23,12 +26,11 @@ public class JavaCodeGenerator {
         Constructor minimalConstructor = genMinimalConstructor(t.name, t.columns);
         boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
 
-        StringBuilder importsBuilder = new StringBuilder();
-        importsBuilder.append("import java.util.List;\n" +
-                "import java.util.ArrayList;\n" +
-                "import java.sql.*;\n" +
-                "import java.util.Arrays;\n");
-        importsBuilder.append("\n");
+        List<String> importsList = new ArrayList<>();
+        importsList.add("import java.util.List;");
+        importsList.add("import java.util.ArrayList;");
+        importsList.add("import java.sql.*;");
+        importsList.add("import java.util.Arrays;");
 
         StringBuilder classContentBuilder = new StringBuilder();
         classContentBuilder.append("/**\n" +
@@ -98,7 +100,6 @@ public class JavaCodeGenerator {
                     "    }\n\n");
 
         // CONSTRUCTORS
-        classContentBuilder.append("private " + t.name + "(){}\n");
         classContentBuilder.append(minimalConstructor.asString);
         if (hasMoreFields)
             classContentBuilder.append(constructor.asString);
@@ -393,9 +394,64 @@ public class JavaCodeGenerator {
                             "}\n");
         }
         classContentBuilder.append(generateWhereClass(t));
+        classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
+
+        // Handle additional code from existing/old generated class
+        if(oldGeneratedClass.exists()){
+            List<String> additionalLines = new ArrayList<>();
+            List<String> lines = Files.readAllLines(oldGeneratedClass.toPath());
+            List<String> oldImportsList = new ArrayList<>();
+            boolean isAdditionalLine = false;
+            for (String line : lines) {
+                if(line.startsWith("import"))
+                    oldImportsList.add(line);
+                else if(line.contains("// Additional code start ->")){
+                    isAdditionalLine = true;
+                    continue;
+                }
+                else if(line.contains("// Additional code end <-"))
+                    isAdditionalLine = false;
+
+                if(isAdditionalLine)
+                    additionalLines.add(line);
+            }
+            importsList = mergeListContents(importsList, oldImportsList);
+            if(!additionalLines.isEmpty()){
+                classContentBuilder.append("// Additional code start -> \n");
+                for (String additionalLine : additionalLines) {
+                    classContentBuilder.append(additionalLine).append("\n");
+                }
+                classContentBuilder.append("// Additional code end <- \n");
+            } else{
+                classContentBuilder.append("// Additional code start -> \n");
+                classContentBuilder.append("private " + t.name + "(){}\n");
+                classContentBuilder.append("// Additional code end <- \n");
+            }
+        } else{
+            classContentBuilder.append("// Additional code start -> \n");
+            classContentBuilder.append("private " + t.name + "(){}\n");
+            classContentBuilder.append("// Additional code end <- \n");
+        }
 
         classContentBuilder.append("}\n"); // Close class
-        return importsBuilder.toString() + classContentBuilder;
+
+        StringBuilder imports = new StringBuilder();
+        for (String s : importsList) {
+            imports.append(s).append("\n");
+        }
+        imports.append("\n");
+        return imports.toString() + classContentBuilder;
+    }
+
+    private static List<String> mergeListContents(List<String>... lists) {
+        List<String> unified = new ArrayList<>();
+        for (List<String> list : lists) {
+            for (String s : list) {
+                if(!unified.contains(s))
+                    unified.add(s);
+            }
+        }
+        return unified;
     }
 
     private static String firstToUpperCase(String s) {
@@ -741,7 +797,7 @@ public class JavaCodeGenerator {
                 "            return this;\n" +
                 "        }\n" +
                 "\n" +
-                "    }";
+                "    }\n";
     }
 
     public static class Constructor {

@@ -498,7 +498,7 @@ public class MainApplication extends javafx.application.Application {
                 javaFile.createNewFile();
                 files.add(javaFile);
                 Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                        JavaCodeGenerator.generate(t));
+                        JavaCodeGenerator.generate(javaFile, t));
             }
         }
         return files;
