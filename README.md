@@ -64,6 +64,7 @@ simply a map with SQL statements mapped to their results lists).
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
+- Its possible to add additional Java code at the bottom of each generated class (only works when a project directory was selected).
 - Its recommended to name your tables like you name your regular
 Java objects, and your columns like your objects' fields.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
