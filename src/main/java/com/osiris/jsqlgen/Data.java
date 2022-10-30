@@ -36,6 +36,13 @@ public class Data {
                     file.createNewFile();
                 }
                 instance = parser.fromJson(new BufferedReader(new FileReader(file)), DataJson.class);
+                for (Database db : instance.databases) {
+                    for (Table t : db.tables) {
+                        for (Column col : t.columns) {
+                            if(col.nameQuoted == null) col.updateName(col.name);
+                        }
+                    }
+                }
             }
             new Thread(() -> {
                 try{

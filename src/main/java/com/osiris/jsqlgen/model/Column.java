@@ -2,7 +2,7 @@ package com.osiris.jsqlgen.model;
 
 public class Column {
     public String name;
-    public transient String nameQuoted;
+    public String nameQuoted;
     public String definition;
     public String comment;
     public ColumnType type;
