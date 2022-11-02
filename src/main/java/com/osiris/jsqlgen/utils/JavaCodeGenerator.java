@@ -49,6 +49,8 @@ public class JavaCodeGenerator {
                 "public class " + t.name + "{\n"); // Open class
         classContentBuilder.append("private static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
         classContentBuilder.append("static {\n" +
+                "try{\n" + // Without this additional try/catch that encapsulates the complete code inside static constructor
+                // we somehow get problems like class not found exception
                 "Connection con = Database.getCon();\n" +
                 "try{\n" +
                 "try (Statement s = con.createStatement()) {\n" +
@@ -69,6 +71,7 @@ public class JavaCodeGenerator {
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
                         "finally {Database.freeCon(con);}\n" +
+                                "}catch(Exception e){e.printStackTrace();}\n" +
                         "}\n\n");
 
         if(t.isCache)
