@@ -86,7 +86,7 @@ public class MainApplication extends javafx.application.Application {
     @Override
     public void start(Stage stage) throws IOException {
         this.stage = stage;
-        stage.setTitle("jSQL-Gen");
+        stage.setTitle("jSQL-Gen v"+Const.getVersion());
         if(Data.instance.window.isMaximized)
             stage.setMaximized(true);
         else{
@@ -484,8 +484,9 @@ public class MainApplication extends javafx.application.Application {
                     "                Class<?> driverClass = Class.forName(driverClassName);\n" +
                     "                Objects.requireNonNull(driverClass);\n" +
                     "            } catch (ClassNotFoundException ex) {\n" +
-                    "                System.err.println(\"Failed to find critical database driver class: \"+driverClassName);\n" +
                     "                ex.printStackTrace();\n" +
+                    "                System.err.println(\"Failed to find critical database driver class: \"+driverClassName+\" program will exit.\");\n" +
+                    "                System.exit(1);\n" +
                     "            }\n" +
                     "        }\n" +
                     "\n" +
@@ -494,7 +495,9 @@ public class MainApplication extends javafx.application.Application {
                     "            Statement s = c.createStatement();) {\n" +
                     "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
                     "        } catch (SQLException e) {\n" +
-                    "            throw new RuntimeException(e);\n" +
+                    "            e.printStackTrace();\n" +
+                    "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+                    "            System.exit(1);\n" +
                     "        }\n" +
                     "    }\n" +
                     "\n" +

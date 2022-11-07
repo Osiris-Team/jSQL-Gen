@@ -10,6 +10,7 @@ module com.osiris.jsqlgen {
     requires java.compiler;
     requires org.apache.commons.collections4;
     requires com.github.javaparser.core;
+    requires maven.model;
 
     opens com.osiris.jsqlgen to javafx.fxml;
     exports com.osiris.jsqlgen;

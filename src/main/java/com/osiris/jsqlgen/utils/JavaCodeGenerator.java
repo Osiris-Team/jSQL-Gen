@@ -71,7 +71,10 @@ public class JavaCodeGenerator {
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
                         "finally {Database.freeCon(con);}\n" +
-                                "}catch(Exception e){e.printStackTrace();}\n" +
+                                "}catch(Exception e){\n" +
+                                "e.printStackTrace();\n" +
+                                "System.err.println(\"Something went really wrong during table ("+t.name+") initialisation, thus the program will exit!\");" +
+                                "System.exit(1);}\n" +
                         "}\n\n");
 
         if(t.isCache)
