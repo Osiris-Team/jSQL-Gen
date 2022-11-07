@@ -23,7 +23,9 @@ import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.controlsfx.control.Notifications;
 
 import java.io.*;
@@ -86,7 +88,9 @@ public class MainApplication extends javafx.application.Application {
     @Override
     public void start(Stage stage) throws IOException {
         this.stage = stage;
-        stage.setTitle("jSQL-Gen v"+Const.getVersion());
+        stage.setOnCloseRequest(event -> {
+            System.exit(0);
+        });
         if(Data.instance.window.isMaximized)
             stage.setMaximized(true);
         else{
@@ -167,6 +171,13 @@ public class MainApplication extends javafx.application.Application {
                     e.printStackTrace();
                 }
             }).start();
+
+            try {
+                stage.setTitle("jSQL-Gen v"+Const.getVersion());
+            } catch (Exception e) {
+                e.printStackTrace();
+                stage.setTitle("jSQL-Gen");
+            }
 
             try {
                 choiceDatabase.setOnAction(event -> { // value changed event
