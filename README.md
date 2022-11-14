@@ -53,6 +53,7 @@ of the class represents one row.
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
+- 100% no boilerplate, thus fast development and prototyping possible.
 - Cached connection pool ensures optimal performance on small and huge databases.
 Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval 
