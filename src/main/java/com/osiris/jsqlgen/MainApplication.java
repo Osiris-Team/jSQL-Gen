@@ -32,6 +32,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainApplication extends javafx.application.Application {
     public static MyTeeOutputStream outErr;
@@ -690,9 +691,45 @@ public class MainApplication extends javafx.application.Application {
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
-        for (Column col : t.columns) {
+        for (int i = 0; i < t.columns.size(); i++) {
+            Column col = t.columns.get(i);
             HBox item = new HBox();
             listColumns.getChildren().add(item);
+            Button btnMoveUp = new Button("˄");
+            item.getChildren().add(btnMoveUp);
+            if (Objects.equals(col.name, "id")) btnMoveUp.setDisable(true);
+            AtomicInteger finalI = new AtomicInteger(i);
+            btnMoveUp.setOnMouseClicked(event -> {
+                try {
+                    int oldI = finalI.get();
+                    t.columns.remove(oldI);
+                    int newIndex = finalI.decrementAndGet();
+                    if(newIndex < 1) newIndex = 1; // 1 because id is always at index 0
+                    else if(newIndex > t.columns.size()) newIndex = t.columns.size();
+                    t.columns.add(newIndex, col);
+                    Data.save();
+                    updateColumnsList(listColumns, dbName, tableName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            Button btnMoveDown = new Button("˅");
+            item.getChildren().add(btnMoveDown);
+            if (Objects.equals(col.name, "id")) btnMoveDown.setDisable(true);
+            btnMoveDown.setOnMouseClicked(event -> {
+                try {
+                    int oldI = finalI.get();
+                    t.columns.remove(oldI);
+                    int newIndex = finalI.incrementAndGet();
+                    if(newIndex < 1) newIndex = 1; // 1 because id is always at index 0
+                    else if(newIndex > t.columns.size()) newIndex = t.columns.size();
+                    t.columns.add(newIndex, col);
+                    Data.save();
+                    updateColumnsList(listColumns, dbName, tableName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
             Button btnRemove = new Button("Delete");
             item.getChildren().add(btnRemove);
             if (Objects.equals(col.name, "id")) btnRemove.setDisable(true);
@@ -724,7 +761,6 @@ public class MainApplication extends javafx.application.Application {
 
 
             item.getChildren().add(colDefinition);
-            if (Objects.equals(col.name, "id")) colDefinition.setDisable(true);
             colDefinition.setPromptText("Column definition");
             colDefinition.setTooltip(new Tooltip("Column definition. Changes are auto-saved."));
             colDefinition.textProperty().addListener((o, oldVal, newVal) -> {
@@ -737,7 +773,6 @@ public class MainApplication extends javafx.application.Application {
 
 
             item.getChildren().add(colComment);
-            if (Objects.equals(col.name, "id")) colComment.setDisable(true);
             colComment.setPromptText("Column comment");
             colComment.setTooltip(new Tooltip("Column comment. Changes are auto-saved."));
             colComment.textProperty().addListener((o, oldVal, newVal) -> {

@@ -34,6 +34,7 @@ public class Data {
                 if (!file.exists()) {
                     file.getParentFile().mkdirs();
                     file.createNewFile();
+                    Files.writeString(file.toPath(), "{}");
                 }
                 instance = parser.fromJson(new BufferedReader(new FileReader(file)), DataJson.class);
                 for (Database db : instance.databases) {
