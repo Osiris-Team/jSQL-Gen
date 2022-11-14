@@ -53,6 +53,7 @@ of the class represents one row.
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
+- 100% no boilerplate, thus fast development and prototyping possible.
 - Cached connection pool ensures optimal performance on small and huge databases.
 Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval 
@@ -80,3 +81,5 @@ in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
 - When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory. 
 Lazy loading (https://github.com/Osiris-Team/jSQL-Gen/issues/10) not implemented yet.
+- Make sure that all NOT NULL fields are on the upper half of the fields and the rest below. The generated functions will make more sense and will
+be generally less error prone.
