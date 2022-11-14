@@ -253,6 +253,9 @@ public class JavaCodeGenerator {
                                 """ : "return list;\n")); // Close synchronized block if isCache
         classContentBuilder.append("}\n\n"); // Close get method
 
+        // CREATE GETLAZY METHODS:
+
+
         // CREATE COUNT METHOD:
         classContentBuilder.append("" +
                 "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
@@ -338,7 +341,7 @@ public class JavaCodeGenerator {
         classContentBuilder.append("}\n\n"); // Close add method
 
 
-        // CREATE DELETE METHOD:
+        // CREATE DELETE/REMOVE METHOD:
         classContentBuilder.append("" +
                 "/**\n" +
                 "Deletes the provided object from the database.\n" +
@@ -370,6 +373,15 @@ public class JavaCodeGenerator {
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close delete method
+
+        classContentBuilder.append("public static void removeAll() "+(t.isNoExceptions ? "" : "throws Exception")+" {\n" +
+                "        Connection con = Database.getCon();\n" +
+                "        try (PreparedStatement ps = con.prepareStatement(\n" +
+                "                \"DELETE FROM "+tNameQuoted+"\")) {\n" +
+                "            ps.executeUpdate();\n" +
+                (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
+                "        finally{Database.freeCon(con);}\n" +
+                "    }");
 
         // CREATE CLONE METHOD
         classContentBuilder.append("public " + t.name + " clone(){\n" +

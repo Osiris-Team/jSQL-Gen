@@ -5,7 +5,7 @@ public class Column {
     public String nameQuoted;
     public String definition;
     public String comment;
-    public ColumnType type;
+    public transient ColumnType type;
 
     public Column(String name) {
         updateName(name);
