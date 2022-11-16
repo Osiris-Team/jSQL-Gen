@@ -23,7 +23,7 @@ I want to have a table named Person with the fields id, name and age. So I creat
 the generated code into my project. Then I can do the following:
 ```java
 // The first time you use Person, the database, Person table 
-// and its (missing) columns will be created if needed.
+// and its columns (and missing columns) will be created if needed.
 
 // Inserting rows:
 Person john = Person.create("John", 34); // id gets automatically set and incremented
