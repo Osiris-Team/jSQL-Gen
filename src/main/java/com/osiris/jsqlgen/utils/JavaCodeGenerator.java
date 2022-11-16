@@ -27,10 +27,14 @@ public class JavaCodeGenerator {
         boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
 
         List<String> importsList = new ArrayList<>();
+        importsList.add("import java.sql.Connection;");
+        importsList.add("import java.sql.PreparedStatement;");
+        importsList.add("import java.sql.ResultSet;");
+        importsList.add("import java.sql.Statement;");
+
         importsList.add("import java.util.List;");
         importsList.add("import java.util.ArrayList;");
-        importsList.add("import java.sql.*;");
-        importsList.add("import java.util.Arrays;");
+        importsList.add("import java.util.function.Consumer;");
 
         StringBuilder classContentBuilder = new StringBuilder();
         classContentBuilder.append("/**\n" +
@@ -254,6 +258,56 @@ public class JavaCodeGenerator {
         classContentBuilder.append("}\n\n"); // Close get method
 
         // CREATE GETLAZY METHODS:
+        classContentBuilder.append("    /**\n" +
+                "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
+                "     */\n" +
+                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "        getLazy(onResultReceived, null, 500, null);\n" +
+                "    }\n" +
+                "    /**\n" +
+                "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
+                "     */\n" +
+                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, int limit)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "        getLazy(onResultReceived, null, limit, null);\n" +
+                "    }\n" +
+                "    /**\n" +
+                "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
+                "     */\n" +
+                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, Consumer<Long> onFinish)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "        getLazy(onResultReceived, onFinish, 500, null);\n" +
+                "    }\n" +
+                "    /**\n" +
+                "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
+                "     */\n" +
+                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, Consumer<Long> onFinish, int limit)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "        getLazy(onResultReceived, onFinish, limit, null);\n" +
+                "    }\n" +
+                "    /**\n" +
+                "     * Loads results lazily in a new thread. <br>\n" +
+                "     * Add {@link Thread#sleep(long)} at the end of your onResultReceived code, to sleep between fetches.\n" +
+                "     * @param onResultReceived can NOT be null. Gets executed until there are no results left, thus the results list is never empty.\n" +
+                "     * @param onFinish can be null. Gets executed when finished receiving all results. Provides the total amount of received elements as parameter.\n" +
+                "     * @param limit the maximum amount of elements for each fetch.\n" +
+                "     * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.\n" +
+                "     */\n" +
+                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) "+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "        new Thread(() -> {\n" +
+                "            WHERE finalWhere;\n" +
+                "            if(where == null) finalWhere = new WHERE(\"\");\n" +
+                "            else finalWhere = where;\n" +
+                "            List<"+t.name+"> results;\n" +
+                "            int lastId = -1;\n" +
+                "            long count = 0;\n" +
+                "            while(true){\n" +
+                "                results = whereId().biggerThan(lastId).and(finalWhere).limit(limit).get();\n" +
+                "                if(results.isEmpty()) break;\n" +
+                "                lastId = results.get(results.size() - 1).id;\n" +
+                "                count += results.size();\n" +
+                "                onResultReceived.accept(results);\n" +
+                "            }\n" +
+                "            if(onFinish!=null) onFinish.accept(count);\n" +
+                "        }).start();\n" +
+                "    }\n\n");
 
 
         // CREATE COUNT METHOD:
@@ -381,7 +435,7 @@ public class JavaCodeGenerator {
                 "            ps.executeUpdate();\n" +
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                 "        finally{Database.freeCon(con);}\n" +
-                "    }");
+                "    }\n\n");
 
         // CREATE CLONE METHOD
         classContentBuilder.append("public " + t.name + " clone(){\n" +
