@@ -35,8 +35,14 @@ john.age = 36;
 Person.update(john);
 
 // Getting rows:
-List<Person> allPersons = Person.get(); // Gets all rows.
-List<Person> list = Person.whereName().is("John").get(); // Gets all rows where the name equals "John"
+List<Person> all = Person.get(); // Gets all rows.
+List<Person> allNamedJohn = Person.whereName().is("John").get(); // Gets all rows where the name equals "John"
+// Lazily get rows:
+MinecraftPlugin.getLazy(results -> { // List with 1000 persons
+  // Executed once every 1000 persons until 
+}, totalCount -> {
+  // Executed when finished
+}, 1000); // Limit for each request 
 
 // Deleting rows:
 Person.remove(john);
