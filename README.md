@@ -39,7 +39,7 @@ List<Person> all = Person.get(); // Gets all rows.
 List<Person> allNamedJohn = Person.whereName().is("John").get(); // Gets all rows where the name equals "John"
 // Lazily get rows:
 MinecraftPlugin.getLazy(results -> { // List with 1000 persons
-  // Executed once every 1000 persons until 
+  // Executed once every 1000 persons until all data is retrieved
 }, totalCount -> {
   // Executed when finished
 }, 1000); // Limit for each request 
