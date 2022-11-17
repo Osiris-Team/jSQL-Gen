@@ -60,7 +60,7 @@ of the class represents one row.
 
 ### ⚡️ 0% boilerplate, fast development and prototyping
 ### ⚡️ Simple UI to create and modify databases
-### ⚡️ Various utility methods like lazy loading of results
+### ⚡️ Various utility methods, like fetching results lazily
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
