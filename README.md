@@ -58,9 +58,13 @@ of the class represents one row.
 
 ## Features
 
+### ⚡️ 0% boilerplate, fast development and prototyping
+### ⚡️ Simple UI to create and modify databases
+### ⚡️ Various utility methods like lazy loading of results
+
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
-- 100% no boilerplate, thus fast development and prototyping possible.
+- 0% boilerplate, thus fast development and prototyping possible.
 - Cached connection pool ensures optimal performance on small and huge databases.
 Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval 
