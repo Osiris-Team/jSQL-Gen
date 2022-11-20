@@ -23,7 +23,7 @@ I want to have a table named Person with the fields id, name and age. So I creat
 the generated code into my project. Then I can do the following:
 ```java
 // The first time you use Person, the database, Person table 
-// and its (missing) columns will be created if needed.
+// and its columns (and missing columns) will be created if needed.
 
 // Inserting rows:
 Person john = Person.create("John", 34); // id gets automatically set and incremented
@@ -35,8 +35,15 @@ john.age = 36;
 Person.update(john);
 
 // Getting rows:
-List<Person> allPersons = Person.get(); // Gets all rows.
-List<Person> list = Person.whereName().is("John").get(); // Gets all rows where the name equals "John"
+List<Person> all = Person.get(); // Gets all rows.
+List<Person> allNamedJohn = Person.whereName().is("John").get(); // Gets all rows where the name equals "John"
+List<Person> allNamedJohn2 = Person.get("name=?", "John"); // Sames as above, but with regular SQL
+// Lazily get rows:
+Person.getLazy(results -> { // List with 1000 persons
+  // Executed once every 1000 persons until all data is retrieved
+}, totalCount -> {
+  // Executed when finished
+}, 1000); // Limit for each request 
 
 // Deleting rows:
 Person.remove(john);
@@ -51,9 +58,13 @@ of the class represents one row.
 
 ## Features
 
+### ⚡️ 0% boilerplate, fast development and prototyping
+### ⚡️ Simple UI to create and modify databases
+### ⚡️ Various utility methods, like fetching results lazily
+
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
-- 100% no boilerplate, thus fast development and prototyping possible.
+- 0% boilerplate, thus fast development and prototyping possible.
 - Cached connection pool ensures optimal performance on small and huge databases.
 Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval 
