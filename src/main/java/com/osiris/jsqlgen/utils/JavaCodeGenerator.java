@@ -51,6 +51,22 @@ public class JavaCodeGenerator {
                         " request before. <br>\n": "") +
                 "*/\n" +
                 "public class " + t.name + "{\n"); // Open class
+        if(t.isDebug)
+            classContentBuilder.append("    /**\n" +
+                    "     * Only works correctly if the package name is com.osiris.jsqlgen.\n" +
+                    "     */\n" +
+                    "    private static String minimalStackString(){\n" +
+                    "        StackTraceElement[] stack = new Exception().getStackTrace();\n" +
+                    "        String s = \"\";\n" +
+                    "        for (int i = stack.length - 1; i >= 1; i--) {\n" +
+                    "            StackTraceElement el = stack[i];\n" +
+                    "            if(el.getClassName().startsWith(\"java.\") || " +
+                    "            el.getClassName().startsWith(\"com.osiris.jsqlgen\")) continue;\n" +
+                    "            s = el.toString();\n" +
+                    "            break;\n" +
+                    "        }\n" +
+                    "        return s +\"...\"+ stack[1].toString(); //stack[0] == current method, gets ignored\n" +
+                    "    }\n");
         classContentBuilder.append("private static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
         classContentBuilder.append("static {\n" +
                 "try{\n" + // Without this additional try/catch that encapsulates the complete code inside static constructor
@@ -214,7 +230,7 @@ public class JavaCodeGenerator {
                 "/**\n" +
                 "Example: <br>\n" +
                 "get(\"username=? AND age=?\", \"Peter\", 33);  <br>\n" +
-                "@param where can be null. Your SQL WHERE statement (without the leading WHERE).\n" +
+                "@param where can be null. Your SQL WHERE statement (with the leading WHERE).\n" +
                 "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "@return a list containing only objects that match the provided SQL WHERE statement (no matches = empty list).\n" +
                 "if that statement is null, returns all the contents of this table.\n" +
@@ -228,8 +244,8 @@ public class JavaCodeGenerator {
         classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
         classContentBuilder.append("\" +\n" +
                         "\" FROM " + tNameQuoted + "\" +\n" +
-                        "(where != null ? (\"WHERE \"+where) : \"\");\n"+
-                (t.isDebug ? "System.err.println(\"get: \"+where);\n" : "") +
+                        "(where != null ? where : \"\");\n"+
+                (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
                 (t.isCache ? "synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);\n" +
                         "if(cachedResult != null) return cachedResult.results;\n" : "") +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
@@ -313,11 +329,11 @@ public class JavaCodeGenerator {
         // CREATE COUNT METHOD:
         classContentBuilder.append("" +
                 "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                (t.isDebug ? "System.err.println(\"count: \"+where);\n" : "") +
+                "String sql = \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
+                "(where != null ? where : \"\"); \n" +
+                (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
                 "Connection con = Database.getCon();\n"+
-                "try (PreparedStatement ps = con.prepareStatement(\n" +
-                "                \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
-                "(where != null ? (\"WHERE \"+where) : \"\"))) {\n" + // Open try/catch
+                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" + // Open try/catch
                 "if(where!=null && whereValues!=null)\n" +
                 "for (int i = 0; i < whereValues.length; i++) {\n" +
                 "Object val = whereValues[i];\n" +
@@ -407,14 +423,15 @@ public class JavaCodeGenerator {
                 "Example: <br>\n" +
                 "remove(\"username=?\", \"Peter\"); <br>\n" +
                 "Deletes the objects that are found by the provided SQL WHERE statement, from the database.\n" +
+                "@param where can NOT be null.\n" +
                 "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "*/\n" +
                 "public static void remove(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                (t.isDebug ? "System.err.println(\"remove: \"+where);\n" : "") +
                 "java.util.Objects.requireNonNull(where);\n" +
+                "String sql = \"DELETE FROM " + tNameQuoted + " \"+where;\n" +
+                (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
                 "Connection con = Database.getCon();\n" +
-                "try (PreparedStatement ps = con.prepareStatement(\n" +
-                "                \"DELETE FROM " + tNameQuoted + " WHERE \"+where)) {\n");// Open try/catch
+                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n");// Open try/catch
         classContentBuilder.append(
                 "if(whereValues != null)\n" +
                         "                for (int i = 0; i < whereValues.length; i++) {\n" +
@@ -661,12 +678,14 @@ public class JavaCodeGenerator {
                 "         * and returns a list of objects matching the query.\n" +
                 "         */\n" +
                 "        public List<" + table.name + "> get() " + (table.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "            String where = sqlBuilder.toString();\n" +
+                "            if(!where.isEmpty()) where = \" WHERE \" + where;\n" +
                 "            String orderBy = orderByBuilder.toString();\n" +
                 "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                return " + table.name + ".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "                return " + table.name + ".get(where+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return " + table.name + ".get(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                return " + table.name + ".get(where+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
@@ -674,12 +693,14 @@ public class JavaCodeGenerator {
                 "         * and returns the size of the list of objects matching the query.\n" +
                 "         */\n" +
                 "        public int count() " + (table.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "            String where = sqlBuilder.toString();\n" +
+                "            if(!where.isEmpty()) where = \" WHERE \" + where;\n" +
                 "            String orderBy = orderByBuilder.toString();\n" +
                 "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                return " + table.name + ".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "                return " + table.name + ".count(where+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return " + table.name + ".count(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                return " + table.name + ".count(where+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
@@ -687,12 +708,14 @@ public class JavaCodeGenerator {
                 "         * and removes the objects matching the query.\n" +
                 "         */\n" +
                 "        public void remove() " + (table.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "            String where = sqlBuilder.toString();\n" +
+                "            if(!where.isEmpty()) where = \" WHERE \" + where;\n" +
                 "            String orderBy = orderByBuilder.toString();\n" +
                 "            if(!orderBy.isEmpty()) orderBy = \" ORDER BY \"+orderBy.substring(0, orderBy.length()-2)+\" \";\n" +
                 "            if(!whereObjects.isEmpty())\n" +
-                "                " + table.name + ".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
+                "                " + table.name + ".remove(where+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                " + table.name + ".remove(sqlBuilder.toString()+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                " + table.name + ".remove(where+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
