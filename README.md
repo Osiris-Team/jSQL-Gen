@@ -14,7 +14,9 @@ it possible to use SQL databases without writing one line of SQL.
 <sub>
 *Select a project directory to directly generate the code in there.
 **Instead of inserting raw, readable crendentials you can provide functions that fetch
-those from a file.
+those from a file. 
+***Its expected that you have a database specific SQL driver in your projects like
+<a href="https://github.com/mysql/mysql-connector-j">mysql-connector-j</a> for example.
 </sub>
 </p>
 
@@ -37,7 +39,7 @@ Person.update(john);
 // Getting rows:
 List<Person> all = Person.get(); // Gets all rows.
 List<Person> allNamedJohn = Person.whereName().is("John").get(); // Gets all rows where the name equals "John"
-List<Person> allNamedJohn2 = Person.get("name=?", "John"); // Sames as above, but with regular SQL
+List<Person> allNamedJohn2 = Person.get("WHERE name=?", "John"); // Sames as above, but with regular SQL
 // Lazily get rows:
 Person.getLazy(results -> { // List with 1000 persons
   // Executed once every 1000 persons until all data is retrieved
