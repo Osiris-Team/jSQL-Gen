@@ -18,8 +18,8 @@ public class Table {
     public Table duplicate() {
         Table t = new Table();
         t.name = "COPY-"+name;
-        for (Column column : columns) {
-            t.columns.add(column.duplicate());
+        for (int i = 1; i < columns.size(); i++) { // Start at 1 to skip id column
+            t.columns.add(columns.get(i).duplicate());
         }
         t.isDebug = isDebug;
         t.isNoExceptions = isNoExceptions;

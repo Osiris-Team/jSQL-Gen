@@ -222,14 +222,14 @@ public class JavaCodeGenerator {
                 "*/\n" +
                 "public static " + t.name + " get(int id) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "try{\n" +
-                "return get(\"id = \"+id).get(0);\n" +
+                "return get(\"WHERE id = \"+id).get(0);\n" +
                 "}catch(IndexOutOfBoundsException ignored){}\n" +
                 (t.isNoExceptions ? "catch(Exception e){throw new RuntimeException(e);}\n" : "") + // Close try/catch
                 "return null;\n" + // Close tr
                 "}\n" +
                 "/**\n" +
                 "Example: <br>\n" +
-                "get(\"username=? AND age=?\", \"Peter\", 33);  <br>\n" +
+                "get(\"WHERE username=? AND age=?\", \"Peter\", 33);  <br>\n" +
                 "@param where can be null. Your SQL WHERE statement (with the leading WHERE).\n" +
                 "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
                 "@return a list containing only objects that match the provided SQL WHERE statement (no matches = empty list).\n" +
@@ -417,11 +417,11 @@ public class JavaCodeGenerator {
                 "Deletes the provided object from the database.\n" +
                 "*/\n" +
                 "public static void remove(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                "remove(\"id = \"+obj.id);\n" +
+                "remove(\"WHERE id = \"+obj.id);\n" +
                 "}\n" +
                 "/**\n" +
                 "Example: <br>\n" +
-                "remove(\"username=?\", \"Peter\"); <br>\n" +
+                "remove(\"WHERE username=?\", \"Peter\"); <br>\n" +
                 "Deletes the objects that are found by the provided SQL WHERE statement, from the database.\n" +
                 "@param where can NOT be null.\n" +
                 "@param whereValues can be null. Your SQL WHERE statement values to set for '?'.\n" +
