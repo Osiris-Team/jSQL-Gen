@@ -1,8 +1,9 @@
-package com.osiris.jsqlgen.utils;
+package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.utils.UString;
 
 import java.io.File;
 import java.nio.file.Files;

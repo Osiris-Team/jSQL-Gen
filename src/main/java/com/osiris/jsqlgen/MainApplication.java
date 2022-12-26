@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
@@ -23,9 +24,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import javafx.util.Duration;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.controlsfx.control.Notifications;
 
 import java.io.*;
@@ -65,7 +64,7 @@ public class MainApplication extends javafx.application.Application {
     private Stage stage;
     private final TabPane lyRoot = new TabPane();
     // Home panel
-    private final MyScroll lyHome = new MyScroll(new VBox());
+    private final MyScroll lyHome = new MyScroll();
     private final TextField dbName = new TextField();
     private final Button btnCreateDatabase = new Button("Create");
     private final Button btnDeleteDatabase = new Button("Delete");
@@ -89,6 +88,10 @@ public class MainApplication extends javafx.application.Application {
     @Override
     public void start(Stage stage) throws IOException {
         this.stage = stage;
+        Scene scene = new Scene(lyRoot);
+        stage.setScene(scene);
+        stage.show(); // RootPane has full window width and height
+
         stage.setOnCloseRequest(event -> {
             System.exit(0);
         });
@@ -99,14 +102,9 @@ public class MainApplication extends javafx.application.Application {
             stage.setY(Data.instance.window.y);
             stage.setWidth(Data.instance.window.width);
             stage.setHeight(Data.instance.window.height);
-            stage.setMaxWidth(Data.instance.window.width);
-            stage.setMinHeight(Data.instance.window.height);
         }
         lyRoot.getTabs().add(new MyTab("Home", lyHome).closable(false));
         lyRoot.getTabs().add(new MyTab("Database", lyDatabase).closable(false));
-        Scene scene = new Scene(lyRoot, stage.getMaxWidth(), stage.getMaxHeight());
-        stage.setScene(scene);
-        stage.show(); // RootPane has full window width and height
 
         Platform.runLater(() -> {
             List<String> newLines = new ArrayList<>();
@@ -425,9 +423,13 @@ public class MainApplication extends javafx.application.Application {
                 dir = new File(db.javaProjectDir + "/src/main/java/com/osiris/jsqlgen/" + db.name);
             dir.mkdirs();
             if (db.javaProjectDir != null) {
-                File jsonData = new File(dir.getParentFile() + "/data.json");
+                File jsonData = new File(dir.getParentFile() + "/"+db.name+"_structure.json");
                 jsonData.createNewFile();
-                Files.copy(Data.file.toPath(), jsonData.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
+                Data.parser.toJson(db, sw);
+                String out = sw.toString();
+                //System.out.println(out);
+                Files.writeString(jsonData.toPath(), out);
             }
             File databaseFile = new File(dir + "/Database.java");
             String rawUrl = "\"jdbc:mysql://localhost/\"";

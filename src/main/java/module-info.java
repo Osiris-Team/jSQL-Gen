@@ -19,4 +19,6 @@ module com.osiris.jsqlgen {
     opens com.osiris.jsqlgen.model to javafx.fxml;
     exports com.osiris.jsqlgen.utils;
     opens com.osiris.jsqlgen.utils to javafx.fxml;
+    exports com.osiris.jsqlgen.generator;
+    opens com.osiris.jsqlgen.generator to javafx.fxml;
 }
