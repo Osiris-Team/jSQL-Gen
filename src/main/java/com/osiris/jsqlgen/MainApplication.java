@@ -305,8 +305,24 @@ public class MainApplication extends javafx.application.Application {
                 Database database = Data.getDatabase(choiceDatabase.getValue());
                 if (database == null)
                     throw new Exception("Failed to find database '" + choiceDatabase.getValue() + "', make sure you created and selected one before.");
-                if (database.javaProjectDir != null)
-                    chooserJavaProjectDir.setInitialDirectory(database.javaProjectDir);
+                File projectDir = database.javaProjectDir;
+                while(projectDir != null){
+                    if(!projectDir.exists()){
+                        projectDir = projectDir.getParentFile();
+                        continue;
+                    }
+                    try{
+                        chooserJavaProjectDir.setInitialDirectory(projectDir);
+                        break;
+                    } catch (Exception ignored) {
+                    }
+                }
+                if(projectDir != database.javaProjectDir){
+                    database.javaProjectDir = projectDir;
+                    Data.save();
+                    System.out.println("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
+                }
+
                 Platform.runLater(() -> {
                     File selectedFile = chooserJavaProjectDir.showDialog(stage);
                     if (selectedFile != null) {
