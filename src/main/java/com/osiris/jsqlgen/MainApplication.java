@@ -29,7 +29,6 @@ import org.controlsfx.control.Notifications;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -474,97 +473,14 @@ public class MainApplication extends javafx.application.Application {
                 }
             }
             databaseFile.createNewFile();
-            Files.writeString(databaseFile.toPath(), "" +
-                    (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                    "import java.sql.Connection;\n" +
-                    "import java.sql.DriverManager;\n" +
-                    "import java.sql.SQLException;\n" +
-                    "import java.sql.Statement;\n" +
-                    "import java.util.Objects;\n" +
-                    "import java.util.ArrayList;\n" +
-                    "import java.util.List;\n\n" +
-                    "/*\n" +
-                    "Auto-generated class that is used by all table classes to create connections. <br>\n" +
-                    "It holds the database credentials (set by you at first run of jSQL-Gen).<br>\n" +
-                    "Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class. <br>\n" +
-                    "All tables use the cached connection pool in this class which has following advantages: <br>\n" +
-                    "- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.\n" +
-                    "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors)."+
-                    "*/\n" +
-                    "public class Database{\n" +
-                    "public static String rawUrl = " + rawUrl + ";\n" +
-                    "public static String url = " + url + ";\n" +
-                    "public static String name = \"" + db.name + "\";\n" +
-                    "public static String username = " + username + ";\n" +
-                    "public static String password = " + password + ";\n" +
-                    "private static final List<Connection> availableConnections = new ArrayList<>();\n" +
-                    "\n" +
-                    "    static{create();} // Create database if not exists\n" +
-                    "\n" +
-                    "public static void create() {\n" +
-                    "\n" +
-                    "        // Do the below to avoid \"No suitable driver found...\" exception \n" +
-                    "        String driverClassName = \"com.mysql.cj.jdbc.Driver\";\n" +
-                    "        try {\n" +
-                    "            Class<?> driverClass = Class.forName(driverClassName);\n" +
-                    "            Objects.requireNonNull(driverClass);\n" +
-                    "        } catch (ClassNotFoundException e) {\n" +
-                    "            try {\n" +
-                    "                driverClassName = \"com.mysql.jdbc.Driver\"; // Try deprecated driver as fallback\n" +
-                    "                Class<?> driverClass = Class.forName(driverClassName);\n" +
-                    "                Objects.requireNonNull(driverClass);\n" +
-                    "            } catch (ClassNotFoundException ex) {\n" +
-                    "                ex.printStackTrace();\n" +
-                    "                System.err.println(\"Failed to find critical database driver class: \"+driverClassName+\" program will exit.\");\n" +
-                    "                System.exit(1);\n" +
-                    "            }\n" +
-                    "        }\n" +
-                    "\n" +
-                    "        // Create database if not exists\n" +
-                    "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
-                    "            Statement s = c.createStatement();) {\n" +
-                    "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
-                    "        } catch (SQLException e) {\n" +
-                    "            e.printStackTrace();\n" +
-                    "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
-                    "            System.exit(1);\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    public static Connection getCon() {\n" +
-                    "        synchronized (availableConnections){\n" +
-                    "            try{\n" +
-                    "                if (!availableConnections.isEmpty()) {\n" +
-                    "                    List<Connection> removableConnections = new ArrayList<>(0);\n" +
-                    "                    for (Connection con : availableConnections) {\n" +
-                    "                        if (con.isValid(1)) return con;\n" +
-                    "                        else removableConnections.add(con);\n" +
-                    "                    }\n" +
-                    "                    for (Connection removableConnection : removableConnections) {\n" +
-                    "                        removableConnection.close();\n" +
-                    "                        availableConnections.remove(removableConnection); // Remove invalid connections\n" +
-                    "                    }\n" +
-                    "                }\n" +
-                    "                return DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
-                    "            } catch (Exception e) {\n" +
-                    "                throw new RuntimeException(e);\n" +
-                    "            }\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    public static void freeCon(Connection connection) {\n" +
-                    "        synchronized (availableConnections){\n" +
-                    "            availableConnections.add(connection);\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "}\n");
+            JavaCodeGenerator.generateDatabaseFile(db, databaseFile, rawUrl, url, username, password);
             files.add(databaseFile);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");
                 javaFile.createNewFile();
                 files.add(javaFile);
                 Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                        JavaCodeGenerator.generate(javaFile, t));
+                        JavaCodeGenerator.generateTableFile(javaFile, t));
             }
         }
         return files;

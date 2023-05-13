@@ -16,6 +16,11 @@ public class Column {
         this.nameQuoted = "`" + newName + "`";
     }
 
+    public Column definition(String s){
+        definition = s;
+        return this;
+    }
+
     public Column duplicate() {
         Column col = new Column(name);
         col.definition = definition;

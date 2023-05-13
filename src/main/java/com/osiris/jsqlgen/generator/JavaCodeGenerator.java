@@ -2,10 +2,12 @@ package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
+import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.UString;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +17,7 @@ public class JavaCodeGenerator {
     /**
      * Generates Java source code, for the provided table.
      */
-    public static String generate(File oldGeneratedClass, Table t) throws Exception {
+    public static String generateTableFile(File oldGeneratedClass, Table t) throws Exception {
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         for (Column col : t.columns) {
             col.type = ColumnType.findBySQLDefinition(col.definition);
@@ -36,6 +38,8 @@ public class JavaCodeGenerator {
         importsList.add("import java.util.List;");
         importsList.add("import java.util.ArrayList;");
         importsList.add("import java.util.function.Consumer;");
+        if(t.isCache)
+            importsList.add("import java.util.Arrays;");
 
         StringBuilder classContentBuilder = new StringBuilder();
         classContentBuilder.append("/**\n" +
@@ -48,8 +52,12 @@ public class JavaCodeGenerator {
                 (t.isDebug ? "DEBUG is enabled, thus debug information will be printed out to System.err. <br>\n": "") +
                 (t.isNoExceptions ? "NO EXCEPTIONS is enabled which makes it possible to use this methods outside of try/catch" +
                         " blocks because SQL errors will be caught and thrown as runtime exceptions instead. <br>\n": "") +
-                (t.isCache ? "CACHE is enabled, note that now the results of get() are not thread safe anymore, because it could be the same list from the" +
-                        " request before. <br>\n": "") +
+                (t.isCache ? """
+                        CACHE is enabled, which means that results of get() are saved in memory <br>
+                        and returned the next time the same request is made. <br>
+                        The returned list is a deep copy, thus you can modify the list and its elements fields in your thread safely. <br>
+                        The cache gets cleared/invalidated at any update/insert/delete. <br>
+                        """ : "") +
                 "*/\n" +
                 "public class " + t.name + "{\n"); // Open class
         if(t.isDebug)
@@ -108,6 +116,15 @@ public class JavaCodeGenerator {
                     "            this.sql = sql;\n" +
                     "            this.whereValues = whereValues;\n" +
                     "            this.results = results;\n" +
+                    "        }\n" +
+                    "        public List<"+t.name+"> getResultsCopy(){\n" +
+                    "            synchronized (results){\n" +
+                    "                List<"+t.name+"> list = new ArrayList<>(results.size());\n" +
+                    "                for ("+t.name+" obj : results) {\n" +
+                    "                    list.add(obj.clone());\n" +
+                    "                }\n" +
+                    "                return list;\n" +
+                    "            }\n" +
                     "        }\n" +
                     "    }\n" +
                     "    private static CachedResult cacheContains(String sql, Object[] whereValues){\n" +
@@ -248,7 +265,7 @@ public class JavaCodeGenerator {
                         "(where != null ? where : \"\");\n"+
                 (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
                 (t.isCache ? "synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);\n" +
-                        "if(cachedResult != null) return cachedResult.results;\n" : "") +
+                        "if(cachedResult != null) return cachedResult.getResultsCopy();\n" : "") +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
                 "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" + // Open try/catch
                         "if(where!=null && whereValues!=null)\n" +
@@ -894,6 +911,95 @@ public class JavaCodeGenerator {
                 "        }\n" +
                 "\n" +
                 "    }\n";
+    }
+
+    public static void generateDatabaseFile(Database db, File databaseFile, String rawUrl, String url, String username, String password) throws IOException {
+        databaseFile.getParentFile().mkdirs();
+        databaseFile.createNewFile();
+        Files.writeString(databaseFile.toPath(), "" +
+                (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+                "import java.sql.Connection;\n" +
+                "import java.sql.DriverManager;\n" +
+                "import java.sql.SQLException;\n" +
+                "import java.sql.Statement;\n" +
+                "import java.util.Objects;\n" +
+                "import java.util.ArrayList;\n" +
+                "import java.util.List;\n\n" +
+                "/*\n" +
+                "Auto-generated class that is used by all table classes to create connections. <br>\n" +
+                "It holds the database credentials (set by you at first run of jSQL-Gen).<br>\n" +
+                "Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class. <br>\n" +
+                "All tables use the cached connection pool in this class which has following advantages: <br>\n" +
+                "- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.\n" +
+                "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors)."+
+                "*/\n" +
+                "public class Database{\n" +
+                "public static String rawUrl = " + rawUrl + ";\n" +
+                "public static String url = " + url + ";\n" +
+                "public static String name = \"" + db.name + "\";\n" +
+                "public static String username = " + username + ";\n" +
+                "public static String password = " + password + ";\n" +
+                "private static final List<Connection> availableConnections = new ArrayList<>();\n" +
+                "\n" +
+                "    static{create();} // Create database if not exists\n" +
+                "\n" +
+                "public static void create() {\n" +
+                "\n" +
+                "        // Do the below to avoid \"No suitable driver found...\" exception \n" +
+                "        String driverClassName = \"com.mysql.cj.jdbc.Driver\";\n" +
+                "        try {\n" +
+                "            Class<?> driverClass = Class.forName(driverClassName);\n" +
+                "            Objects.requireNonNull(driverClass);\n" +
+                "        } catch (ClassNotFoundException e) {\n" +
+                "            try {\n" +
+                "                driverClassName = \"com.mysql.jdbc.Driver\"; // Try deprecated driver as fallback\n" +
+                "                Class<?> driverClass = Class.forName(driverClassName);\n" +
+                "                Objects.requireNonNull(driverClass);\n" +
+                "            } catch (ClassNotFoundException ex) {\n" +
+                "                ex.printStackTrace();\n" +
+                "                System.err.println(\"Failed to find critical database driver class: \"+driverClassName+\" program will exit.\");\n" +
+                "                System.exit(1);\n" +
+                "            }\n" +
+                "        }\n" +
+                "\n" +
+                "        // Create database if not exists\n" +
+                "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
+                "            Statement s = c.createStatement();) {\n" +
+                "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
+                "        } catch (SQLException e) {\n" +
+                "            e.printStackTrace();\n" +
+                "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+                "            System.exit(1);\n" +
+                "        }\n" +
+                "    }\n" +
+                "\n" +
+                "    public static Connection getCon() {\n" +
+                "        synchronized (availableConnections){\n" +
+                "            try{\n" +
+                "                if (!availableConnections.isEmpty()) {\n" +
+                "                    List<Connection> removableConnections = new ArrayList<>(0);\n" +
+                "                    for (Connection con : availableConnections) {\n" +
+                "                        if (con.isValid(1)) return con;\n" +
+                "                        else removableConnections.add(con);\n" +
+                "                    }\n" +
+                "                    for (Connection removableConnection : removableConnections) {\n" +
+                "                        removableConnection.close();\n" +
+                "                        availableConnections.remove(removableConnection); // Remove invalid connections\n" +
+                "                    }\n" +
+                "                }\n" +
+                "                return DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
+                "            } catch (Exception e) {\n" +
+                "                throw new RuntimeException(e);\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "\n" +
+                "    public static void freeCon(Connection connection) {\n" +
+                "        synchronized (availableConnections){\n" +
+                "            availableConnections.add(connection);\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n");
     }
 
     public static class Constructor {
