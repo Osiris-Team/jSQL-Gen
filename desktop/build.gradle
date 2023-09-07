@@ -1,0 +1,111 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    maven {url 'https://jitpack.io'}
+    maven{url 'https://oss.sonatype.org/content/repositories/snapshots'}
+  }
+  dependencies {
+    classpath 'com.github.johnrengelman:shadow:8.1.1'
+    classpath 'io.github.fvarrui:javapackager:1.7.3-20230525.235840-4'
+  }
+}
+
+plugins {
+  id 'com.github.johnrengelman.shadow' version '8.1.1'
+  id 'java'
+  id 'maven-publish'
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'io.github.fvarrui.javapackager.plugin'
+
+repositories {
+  mavenCentral()
+  maven { url 'https://jitpack.io' }
+}
+
+sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
+//mainClassName = 'com.author.desktop.Main'
+eclipse.project.name = appName + '-desktop'
+sourceCompatibility = 1.8
+
+dependencies {
+  implementation project(':core')
+}
+
+import io.github.fvarrui.javapackager.gradle.PackageTask;
+import io.github.fvarrui.javapackager.model.*;
+
+group = 'com.author.desktop'
+version = '1.0.0'
+description = 'Desku example app.'
+sourceCompatibility = '1.17' // Desku is compatible with 1.8 or higher
+compileJava.options.encoding = 'UTF-8'
+
+javapackager {
+  mainClass = 'com.author.desktop.Main'
+  additionalResources = [ file('src/main/resources/info.txt') ]
+  customizedJre = true
+  generateInstaller = true
+  vmArgs = ["-Djava.library.path=."]
+  administratorRequired = false
+}
+jar {
+  manifest {
+    attributes 'Main-Class': 'com.author.desktop.Main'
+  }
+}
+// Output to build/libs/<project-name>.jar
+shadowJar {
+  archiveBaseName.set(rootProject.name)
+  archiveClassifier.set('')
+  archiveVersion.set('')
+}
+
+task packageForWindows(type: PackageTask, dependsOn: build) {
+  description = 'Packages the application as a native Windows executable and bundles it in a zipball'
+  platform = 'windows'
+  createZipball = true
+  winConfig {
+    vmArgs = ["-Dprism.maxvram=512m -XX:+UseG1GC"]
+    generateSetup = true
+    generateMsi = true
+    icoFile = file("windows/HelloWorldGradle.ico")
+    setupMode = SetupMode.askTheUser
+    removeOldLibs = true
+    disableDirPage = false
+    disableFinishedPage = false
+    disableWelcomePage = false
+    createDesktopIconTask = false
+  }
+}
+
+task packageForLinux(type: PackageTask, dependsOn: build) {
+  description = 'Packages the application as a native GNU/Linux executable and bundles it in a tarball'
+  platform = 'linux'
+  bundleJre = true
+  createTarball = true
+  scripts {
+    bootstrap = file('assets/bootstrap.sh')
+  }
+}
+
+task packageForMac(type: PackageTask, dependsOn: build) {
+  description = 'Packages the application as a native Mac OS app and bundles it in a tarball'
+  platform = 'mac'
+  createTarball = true
+  scripts {
+    bootstrap = file('assets/bootstrap.sh')
+  }
+  macConfig {
+    infoPlist.additionalEntries = '''
+			<key>LSUIElement</key>
+			<true/>
+		'''
+  }
+}
+
+task packageForAllPlatforms(dependsOn: [ packageForWindows, packageForMac, packageForLinux ]) {
+  description = 'Packages the application for all platforms'
+  group = 'JavaPackager'
+}

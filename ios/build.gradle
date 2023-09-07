@@ -1,0 +1,27 @@
+apply plugin: 'robovm'
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+ext {
+  mainClassName = "com.author.ios.IOSLauncher"
+}
+
+launchIPhoneSimulator.dependsOn build
+launchIPadSimulator.dependsOn build
+launchIOSDevice.dependsOn build
+createIPA.dependsOn build
+
+eclipse.project {
+  name = appName + "-ios"
+  natures 'org.robovm.eclipse.RoboVMNature'
+}
+
+dependencies {
+  implementation "com.mobidevelop.robovm:robovm-cocoatouch:$robovmVersion"
+  implementation "com.mobidevelop.robovm:robovm-rt:$robovmVersion"
+  implementation project(':core')
+}
+
+robovm {
+  iosSkipSigning = true
+}

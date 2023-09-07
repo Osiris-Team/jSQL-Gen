@@ -1,0 +1,31 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+dependencies {
+  api "com.github.Osiris-Team:Desku:$deskuVersion"
+
+
+  implementation "org.apache.commons:commons-lang3:3.12.0"
+  implementation "com.github.javaparser:javaparser-core:3.24.4"
+  implementation "com.google.code.gson:gson:2.9.0"
+  implementation "org.apache.commons:commons-collections4:4.4"
+  implementation "org.apache.maven:maven-model:3.3.9"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:5.3.0"
+  testImplementation "org.junit.jupiter:junit-jupiter-engine:5.3.0"
+  testImplementation "mysql:mysql-connector-java:8.0.24"
+  testImplementation "ch.vorburger.mariaDB4j:mariaDB4j:2.4.0"
+}
+
+// Ensure that everything other than classes/.java files are also included in the final jar
+// This should also be included in your project if you want to easily load resources.
+sourceSets {
+  main {
+    resources {
+      srcDirs = ["src/main/java", "src/main/resources"]
+      include '**/*' // Include everything (no .java by default)
+    }
+
+  }
+}
+// This must also be included if you want to generate the sources jar without issues
+tasks.withType(Jar).configureEach { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
