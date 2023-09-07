@@ -1,6 +1,6 @@
 # jSQL-Gen
-Java SQL (JDBC) code generator with GUI. Removes 100% of the boilerplate code and makes
-it possible to use SQL databases without writing one line of SQL.
+Java SQL (JDBC) code generator with GUI. Removes 100% of the boilerplate code and makess
+it possible to use SQL databases without writing one line of SQL (compile-safe SQL).
 
 ![image](https://user-images.githubusercontent.com/59899645/195866082-e0602e28-dad0-4321-b9e5-318645caa17f.png)
 
@@ -93,7 +93,7 @@ Java objects, and your columns like your objects' fields.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep
 in mind that those changes won't affect the actual database tables/columns.
 - Thus changes to the database (specially changes in data types) should be made using the GUI.
-- When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory. 
-Lazy loading (https://github.com/Osiris-Team/jSQL-Gen/issues/10) not implemented yet.
+- When dealing with big amounts of data its recommended to use the WHERE class to its full extend to avoid going out of memory
+or use the lazy loading methods.
 - Make sure that all NOT NULL fields are on the upper half of the fields and the rest below. The generated functions will make more sense and will
 be generally less error prone.
