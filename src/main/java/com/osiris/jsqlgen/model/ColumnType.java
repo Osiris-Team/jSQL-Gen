@@ -4,6 +4,8 @@ import com.osiris.jsqlgen.utils.UString;
 
 public class ColumnType {
     // INTEGER TYPES:
+    public static ColumnType BIT = new ColumnType(new String[]{"BIT", "BOOLEAN"},
+            "boolean", "setBoolean", "getBoolean");
     public static ColumnType BYTE = new ColumnType(new String[]{"TINYINT", "BYTE"},
             "byte", "setByte", "getByte");
     public static ColumnType SHORT = new ColumnType(new String[]{"SMALLINT"},
