@@ -1,51 +1,230 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Release
+name: release
 
 on:
   workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      version:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'Version'
+        # Default value if no value is explicitly provided
+        default: '1.0.0'
+        # Input has to be provided for the workflow to run
+        required: true
+      build-for-windows:
+        type: boolean
+        default: true
+      build-for-linux:
+        type: boolean
+        default: true
+      build-for-mac:
+        type: boolean
+        default: true
+      build-for-android:
+        type: boolean
+        default: true
+      build-for-ios:
+        type: boolean
+        default: true
+
+permissions: write-all
 
 jobs:
-  build:
-
-    runs-on: windows-latest
-
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.event.inputs.version }}
+          generateReleaseNotes: true
 
-    - uses: actions/checkout@v3
-    - name: Set up JDK 16
-      uses: actions/setup-java@v3
-      with:
-        java-version: '16'
-        distribution: 'temurin'
-        cache: maven
-    # Must install chocolatey and other dependencies in
-    # the same shell as mvn... command (with JavaPackager plugin)
-    # since global PATH variables somehow don't get when running in another shell.
-    - name: Build with Maven/JavaPackager
-      shell: pwsh
-      run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        choco install -y innosetup wixtoolset
-        refreshenv
-        mvn -B package --file pom.xml -DskipTests
+  build-windows:
+    runs-on: windows-latest
+    if: ${{ github.event.inputs.build-for-windows == 'true' }}
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        continue-on-error: true
+        shell: pwsh
+        # Also sets path for candle and light
+        run: |
+          echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" >> $GITHUB_PATH
+          ./gradlew clean shadowJar desktop:packageForWindows --stacktrace --info --no-daemon -x test
+          cd ./desktop
+          echo "Contents of ./build folder:"
+          Get-ChildItem -Path "./build" -Recurse
+          echo "Building Native-Image..."
+          cd ./build
+          native-image -jar ./libs/Desku-App.jar Desku-App-windows-runnable
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@2.5.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./desktop/build/*.*
+          tag: ${{ github.event.inputs.version }}
+          overwrite: true
+          file_glob: true
 
-    - name: Show files.
-      run: |
-        echo Showing current directory:
-        ls
-        echo Showing ./target directory:
-        ls ./target
-      
-    - uses: "marvinpinto/action-automatic-releases@latest"
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "latest"
-        prerelease: false
-        title: "Release"
-        files: |
-          ./target/*.tar.gz
-          ./target/*.zip
-          ./target/*.jar
-          ./target/*.exe
+  build-mac:
+    runs-on: macos-latest
+    if: ${{ github.event.inputs.build-for-mac == 'true' }}
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        continue-on-error: true
+        run: |
+          sudo chmod +x gradlew
+          ./gradlew clean shadowJar desktop:packageForMac --stacktrace --info --no-daemon -x test
+          cd ./desktop
+          echo "Contents of ./build folder:"
+          find ./build
+          echo "Building Native-Image..."
+          cd ./build
+          native-image -jar ./libs/Desku-App.jar Desku-App-mac-runnable
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@2.5.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./desktop/build/*.*
+          tag: ${{ github.event.inputs.version }}
+          overwrite: true
+          file_glob: true
+
+  build-linux:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.build-for-linux == 'true' }}
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        continue-on-error: true
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          sudo chmod +x gradlew
+          ./gradlew clean shadowJar desktop:packageForLinux --stacktrace --info --no-daemon -x test
+          cd ./desktop
+          echo "Contents of ./build folder:"
+          find ./build
+          echo "Building Native-Image..."
+          cd ./build
+          native-image -jar ./libs/Desku-App.jar Desku-App-linux-runnable
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@2.5.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./desktop/build/*.*
+          tag: ${{ github.event.inputs.version }}
+          overwrite: true
+          file_glob: true
+
+  build-android:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.build-for-android == 'true' }}
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Build
+        continue-on-error: true
+        # Release singing:
+        # https://developer.android.com/studio/publish/app-signing
+        # https://medium.com/google-developer-experts/github-actions-for-android-developers-6b54c8a32f55
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          chmod +x gradlew
+          export ANDROID_HOME=$HOME/.android/sdk
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US"
+          ./gradlew clean shadowJar android:build --stacktrace --info --no-daemon -x test
+          cd ./android
+          echo "Contents of ./build folder:"
+          find ./build
+        #echo "Building Native-Image..."
+        #cd ./build
+        #native-image -jar ./libs/Desku-App.jar Desku-App-android-runnable
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@2.5.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: |
+            ./android/build/outputs/apk/debug/*.*
+            ./android/build/outputs/apk/release/*.*
+          tag: ${{ github.event.inputs.version }}
+          overwrite: true
+          file_glob: true
+
+  build-ios:
+    runs-on: macos-latest
+    if: ${{ github.event.inputs.build-for-ios == 'true' }}
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        continue-on-error: true
+        # If you want to release a signed .ipa follow these steps:
+        # https://stackoverflow.com/questions/25133774/robovm-missing-signing-identity
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          sudo chmod +x gradlew
+          ./gradlew clean shadowJar ios:build ios:robovmArchive --stacktrace --info --no-daemon -x test
+          cd ./ios
+          echo "Contents of ./build folder:"
+          find ./build
+        #echo "Building Native-Image..."
+        #cd ./build
+        #native-image -jar ./libs/Desku-App.jar Desku-App-ios-runnable
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@2.5.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file:  |
+            ./ios/build/robovm/*.*
+          tag: ${{ github.event.inputs.version }}
+          overwrite: true
+          file_glob: true
+

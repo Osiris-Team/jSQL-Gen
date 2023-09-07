@@ -6,33 +6,31 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.osiris.desku.DesktopUI;
+import com.osiris.desku.Route;
+import com.osiris.desku.UI;
+import com.osiris.desku.ui.Component;
+import com.osiris.desku.ui.input.*;
+import com.osiris.desku.ui.layout.Horizontal;
+import com.osiris.desku.ui.layout.SmartLayout;
+import com.osiris.desku.ui.layout.TabLayout;
+import com.osiris.desku.ui.layout.Vertical;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.*;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.Popup;
-import javafx.stage.Stage;
-import javafx.util.Duration;
-import org.controlsfx.control.Notifications;
 
+import javax.swing.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MainApplication extends javafx.application.Application {
+import static com.osiris.desku.Statics.*;
+
+public class MainView extends Route {
     public static MyTeeOutputStream outErr;
     public static MyTeeOutputStream out;
     public static AsyncReader asyncIn;
@@ -60,73 +58,69 @@ public class MainApplication extends javafx.application.Application {
         }
     }
 
-    private Stage stage;
-    private final TabPane lyRoot = new TabPane();
+    private final Vertical lyRoot = vertical();
     // Home panel
-    private final MyScroll lyHome = new MyScroll();
-    private final TextField dbName = new TextField();
-    private final Button btnCreateDatabase = new Button("Create");
-    private final Button btnDeleteDatabase = new Button("Delete");
-    private final Button btnImportDatabase = new Button("Import");
-    private final Button btnExportDatabase = new Button("Export");
-    private final Button btnShowData = new Button("Show data");
-    private final TextArea txtLogs = new TextArea();
+    private final Vertical lyHome = vertical();
+    private final TextField dbName = textfield("Enter database name");
+    private final Button btnCreateDatabase = button("Create");
+    private final Button btnDeleteDatabase = button("Delete");
+    private final Button btnImportDatabase = button("Import");
+    private final Button btnExportDatabase = button("Export");
+    private final Button btnShowData = button("Show data");
+    private final TextField txtLogs = textfield();
     // Database panel
-    private final MyScroll lyDatabase = new MyScroll(new VBox());
-    private final ChoiceBox<String> choiceDatabase = new ChoiceBox<>();
-    private final ListView<VBox> listTables = new ListView<>();
-    private final TabPane tabsCode = new TabPane();
-    private final Button btnGenerate = new Button("Generate Code");
-    private final Button btnChooseJavaProjectDir = new Button("Project-Dir");
-    private final DirectoryChooser chooserJavaProjectDir = new DirectoryChooser();
+    private final Vertical lyDatabase = vertical();
+    private final Select choiceDatabase = select();
+    private final Vertical listTables = vertical().scrollable(true, "100%", "50vh", "100%", "2vh");
+    private final TabLayout tabsCode = tablayout();
+    private final Button btnGenerate = button("Generate Code");
+    private final Button btnChooseJavaProjectDir = button("Project-Dir");
+    private final FileChooser chooserJavaProjectDir = filechooser();
+    private JFrame frame;
 
-    public static void main(String[] args) {
-        launch();
+    public MainView() {
+        super("/");
     }
 
     @Override
-    public void start(Stage stage) throws IOException {
-        this.stage = stage;
-        Scene scene = new Scene(lyRoot);
-        stage.setScene(scene);
-        stage.show(); // RootPane has full window width and height
+    public Component<?> loadContent() {
+        this.frame = ((DesktopUI)UI.get()).frame; // TODO support mobile
 
-        stage.setOnCloseRequest(event -> {
-            System.exit(0);
-        });
         if(Data.instance.window.isMaximized)
-            stage.setMaximized(true);
+            frame.setMaximized(true);
         else{
-            stage.setX(Data.instance.window.x);
-            stage.setY(Data.instance.window.y);
-            stage.setWidth(Data.instance.window.width);
-            stage.setHeight(Data.instance.window.height);
+            frame.setX(Data.instance.window.x);
+            frame.setY(Data.instance.window.y);
+            frame.setWidth(Data.instance.window.width);
+            frame.setHeight(Data.instance.window.height);
         }
-        lyRoot.getTabs().add(new MyTab("Home", lyHome).closable(false));
-        lyRoot.getTabs().add(new MyTab("Database", lyDatabase).closable(false));
+        lyRoot.add(
+            tablayout().addTabAndPage("Home", lyHome)
+                .addTabAndPage("Database", lyDatabase)
+        );
 
-        Platform.runLater(() -> {
+        lyRoot.later(root -> {
             List<String> newLines = new ArrayList<>();
-            MainApplication.asyncIn.listeners.add(line -> {
+            MainView.asyncIn.listeners.add(line -> {
                 synchronized (newLines) {
                     newLines.add(line);
                 }
-                Platform.runLater(() -> {
-                    txtLogs.setText(txtLogs.getText() + line + "\n");
+                lyRoot.later(root2 -> {
+                    txtLogs.setValue(txtLogs.getValue() + line + "\n");
                 });
             });
             List<String> newErrLines = new ArrayList<>();
-            MainApplication.asyncInErr.listeners.add(line -> {
+            MainView.asyncInErr.listeners.add(line -> {
                 synchronized (newErrLines) {
                     newErrLines.add(line);
                 }
-                Platform.runLater(() -> {
-                    txtLogs.setText(txtLogs.getText() + "[!] " + line + "\n");
+                lyRoot.later(root2 -> {
+                    txtLogs.setValue(txtLogs.getValue() + "[!] " + line + "\n");
                 });
             });
             System.out.println("Registered log listener.");
             System.out.println("Initialised jSQL-Gen successfully!");
-            new Thread(() -> {
+            lyRoot.later(root_ -> {
                 try {
                     while (true) {
                         Thread.sleep(1000);
@@ -137,13 +131,13 @@ public class MainApplication extends javafx.application.Application {
                                     builder.append(l + "\n");
                                 }
                                 newLines.clear();
-                                Platform.runLater(() -> {
+                                lyRoot.later(root__ -> {
                                     Notifications.create()
-                                            .title("jSQL-Gen | Info")
-                                            .text(builder.toString())
-                                            .position(Pos.BOTTOM_RIGHT)
-                                            .hideAfter(Duration.millis(10000))
-                                            .show();
+                                        .title("jSQL-Gen | Info")
+                                        .text(builder.toString())
+                                        .position(Pos.BOTTOM_RIGHT)
+                                        .hideAfter(Duration.millis(10000))
+                                        .show();
                                 });
                             }
                         }
@@ -154,13 +148,13 @@ public class MainApplication extends javafx.application.Application {
                                     builder.append(l + "\n");
                                 }
                                 newErrLines.clear();
-                                Platform.runLater(() -> {
+                                lyRoot.later(root__ -> {
                                     Notifications.create()
-                                            .title("jSQL-Gen | Error")
-                                            .text(builder.toString())
-                                            .position(Pos.BOTTOM_RIGHT)
-                                            .hideAfter(Duration.millis(30000))
-                                            .show();
+                                        .title("jSQL-Gen | Error")
+                                        .text(builder.toString())
+                                        .position(Pos.BOTTOM_RIGHT)
+                                        .hideAfter(Duration.millis(30000))
+                                        .show();
                                 });
                             }
                         }
@@ -168,26 +162,26 @@ public class MainApplication extends javafx.application.Application {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }).start();
+            });
 
             try {
-                stage.setTitle("jSQL-Gen v"+Const.getVersion());
+                frame.setTitle("jSQL-Gen v"+Const.getVersion());
             } catch (Exception e) {
                 e.printStackTrace();
-                stage.setTitle("jSQL-Gen");
+                frame.setTitle("jSQL-Gen");
             }
 
             try {
-                choiceDatabase.setOnAction(event -> { // value changed event
+                choiceDatabase.onSelectedChange(event -> { // value changed event
                     try {
-                        changeDatabase(choiceDatabase.getValue());
+                        changeDatabase(event.value);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
                 updateChoiceDatabase();
                 if (!Data.instance.databases.isEmpty()) {
-                    choiceDatabase.setValue(Data.instance.databases.get(0).name);
+                    choiceDatabase.setSelected(Data.instance.databases.get(0).name);
                 }
                 // Layout stuff
                 layoutHome();
@@ -197,81 +191,81 @@ public class MainApplication extends javafx.application.Application {
             }
 
             Runnable runnable = () -> {
-                Data.instance.window.x = stage.getX();
-                Data.instance.window.y = stage.getY();
-                Data.instance.window.width = stage.getWidth();
-                Data.instance.window.height = stage.getHeight();
+                Data.instance.window.x = frame.getX();
+                Data.instance.window.y = frame.getY();
+                Data.instance.window.width = frame.getWidth();
+                Data.instance.window.height = frame.getHeight();
                 Data.save();
             };
-            stage.xProperty().addListener((observableValue, number, t1) -> {
+            frame.xProperty().addListener((observableValue, number, t1) -> {
                 runnable.run();
             });
-            stage.yProperty().addListener((observableValue, number, t1) -> {
+            frame.yProperty().addListener((observableValue, number, t1) -> {
                 runnable.run();
             });
-            stage.widthProperty().addListener((obs, oldVal, newVal) -> {
+            frame.widthProperty().addListener((obs, oldVal, newVal) -> {
                 runnable.run();
             });
-            stage.heightProperty().addListener((obs, oldVal, newVal) -> {
+            frame.heightProperty().addListener((obs, oldVal, newVal) -> {
                 runnable.run();
             });
-            stage.maximizedProperty().addListener((observableValue, aBoolean, t1) -> {
+            frame.maximizedProperty().addListener((observableValue, aBoolean, t1) -> {
                 Data.instance.window.isMaximized = observableValue.getValue();
                 runnable.run();
             });
         });
+        return lyRoot;
     }
 
     private void layoutHome() {
         lyHome.removeAll();
 
-        dbName.setPromptText("Enter database name");
-        btnCreateDatabase.setOnMouseClicked(click -> {
+        btnCreateDatabase.onClick(click -> {
             try {
                 addDatabase();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
-        btnDeleteDatabase.setOnMouseClicked(click -> {
+        btnDeleteDatabase.onClick(click -> {
             try {
-                deleteDatabase(dbName.getText());
+                deleteDatabase(dbName.getValue());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
 
         btnImportDatabase.setTooltip(new MyTooltip("Imports a json file or text and either overrides the existing database or creates a new one."));
-        btnImportDatabase.setOnMouseClicked(click -> {
+        btnImportDatabase.onClick(click -> {
             Popup popup = new Popup();
 
-            MyScroll ly = new MyScroll(new VBox());
+            MyScroll ly = new MyScroll(new Vertical());
             FX.heightPercentScreen(ly, 10);
             FX.widthPercentScreen(ly, 20);
-            Button btnClose = new Button("Close");
+            Button btnClose = button("Close");
             ly.addRow().add(btnClose);
-            btnClose.setOnMouseClicked(click2 -> popup.hide());
+            btnClose.onClick(click2 -> popup.hide());
             ly.addRow().add(new Label("Currently in todo, will be available soon..."));
 
             popup.getContent().add(ly);
-            popup.show(this.stage);
+            popup.show(this.frame);
         });
         btnExportDatabase.setTooltip(new Tooltip("Exports the selected database in json format, which later can be imported again."));
-        btnExportDatabase.setOnMouseClicked(click -> {
+        btnExportDatabase.onClick(click -> {
             Popup popup = new Popup();
 
-            MyScroll ly = new MyScroll(new VBox());
+            MyScroll ly = new MyScroll(new Vertical());
             FX.heightPercentScreen(ly, 10);
             FX.widthPercentScreen(ly, 20);
-            Button btnClose = new Button("Close");
+            Button btnClose = button("Close");
             ly.addRow().add(btnClose);
-            btnClose.setOnMouseClicked(click2 -> popup.hide());
+            btnClose.onClick(click2 -> popup.hide());
             ly.addRow().add(new Label("Currently in todo, will be available soon..."));
 
             popup.getContent().add(ly);
-            popup.show(this.stage);
+            popup.show(this.frame);
         });
-        btnShowData.setOnMouseClicked(click -> {
+        btnShowData.onClick(click -> {
             try {
                 showData();
             } catch (IOException e) {
@@ -289,7 +283,7 @@ public class MainApplication extends javafx.application.Application {
     private void layoutDatabase() {
         lyDatabase.removeAll();
 
-        btnGenerate.setOnMouseClicked(click -> {
+        btnGenerate.onClick(click -> {
             try {
                 generateCode();
             } catch (IOException e) {
@@ -299,7 +293,7 @@ public class MainApplication extends javafx.application.Application {
         chooserJavaProjectDir.setTitle("Select Java project directory");
         btnChooseJavaProjectDir.setTooltip(new Tooltip("Select the directory of your Java project. Classes then will be generated there" +
                 " together with a copy of the schema. Everything gets overwritten, except critical information in the database class."));
-        btnChooseJavaProjectDir.setOnMouseClicked(click -> {
+        btnChooseJavaProjectDir.onClick(click -> {
             try {
                 Database database = Data.getDatabase(choiceDatabase.getValue());
                 if (database == null)
@@ -322,8 +316,8 @@ public class MainApplication extends javafx.application.Application {
                     System.out.println("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
                 }
 
-                Platform.runLater(() -> {
-                    File selectedFile = chooserJavaProjectDir.showDialog(stage);
+                lyRoot.later(root -> {
+                    File selectedFile = chooserJavaProjectDir.showDialog(frame);
                     if (selectedFile != null) {
                         database.javaProjectDir = selectedFile;
                         Data.save();
@@ -368,12 +362,12 @@ public class MainApplication extends javafx.application.Application {
     }
 
     protected void addDatabase() throws IOException {
-        if (dbName.getText() == null || dbName.getText().strip().isEmpty()) {
+        if (dbName.getValue() == null || dbName.getValue().strip().isEmpty()) {
             System.err.println("Database name cannot be null or empty!");
             return;
         }
         Database db = new Database();
-        db.name = dbName.getText();
+        db.name = dbName.getValue();
         Data.instance.databases.add(db);
         Data.save();
         updateChoiceDatabase();
@@ -412,8 +406,8 @@ public class MainApplication extends javafx.application.Application {
                 tabsCode.getTabs().add(tab);
                 TextArea txtCode = new TextArea();
                 tab.setContent(txtCode);
-                tab.setText(f.getName());
-                txtCode.setText(Files.readString(f.toPath()));
+                tab.setValue(f.getName());
+                txtCode.setValue(Files.readString(f.toPath()));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -492,16 +486,15 @@ public class MainApplication extends javafx.application.Application {
         ArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
             Table t = tables.get(i);
-            VBox wrapperTable = new VBox();
+            Vertical wrapperTable = new Vertical();
             listTables.getItems().add(wrapperTable);
-            FlowPane paneTable = new FlowPane();
-            paneTable.setHgap(10);
-            paneTable.setBackground(new Background(new BackgroundFill(
-                    new Color(new Random().nextFloat(), new Random().nextFloat(), new Random().nextFloat(), 0.7),
-                    null, null)));
-            wrapperTable.getChildren().add(paneTable);
-            ChoiceBox<String> choiceAction = new ChoiceBox<>();
-            paneTable.getChildren().add(choiceAction);
+            SmartLayout paneTable = new SmartLayout();
+            paneTable.putStyle("background-color",
+                "rgba("+new Random().nextFloat()+","+ new Random().nextFloat()+","+ new Random().nextFloat()+","+ 0.7+")"
+            );
+            wrapperTable.add(paneTable);
+            Select choiceAction = new Select();
+            paneTable.add(choiceAction);
             FX.widthPercentScreen(choiceAction, 1);
             ObservableList<String> list = FXCollections.observableArrayList();
             list.add("Delete");
@@ -525,7 +518,7 @@ public class MainApplication extends javafx.application.Application {
                 }
             });
             TextField tableName = new TextField(t.name);
-            paneTable.getChildren().add(tableName);
+            paneTable.add(tableName);
             tableName.setTooltip(new Tooltip("The table name. Changes are auto-saved."));
             tableName.textProperty().addListener((o, oldVal, newVal) -> { // enter pressed event
                 try {
@@ -535,7 +528,7 @@ public class MainApplication extends javafx.application.Application {
                 }
             });
             final CheckBox isDebug = new CheckBox("Debug");
-            paneTable.getChildren().add(isDebug);
+            paneTable.add(isDebug);
             isDebug.setTooltip(new MyTooltip("If selected generates additional debug logging to the error stream."));
             isDebug.setSelected(t.isDebug);
             isDebug.setOnAction(event -> {
@@ -544,7 +537,7 @@ public class MainApplication extends javafx.application.Application {
             });
 
             final CheckBox isNoExceptions = new CheckBox("No exceptions");
-            paneTable.getChildren().add(isNoExceptions);
+            paneTable.add(isNoExceptions);
             isNoExceptions.setTooltip(new MyTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
                     " which means that all methods of a generated class can be used outside of try/catch blocks."));
             isNoExceptions.setSelected(t.isNoExceptions);
@@ -554,14 +547,14 @@ public class MainApplication extends javafx.application.Application {
             });
 
             final CheckBox isCache = new CheckBox("Cache");
-            paneTable.getChildren().add(isCache);
+            paneTable.add(isCache);
             isCache.setSelected(t.isCache);
             isCache.setOnAction(event -> {
                 t.isCache = isCache.isSelected();
                 Data.save();
             });
 
-            VBox listColumns = new VBox();
+            Vertical listColumns = new Vertical();
             listTables.getItems().add(listColumns);
             listColumns.paddingProperty().setValue(new Insets(0, 0, 0, 50));
             try {
@@ -570,16 +563,16 @@ public class MainApplication extends javafx.application.Application {
                 e.printStackTrace();
             }
         }
-        VBox wrapper = new VBox();
+        Vertical wrapper = new Vertical();
         listTables.getItems().add(wrapper);
-        FlowPane lastItem = new FlowPane();
-        wrapper.getChildren().add(lastItem);
+        SmartLayout lastItem = new SmartLayout();
+        wrapper.add(lastItem);
         TextField tableName = new TextField();
-        lastItem.getChildren().add(tableName);
+        lastItem.add(tableName);
         tableName.setPromptText("New table name");
         tableName.setOnAction(event -> { // enter pressed event
             try {
-                addNewTable(dbName, tableName.getText());
+                addNewTable(dbName, tableName.getValue());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -620,20 +613,20 @@ public class MainApplication extends javafx.application.Application {
     }
 
 
-    private void updateColumnsList(VBox listColumns, String dbName, String tableName) throws IOException {
-        listColumns.getChildren().clear();
+    private void updateColumnsList(Vertical listColumns, String dbName, String tableName) throws IOException {
+        listColumns.children.clear();
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         for (int i = 0; i < t.columns.size(); i++) {
             Column col = t.columns.get(i);
-            HBox item = new HBox();
-            listColumns.getChildren().add(item);
-            Button btnMoveUp = new Button("˄");
-            item.getChildren().add(btnMoveUp);
-            if (Objects.equals(col.name, "id")) btnMoveUp.setDisable(true);
+            Horizontal item = new Horizontal();
+            listColumns.add(item);
+            Button btnMoveUp = button("˄");
+            item.add(btnMoveUp);
+            if (Objects.equals(col.name, "id")) btnMoveUp.enable(false);
             AtomicInteger finalI = new AtomicInteger(i);
-            btnMoveUp.setOnMouseClicked(event -> {
+            btnMoveUp.onClick(event -> {
                 try {
                     int oldI = finalI.get();
                     t.columns.remove(oldI);
@@ -647,10 +640,10 @@ public class MainApplication extends javafx.application.Application {
                     e.printStackTrace();
                 }
             });
-            Button btnMoveDown = new Button("˅");
-            item.getChildren().add(btnMoveDown);
-            if (Objects.equals(col.name, "id")) btnMoveDown.setDisable(true);
-            btnMoveDown.setOnMouseClicked(event -> {
+            Button btnMoveDown = button("˅");
+            item.add(btnMoveDown);
+            if (Objects.equals(col.name, "id")) btnMoveDown.enable(false);
+            btnMoveDown.onClick(event -> {
                 try {
                     int oldI = finalI.get();
                     t.columns.remove(oldI);
@@ -664,10 +657,10 @@ public class MainApplication extends javafx.application.Application {
                     e.printStackTrace();
                 }
             });
-            Button btnRemove = new Button("Delete");
-            item.getChildren().add(btnRemove);
-            if (Objects.equals(col.name, "id")) btnRemove.setDisable(true);
-            btnRemove.setOnMouseClicked(event -> {
+            Button btnRemove = button("Delete");
+            item.add(btnRemove);
+            if (Objects.equals(col.name, "id")) btnRemove.enable(false);
+            btnRemove.onClick(event -> {
                 try {
                     deleteColumn(listColumns, dbName, t.name, col.name);
                 } catch (Exception e) {
@@ -681,57 +674,57 @@ public class MainApplication extends javafx.application.Application {
             }
             TextField colComment = new TextField(col.comment);
 
-            item.getChildren().add(colName);
-            if (Objects.equals(col.name, "id")) colName.setDisable(true);
+            item.add(colName);
+            if (Objects.equals(col.name, "id")) colName.enable(false);
             colName.setPromptText("Column name");
             colName.setTooltip(new Tooltip("Column name. Changes are auto-saved."));
             colName.textProperty().addListener((o, oldVal, newVal) -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, oldVal, newVal, col.definition, colComment.getText());
+                    updateColumn(listColumns, dbName, t.name, oldVal, newVal, col.definition, colComment.getValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
 
 
-            item.getChildren().add(colDefinition);
+            item.add(colDefinition);
             colDefinition.setPromptText("Column definition");
             colDefinition.setTooltip(new Tooltip("Column definition. Changes are auto-saved."));
             colDefinition.textProperty().addListener((o, oldVal, newVal) -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, colName.getText(), colName.getText(), newVal, colComment.getText());
+                    updateColumn(listColumns, dbName, t.name, colName.getValue(), colName.getValue(), newVal, colComment.getValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
 
 
-            item.getChildren().add(colComment);
+            item.add(colComment);
             colComment.setPromptText("Column comment");
             colComment.setTooltip(new Tooltip("Column comment. Changes are auto-saved."));
             colComment.textProperty().addListener((o, oldVal, newVal) -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, colName.getText(), colName.getText(), colDefinition.getText(), newVal);
+                    updateColumn(listColumns, dbName, t.name, colName.getValue(), colName.getValue(), colDefinition.getValue(), newVal);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
         }
         FlowPane lastItem = new FlowPane();
-        listColumns.getChildren().add(lastItem);
+        listColumns.add(lastItem);
         TextField colName = new TextField();
-        lastItem.getChildren().add(colName);
+        lastItem.add(colName);
         colName.setPromptText("New column name");
         colName.setOnAction(event -> { // enter pressed event
             try {
-                addNewColumn(listColumns, dbName, t.name, colName.getText(), null);
+                addNewColumn(listColumns, dbName, t.name, colName.getValue(), null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
 
-    private void updateColumn(VBox listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws IOException {
+    private void updateColumn(Vertical listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws IOException {
         System.out.println("Updating column...");
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
@@ -747,7 +740,7 @@ public class MainApplication extends javafx.application.Application {
         System.out.println("OK!");
     }
 
-    private void addNewColumn(VBox listColumns, String dbName, String tableName, String columnName, String columnDefinition) throws IOException {
+    private void addNewColumn(Vertical listColumns, String dbName, String tableName, String columnName, String columnDefinition) throws IOException {
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
@@ -758,7 +751,7 @@ public class MainApplication extends javafx.application.Application {
         updateColumnsList(listColumns, dbName, tableName);
     }
 
-    private void deleteColumn(VBox listColumns, String dbName, String tableName, String columnName) throws IOException {
+    private void deleteColumn(Vertical listColumns, String dbName, String tableName, String columnName) throws IOException {
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);

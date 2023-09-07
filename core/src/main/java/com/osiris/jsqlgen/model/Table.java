@@ -1,6 +1,7 @@
 package com.osiris.jsqlgen.model;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Table {
     public String name;
@@ -8,6 +9,7 @@ public class Table {
     public boolean isDebug = false;
     public boolean isNoExceptions = true;
     public boolean isCache = false;
+    public List<String> removedColumnNames = new ArrayList<>();
 
     public Table() {
         Column idColumn = new Column("id");
