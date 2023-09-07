@@ -40,6 +40,7 @@ public class ColumnType {
 
 
     public static ColumnType[] allTypes = new ColumnType[]{
+            BIT,
             BYTE, SHORT, INT, LONG, DECIMAL, FLOAT, DOUBLE,
             DATE, TIMESTAMP, TIME, YEAR,
             STRING, BLOB
