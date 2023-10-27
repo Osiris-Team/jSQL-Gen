@@ -922,6 +922,7 @@ public class JavaCodeGenerator {
                 "import java.sql.DriverManager;\n" +
                 "import java.sql.SQLException;\n" +
                 "import java.sql.Statement;\n" +
+                "import java.util.Arrays;\n" +
                 "import java.util.Objects;\n" +
                 "import java.util.ArrayList;\n" +
                 "import java.util.List;\n\n" +
@@ -945,22 +946,27 @@ public class JavaCodeGenerator {
                 "\n" +
                 "public static void create() {\n" +
                 "\n" +
-                "        // Do the below to avoid \"No suitable driver found...\" exception \n" +
-                "        String driverClassName = \"com.mysql.cj.jdbc.Driver\";\n" +
+                "        // Do the below to avoid \"No suitable driver found...\" exception\n" +
+                "        String[] driversClassNames = new String[]{\"com.mysql.cj.jdbc.Driver\", \"com.mysql.jdbc.Driver\",\n" +
+                "        \"oracle.jdbc.OracleDriver\", \"com.microsoft.sqlserver.jdbc.SQLServerDriver\", \"org.postgresql.Driver\",\n" +
+                "        \"org.sqlite.JDBC\", \"org.h2.Driver\", \"com.ibm.db2.jcc.DB2Driver\", \"org.apache.derby.jdbc.ClientDriver\",\n" +
+                "        \"org.mariadb.jdbc.Driver\", \"org.apache.derby.jdbc.ClientDriver\"};\n" +
+                "        Class<?> driverClass = null;\n" +
+                "        Exception lastException = null;\n" +
+                "    for (int i = 0; i < driversClassNames.length; i++) {\n" +
+                "        String driverClassName = driversClassNames[i];\n" +
                 "        try {\n" +
-                "            Class<?> driverClass = Class.forName(driverClassName);\n" +
+                "            driverClass = Class.forName(driverClassName);\n" +
                 "            Objects.requireNonNull(driverClass);\n" +
-                "        } catch (ClassNotFoundException e) {\n" +
-                "            try {\n" +
-                "                driverClassName = \"com.mysql.jdbc.Driver\"; // Try deprecated driver as fallback\n" +
-                "                Class<?> driverClass = Class.forName(driverClassName);\n" +
-                "                Objects.requireNonNull(driverClass);\n" +
-                "            } catch (ClassNotFoundException ex) {\n" +
-                "                ex.printStackTrace();\n" +
-                "                System.err.println(\"Failed to find critical database driver class: \"+driverClassName+\" program will exit.\");\n" +
-                "                System.exit(1);\n" +
-                "            }\n" +
+                "        } catch (Exception e) {\n" +
+                "            lastException = e;\n" +
                 "        }\n" +
+                "    }\n" +
+                "    if(driverClass == null){\n" +
+                "        if(lastException != null) lastException.printStackTrace();\n" +
+                "        System.err.println(\"Failed to find critical database driver class, program will exit! Searched classes: \"+ Arrays.toString(driversClassNames));\n" +
+                "        System.exit(1);\n" +
+                "    }\n" +
                 "\n" +
                 "        // Create database if not exists\n" +
                 "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
