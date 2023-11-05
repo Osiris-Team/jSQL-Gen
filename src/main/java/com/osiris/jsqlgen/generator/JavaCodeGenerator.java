@@ -958,6 +958,7 @@ public class JavaCodeGenerator {
                 "        try {\n" +
                 "            driverClass = Class.forName(driverClassName);\n" +
                 "            Objects.requireNonNull(driverClass);\n" +
+                "            break; // No need to continue, since registration was a success \n" +
                 "        } catch (Exception e) {\n" +
                 "            lastException = e;\n" +
                 "        }\n" +
