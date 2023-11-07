@@ -33,17 +33,23 @@ public class ColumnType {
             "int", "setInt", "getInt");
     // STRING/TEXT TYPES:
     public static ColumnType STRING = new ColumnType(new String[]
-            {"CHAR", "VARCHAR", "BINARY", "VARBINARY", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET"},
+            {"CHAR", "VARCHAR", "BINARY", "VARBINARY", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT"},
             "String", "setString", "getString");
     public static ColumnType BLOB = new ColumnType(new String[]{"TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"},
             "java.sql.Blob", "setBlob", "getBlob");
+    // ENUM
+    public static ColumnType ENUM = new ColumnType(new String[]
+            {"ENUM"},
+            null, // Must be set later by the generator
+            "setString", "getString");
+    // TODO support SET (aka list with only a SET of allowed values) and lists
 
 
     public static ColumnType[] allTypes = new ColumnType[]{
             BIT,
             BYTE, SHORT, INT, LONG, DECIMAL, FLOAT, DOUBLE,
             DATE, TIMESTAMP, TIME, YEAR,
-            STRING, BLOB
+            STRING, BLOB, ENUM
             // TODO add new datatype here
     };
     public String[] inSQL;
@@ -56,6 +62,10 @@ public class ColumnType {
         this.inJava = inJava;
         this.inJBDCSet = inJBDCSet;
         this.inJBDCGet = inJBDCGet;
+    }
+
+    public boolean isEnum(){
+        return inSQL[0].equals("ENUM");
     }
 
     /**

@@ -676,6 +676,7 @@ public class MainApplication extends javafx.application.Application {
             });
             TextField colName = new TextField(col.name);
             SuggestionTextField colDefinition = new SuggestionTextField(col.definition);
+            FX.widthFull(colDefinition);
             for (ColumnType colType : ColumnType.allTypes) {
                 colDefinition.getEntries().addAll(List.of(colType.inSQL));
             }

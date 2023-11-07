@@ -64,7 +64,8 @@ public class FX {
                     e.printStackTrace();
                 }
                 if(n.getScene() == null){
-                    ex.printStackTrace();
+                    //System.err.println("Scene is null!");
+                    //ex.printStackTrace();
                     return;
                 }
                 _widthPercent(n, widthPercent);

@@ -19,11 +19,17 @@ public class JavaCodeGenerator {
      */
     public static String generateTableFile(File oldGeneratedClass, Table t) throws Exception {
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
+        List<String> generatedEnumClasses = new ArrayList<>();
         for (Column col : t.columns) {
             col.type = ColumnType.findBySQLDefinition(col.definition);
             if (col.type == null)
                 throw new Exception("Failed to generate code, because failed to find matching java type of definition '" + col.definition
                         + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
+            if(col.type.isEnum()){
+                String enumName = firstToUpperCase(col.name);
+                col.type = new ColumnType(ColumnType.ENUM.inSQL, enumName, ColumnType.ENUM.inJBDCSet, ColumnType.ENUM.inJBDCGet);
+                generatedEnumClasses.add(genEnum(enumName, col.definition));
+            }
         }
         Constructor constructor = genConstructor(t.name, t.columns);
         Constructor minimalConstructor = genMinimalConstructor(t.name, t.columns);
@@ -60,6 +66,10 @@ public class JavaCodeGenerator {
                         """ : "") +
                 "*/\n" +
                 "public class " + t.name + "{\n"); // Open class
+        // Append public inner enum classes
+        for (String generatedEnumClass : generatedEnumClasses) {
+            classContentBuilder.append(generatedEnumClass);
+        }
         if(t.isDebug)
             classContentBuilder.append("    /**\n" +
                     "     * Only works correctly if the package name is com.osiris.jsqlgen.\n" +
@@ -279,7 +289,10 @@ public class JavaCodeGenerator {
                         "list.add(obj);\n");
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
-            classContentBuilder.append("obj." + c.name + " = rs." + c.type.inJBDCGet + "(" + (i + 1) + ");\n");
+            if(c.type.isEnum())
+                classContentBuilder.append("obj." + c.name + " = "+c.type.inJava+".valueOf(rs." + c.type.inJBDCGet + "(" + (i + 1) + "));\n");
+            else
+                classContentBuilder.append("obj." + c.name + " = rs." + c.type.inJBDCGet + "(" + (i + 1) + ");\n");
         }
         classContentBuilder.append(
                 "}\n" + // Close while
@@ -384,7 +397,7 @@ public class JavaCodeGenerator {
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
-            classContentBuilder.append("ps." + c.type.inJBDCSet + "(" + (i + 1) + ", obj." + c.name + ");\n");
+            classContentBuilder.append(genJDBCSet(c, i));
         }
         classContentBuilder.append(
                 "ps.executeUpdate();\n" +
@@ -418,7 +431,7 @@ public class JavaCodeGenerator {
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
-            classContentBuilder.append("ps." + c.type.inJBDCSet + "(" + (i + 1) + ", obj." + c.name + ");\n");
+            classContentBuilder.append(genJDBCSet(c, i));
         }
         classContentBuilder.append(
                 "ps.executeUpdate();\n" +
@@ -548,6 +561,27 @@ public class JavaCodeGenerator {
         }
         imports.append("\n");
         return imports.toString() + classContentBuilder;
+    }
+
+    private static String genJDBCSet(Column c, int i) {
+        if(c.type.isEnum())
+            return "ps." + c.type.inJBDCSet + "(" + (i + 1) + ", obj." + c.name + ".name());\n";
+        else
+            return "ps." + c.type.inJBDCSet + "(" + (i + 1) + ", obj." + c.name + ");\n";
+    }
+
+    private static String genEnum(String enumName, String definition) {
+        definition = definition.substring(definition.indexOf("(") + 1, definition.lastIndexOf(")"));
+        String[] enumTypeRawNames = definition.split(",");
+        String s = "public enum "+enumName+" {";
+        for (String enumTypeRawName : enumTypeRawNames) {
+            s += enumTypeRawName.replace("\"", "")
+                    .replace("'", "")
+                    .replace("`", "")
+                    +",";
+        }
+        s += "}\n";
+        return s;
     }
 
     private static List<String> mergeListContents(List<String>... lists) {
