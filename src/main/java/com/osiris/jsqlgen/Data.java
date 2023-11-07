@@ -9,7 +9,9 @@ import com.osiris.jsqlgen.utils.FileTypeAdapter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -55,6 +57,9 @@ public class Data {
                                     file.getParentFile().mkdirs();
                                     file.createNewFile();
                                 }
+                                // Before writing, backup the existing file
+                                Files.copy(file.toPath(), new File(file.getPath()+"_backup.json").toPath(),
+                                        StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
                                 StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
                                 parser.toJson(instance, sw);
                                 String out = sw.toString();
