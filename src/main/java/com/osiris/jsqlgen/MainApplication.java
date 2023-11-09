@@ -449,6 +449,7 @@ public class MainApplication extends javafx.application.Application {
             File databaseFile = new File(dir + "/Database.java");
             String rawUrl = "\"jdbc:mysql://localhost/\"";
             String url = "\"jdbc:mysql://localhost/" + db.name+"\"";
+            String name = "\""+db.name+"\"";
             String username = "\"\"";
             String password = "\"\"";
             if (databaseFile.exists()) {
@@ -463,6 +464,9 @@ public class MainApplication extends javafx.application.Application {
                         else if (Objects.equals(var.getName().asString(), "url"))
                             if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
                             else url = varInit.toString();
+                        else if (Objects.equals(var.getName().asString(), "name"))
+                            if(varInit.isStringLiteralExpr()) name = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                            else name = varInit.toString();
                         else if (Objects.equals(var.getName().asString(), "username"))
                             if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
                             else username = varInit.toString();
@@ -473,7 +477,7 @@ public class MainApplication extends javafx.application.Application {
                 }
             }
             databaseFile.createNewFile();
-            JavaCodeGenerator.generateDatabaseFile(db, databaseFile, rawUrl, url, username, password);
+            JavaCodeGenerator.generateDatabaseFile(db, databaseFile, rawUrl, url, name, username, password);
             files.add(databaseFile);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");

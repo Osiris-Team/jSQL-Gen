@@ -947,7 +947,7 @@ public class JavaCodeGenerator {
                 "    }\n";
     }
 
-    public static void generateDatabaseFile(Database db, File databaseFile, String rawUrl, String url, String username, String password) throws IOException {
+    public static void generateDatabaseFile(Database db, File databaseFile, String rawUrl, String url, String name, String username, String password) throws IOException {
         databaseFile.getParentFile().mkdirs();
         databaseFile.createNewFile();
         Files.writeString(databaseFile.toPath(), "" +
