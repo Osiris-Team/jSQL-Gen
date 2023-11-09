@@ -971,7 +971,7 @@ public class JavaCodeGenerator {
                 "public class Database{\n" +
                 "public static String rawUrl = " + rawUrl + ";\n" +
                 "public static String url = " + url + ";\n" +
-                "public static String name = \"" + db.name + "\";\n" +
+                "public static String name = " + name + ";\n" +
                 "public static String username = " + username + ";\n" +
                 "public static String password = " + password + ";\n" +
                 "private static final List<Connection> availableConnections = new ArrayList<>();\n" +
