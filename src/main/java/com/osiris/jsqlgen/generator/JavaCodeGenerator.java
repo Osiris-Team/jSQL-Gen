@@ -264,7 +264,9 @@ public class JavaCodeGenerator {
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
                 "public static List<" + t.name + "> get(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis();\n" : "") +
                 "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
                 "String sql = \"SELECT ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
@@ -273,7 +275,8 @@ public class JavaCodeGenerator {
         classContentBuilder.append("\" +\n" +
                         "\" FROM " + tNameQuoted + "\" +\n" +
                         "(where != null ? where : \"\");\n"+
-                (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
+                (t.isDebug ? "long msGetResults = System.currentTimeMillis();\n" : "") +
+
                 (t.isCache ? "synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);\n" +
                         "if(cachedResult != null) return cachedResult.getResultsCopy();\n" : "") +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
@@ -296,6 +299,8 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "}\n" + // Close while
+                        (t.isDebug ? "msGetResults = System.currentTimeMillis() - msGetResults;\n" : "") +
+                        (t.isDebug ? "System.err.println(minimalStackString()+\" con=\"+con+\" msGetCon=\"+msGetCon+\" msGetResults=\"+msGetResults+\" \"+sql);\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                         "finally{Database.freeCon(con);}\n"+
                         (t.isCache ? """
@@ -1017,18 +1022,19 @@ public class JavaCodeGenerator {
                 "    public static Connection getCon() {\n" +
                 "        synchronized (availableConnections){\n" +
                 "            try{\n" +
+                "                Connection availableCon = null;\n" +
                 "                if (!availableConnections.isEmpty()) {\n" +
                 "                    List<Connection> removableConnections = new ArrayList<>(0);\n" +
                 "                    for (Connection con : availableConnections) {\n" +
-                "                        if (con.isValid(1)) return con;\n" +
-                "                        else removableConnections.add(con);\n" +
+                "                        if (!con.isValid(1)) {con.close(); removableConnections.add(con);}\n"+
+                "                        else {availableCon = con; removableConnections.add(con); break;}\n" +
                 "                    }\n" +
                 "                    for (Connection removableConnection : removableConnections) {\n" +
-                "                        removableConnection.close();\n" +
-                "                        availableConnections.remove(removableConnection); // Remove invalid connections\n" +
+                "                        availableConnections.remove(removableConnection); // Remove invalid or used connections\n" +
                 "                    }\n" +
                 "                }\n" +
-                "                return DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
+                "                if (availableCon != null) return availableCon;\n"+
+                "                else return DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
                 "            } catch (Exception e) {\n" +
                 "                throw new RuntimeException(e);\n" +
                 "            }\n" +
