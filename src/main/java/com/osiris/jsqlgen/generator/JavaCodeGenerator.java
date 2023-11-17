@@ -512,10 +512,11 @@ public class JavaCodeGenerator {
         classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(";\n}\n");
 
+        // SHORTCUT FOR WHERE METHODS
         for (Column col : t.columns) {
             classContentBuilder.append(
-                    "public static WHERE where" + firstToUpperCase(col.name) + "() {\n" +
-                            "return new WHERE(\"" + col.nameQuoted + "\");\n" +
+                    "public static WHERE<"+(col.type.inJava)+"> where" + firstToUpperCase(col.name) + "() {\n" +
+                            "return new WHERE<"+(col.type.inJava)+">(\"" + col.nameQuoted + "\");\n" +
                             "}\n");
         }
         classContentBuilder.append(generateWhereClass(t));
@@ -709,7 +710,7 @@ public class JavaCodeGenerator {
     }
 
     public static String generateWhereClass(Table table) {
-        return "public static class WHERE {\n" +
+        return "public static class WHERE<T> {\n" +
                 "        /**\n" +
                 "         * Remember to prepend WHERE on the final SQL statement.\n" +
                 "         * This is not done by this class due to performance reasons. <p>\n" +
@@ -742,7 +743,7 @@ public class JavaCodeGenerator {
                 "            if(!whereObjects.isEmpty())\n" +
                 "                return " + table.name + ".get(where+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return " + table.name + ".get(where+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                return " + table.name + ".get(where+orderBy+limitBuilder.toString(), (T[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
@@ -757,7 +758,7 @@ public class JavaCodeGenerator {
                 "            if(!whereObjects.isEmpty())\n" +
                 "                return " + table.name + ".count(where+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                return " + table.name + ".count(where+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                return " + table.name + ".count(where+orderBy+limitBuilder.toString(), (T[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
@@ -772,13 +773,13 @@ public class JavaCodeGenerator {
                 "            if(!whereObjects.isEmpty())\n" +
                 "                " + table.name + ".remove(where+orderBy+limitBuilder.toString(), whereObjects.toArray());\n" +
                 "            else\n" +
-                "                " + table.name + ".remove(where+orderBy+limitBuilder.toString(), (Object[]) null);\n" +
+                "                " + table.name + ".remove(where+orderBy+limitBuilder.toString(), (T[]) null);\n" +
                 "        }\n" +
                 "\n" +
                 "        /**\n" +
                 "         * AND (...) <br>\n" +
                 "         */\n" +
-                "        public WHERE and(WHERE where) {\n" +
+                "        public WHERE<T> and(WHERE<?> where) {\n" +
                 "            String sql = where.sqlBuilder.toString();\n" +
                 "            if(!sql.isEmpty()) {\n" +
                 "            sqlBuilder.append(\"AND (\").append(sql).append(\") \");\n" +
@@ -791,7 +792,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * OR (...) <br>\n" +
                 "         */\n" +
-                "        public WHERE or(WHERE where) {\n" +
+                "        public WHERE<T> or(WHERE<?> where) {\n" +
                 "            String sql = where.sqlBuilder.toString();\n" +
                 "            if(!sql.isEmpty()) {\n" +
                 "            sqlBuilder.append(\"OR (\").append(sql).append(\") \");\n" +
@@ -804,7 +805,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName = ? <br>\n" +
                 "         */\n" +
-                "        public WHERE is(Object obj) {\n" +
+                "        public WHERE<T> is(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" = ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -815,9 +816,9 @@ public class JavaCodeGenerator {
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_in.asp\">https://www.w3schools.com/mysql/mysql_in.asp</a>\n" +
                 "         */\n" +
-                "        public WHERE is(Object... objects) {\n" +
+                "        public WHERE<T> is(T... objects) {\n" +
                 "            String s = \"\";\n" +
-                "            for (Object obj : objects) {\n" +
+                "            for (T obj : objects) {\n" +
                 "                s += \"?,\";\n" +
                 "                whereObjects.add(obj);\n" +
                 "            }\n" +
@@ -829,7 +830,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName <> ? <br>\n" +
                 "         */\n" +
-                "        public WHERE isNot(Object obj) {\n" +
+                "        public WHERE<T> isNot(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" <> ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -838,7 +839,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName IS NULL <br>\n" +
                 "         */\n" +
-                "        public WHERE isNull() {\n" +
+                "        public WHERE<T> isNull() {\n" +
                 "            sqlBuilder.append(columnName).append(\" IS NULL \");\n" +
                 "            return this;\n" +
                 "        }\n" +
@@ -846,7 +847,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName IS NOT NULL <br>\n" +
                 "         */\n" +
-                "        public WHERE isNotNull() {\n" +
+                "        public WHERE<T> isNotNull() {\n" +
                 "            sqlBuilder.append(columnName).append(\" IS NOT NULL \");\n" +
                 "            return this;\n" +
                 "        }\n" +
@@ -856,7 +857,7 @@ public class JavaCodeGenerator {
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
                 "         */\n" +
-                "        public WHERE like(Object obj) {\n" +
+                "        public WHERE<T> like(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" LIKE ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -867,7 +868,7 @@ public class JavaCodeGenerator {
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
                 "         */\n" +
-                "        public WHERE notLike(Object obj) {\n" +
+                "        public WHERE<T> notLike(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" NOT LIKE ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -876,7 +877,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName > ? <br>\n" +
                 "         */\n" +
-                "        public WHERE biggerThan(Object obj) {\n" +
+                "        public WHERE<T> biggerThan(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" > ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -885,7 +886,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName < ? <br>\n" +
                 "         */\n" +
-                "        public WHERE smallerThan(Object obj) {\n" +
+                "        public WHERE<T> smallerThan(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" < ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -894,7 +895,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName >= ? <br>\n" +
                 "         */\n" +
-                "        public WHERE biggerOrEqual(Object obj) {\n" +
+                "        public WHERE<T> biggerOrEqual(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" >= ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -903,7 +904,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName <= ? <br>\n" +
                 "         */\n" +
-                "        public WHERE smallerOrEqual(Object obj) {\n" +
+                "        public WHERE<T> smallerOrEqual(T obj) {\n" +
                 "            sqlBuilder.append(columnName).append(\" <= ? \");\n" +
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
@@ -912,7 +913,7 @@ public class JavaCodeGenerator {
                 "        /**\n" +
                 "         * columnName BETWEEN ? AND ? <br>\n" +
                 "         */\n" +
-                "        public WHERE between(Object obj1, Object obj2) {\n" +
+                "        public WHERE<T> between(T obj1, T obj2) {\n" +
                 "            sqlBuilder.append(columnName).append(\" BETWEEN ? AND ? \");\n" +
                 "            whereObjects.add(obj1);\n" +
                 "            whereObjects.add(obj2);\n" +
@@ -924,7 +925,7 @@ public class JavaCodeGenerator {
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
                 "         */\n" +
-                "        public WHERE smallestFirst() {\n" +
+                "        public WHERE<T> smallestFirst() {\n" +
                 "            orderByBuilder.append(columnName + \" ASC, \");\n" +
                 "            return this;\n" +
                 "        }\n" +
@@ -934,7 +935,7 @@ public class JavaCodeGenerator {
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
                 "         */\n" +
-                "        public WHERE biggestFirst() {\n" +
+                "        public WHERE<T> biggestFirst() {\n" +
                 "            orderByBuilder.append(columnName + \" DESC, \");\n" +
                 "            return this;\n" +
                 "        }\n" +
@@ -944,7 +945,7 @@ public class JavaCodeGenerator {
                 "         *\n" +
                 "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_limit.asp\">https://www.w3schools.com/mysql/mysql_limit.asp</a>\n" +
                 "         */\n" +
-                "        public WHERE limit(int num) {\n" +
+                "        public WHERE<T> limit(int num) {\n" +
                 "            limitBuilder.append(\"LIMIT \").append(num + \" \");\n" +
                 "            return this;\n" +
                 "        }\n" +

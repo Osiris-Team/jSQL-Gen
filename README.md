@@ -62,8 +62,8 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 ## Features
 
-### ⚡️ 0% boilerplate, fast development and prototyping
-### ⚡️ Simple UI to create and modify databases
+### ⚡️ 0% boilerplate, fast development and prototyping with UI
+### ⚡️ Typesafe SQL queries via WHERE class
 ### ⚡️ Various utility methods, like fetching results lazily
 
 #### Pros
