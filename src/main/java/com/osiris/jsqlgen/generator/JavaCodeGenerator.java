@@ -18,6 +18,7 @@ public class JavaCodeGenerator {
      * Generates Java source code, for the provided table.
      */
     public static String generateTableFile(File oldGeneratedClass, Table t) throws Exception {
+        List<String> importsList = new ArrayList<>();
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         List<String> generatedEnumClasses = new ArrayList<>();
         for (Column col : t.columns) {
@@ -30,12 +31,13 @@ public class JavaCodeGenerator {
                 col.type = new ColumnType(ColumnType.ENUM.inSQL, enumName, ColumnType.ENUM.inJBDCSet, ColumnType.ENUM.inJBDCGet);
                 generatedEnumClasses.add(genEnum(enumName, col.definition));
             }
+            if(col.type.inJavaWithPackage != null)
+                importsList.add("import "+col.type.inJavaWithPackage+";");
         }
         Constructor constructor = genConstructor(t.name, t.columns);
         Constructor minimalConstructor = genMinimalConstructor(t.name, t.columns);
         boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
 
-        List<String> importsList = new ArrayList<>();
         importsList.add("import java.sql.Connection;");
         importsList.add("import java.sql.PreparedStatement;");
         importsList.add("import java.sql.ResultSet;");
@@ -514,9 +516,10 @@ public class JavaCodeGenerator {
 
         // SHORTCUT FOR WHERE METHODS
         for (Column col : t.columns) {
+            String colType = col.type.inJava.equals("int") ? "Integer" : col.type.inJava; // We need the
             classContentBuilder.append(
-                    "public static WHERE<"+(col.type.inJava)+"> where" + firstToUpperCase(col.name) + "() {\n" +
-                            "return new WHERE<"+(col.type.inJava)+">(\"" + col.nameQuoted + "\");\n" +
+                    "public static WHERE<"+firstToUpperCase(colType)+"> where" + firstToUpperCase(col.name) + "() {\n" +
+                            "return new WHERE<"+firstToUpperCase(colType)+">(\"" + col.nameQuoted + "\");\n" +
                             "}\n");
         }
         classContentBuilder.append(generateWhereClass(t));

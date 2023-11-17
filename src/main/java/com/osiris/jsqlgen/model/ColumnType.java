@@ -24,11 +24,11 @@ public class ColumnType {
             "double", "setDouble", "getDouble");
     // TIME/DATE TYPES:
     public static ColumnType DATE = new ColumnType(new String[]{"DATE", "DATETIME"},
-            "java.sql.Date", "setDate", "getDate");
+            "Date","java.sql.Date", "setDate", "getDate");
     public static ColumnType TIMESTAMP = new ColumnType(new String[]{"TIMESTAMP"},
-            "java.sql.Timestamp", "setTimestamp", "getTimestamp");
+            "Timestamp", "java.sql.Timestamp", "setTimestamp", "getTimestamp");
     public static ColumnType TIME = new ColumnType(new String[]{"TIME"},
-            "java.sql.Time", "setTime", "getTime");
+            "Time", "java.sql.Time","setTime", "getTime");
     public static ColumnType YEAR = new ColumnType(new String[]{"YEAR"},
             "int", "setInt", "getInt");
     // STRING/TEXT TYPES:
@@ -36,7 +36,7 @@ public class ColumnType {
             {"CHAR", "VARCHAR", "BINARY", "VARBINARY", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT"},
             "String", "setString", "getString");
     public static ColumnType BLOB = new ColumnType(new String[]{"TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"},
-            "java.sql.Blob", "setBlob", "getBlob");
+            "Blob", "java.sql.Blob", "setBlob", "getBlob");
     // ENUM
     public static ColumnType ENUM = new ColumnType(new String[]
             {"ENUM"},
@@ -54,12 +54,21 @@ public class ColumnType {
     };
     public String[] inSQL;
     public String inJava;
+    public String inJavaWithPackage;
     public String inJBDCSet;
     public String inJBDCGet;
 
     public ColumnType(String[] inSQL, String inJava, String inJBDCSet, String inJBDCGet) {
         this.inSQL = inSQL;
         this.inJava = inJava;
+        this.inJBDCSet = inJBDCSet;
+        this.inJBDCGet = inJBDCGet;
+    }
+
+    public ColumnType(String[] inSQL, String inJava, String inJavaWithPackage, String inJBDCSet, String inJBDCGet) {
+        this.inSQL = inSQL;
+        this.inJava = inJava;
+        this.inJavaWithPackage = inJavaWithPackage;
         this.inJBDCSet = inJBDCSet;
         this.inJBDCGet = inJBDCGet;
     }
