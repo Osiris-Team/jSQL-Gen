@@ -86,7 +86,7 @@ public class ColumnType {
     public static ColumnType findBySQLDefinition(String s) {
         for (ColumnType t : allTypes) {
             for (String sqlTypeName : t.inSQL) {
-                if (UString.startsWithIgnoreCase(s, sqlTypeName))
+                if (UString.startsWithWordIgnoreCase(s, sqlTypeName))
                     return t;
             }
         }
