@@ -68,6 +68,7 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 #### Pros
 - No runtime overhead for class generation (unlike other ORMs).
+- Generated classes can be enhanced by adding your own custom code at the bottom of the class.
 - 0% boilerplate, thus fast development and prototyping possible.
 - Cached connection pool ensures optimal performance on small and huge databases.
 Besides that it provides protection against timed out connections.
