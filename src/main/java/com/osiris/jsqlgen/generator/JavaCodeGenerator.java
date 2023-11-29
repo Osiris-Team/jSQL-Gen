@@ -517,6 +517,8 @@ public class JavaCodeGenerator {
         // SHORTCUT FOR WHERE METHODS
         for (Column col : t.columns) {
             String colType = col.type.inJava.equals("int") ? "Integer" : col.type.inJava; // We need the
+            if(col.type.isEnum()) colType = "String"; // Workaround to support enums right now
+            // TODO find a better solution for the above, since now typesafety for enums is gone
             classContentBuilder.append(
                     "public static WHERE<"+firstToUpperCase(colType)+"> where" + firstToUpperCase(col.name) + "() {\n" +
                             "return new WHERE<"+firstToUpperCase(colType)+">(\"" + col.nameQuoted + "\");\n" +
