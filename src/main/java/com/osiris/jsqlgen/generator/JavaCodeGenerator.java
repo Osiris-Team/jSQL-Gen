@@ -88,7 +88,7 @@ public class JavaCodeGenerator {
                     "        }\n" +
                     "        return s +\"...\"+ stack[1].toString(); //stack[0] == current method, gets ignored\n" +
                     "    }\n");
-        classContentBuilder.append("private static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
+        classContentBuilder.append("public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
         classContentBuilder.append("static {\n" +
                 "try{\n" + // Without this additional try/catch that encapsulates the complete code inside static constructor
                 // we somehow get problems like class not found exception
