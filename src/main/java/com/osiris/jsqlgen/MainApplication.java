@@ -447,8 +447,8 @@ public class MainApplication extends javafx.application.Application {
                 Files.writeString(jsonData.toPath(), out);
             }
             File databaseFile = new File(dir + "/Database.java");
-            String rawUrl = "\"jdbc:mysql://localhost/\"";
-            String url = "\"jdbc:mysql://localhost/" + db.name+"\"";
+            String url = "\"jdbc:mysql://localhost:3306/" + db.name+"\"";
+            String rawUrl = "getRawDbUrlFrom(url)";
             String name = "\""+db.name+"\"";
             String username = "\"\"";
             String password = "\"\"";

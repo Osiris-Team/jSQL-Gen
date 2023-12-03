@@ -266,9 +266,6 @@ public class JavaCodeGenerator {
                 "if that statement is null, returns all the contents of this table.\n" +
                 "*/\n" +
                 "public static List<" + t.name + "> get(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                (t.isDebug ? "long msGetCon = System.currentTimeMillis();\n" : "") +
-                "Connection con = Database.getCon();\n" +
-                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
                 "String sql = \"SELECT ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
@@ -277,11 +274,14 @@ public class JavaCodeGenerator {
         classContentBuilder.append("\" +\n" +
                         "\" FROM " + tNameQuoted + "\" +\n" +
                         "(where != null ? where : \"\");\n"+
-                (t.isDebug ? "long msGetResults = System.currentTimeMillis();\n" : "") +
 
                 (t.isCache ? "synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);\n" +
                         "if(cachedResult != null) return cachedResult.getResultsCopy();\n" : "") +
                 "List<" + t.name + "> list = new ArrayList<>();\n" +
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
+                "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
                 "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" + // Open try/catch
                         "if(where!=null && whereValues!=null)\n" +
                         "for (int i = 0; i < whereValues.length; i++) {\n" +
@@ -301,10 +301,11 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "}\n" + // Close while
-                        (t.isDebug ? "msGetResults = System.currentTimeMillis() - msGetResults;\n" : "") +
-                        (t.isDebug ? "System.err.println(minimalStackString()+\" con=\"+con+\" msGetCon=\"+msGetCon+\" msGetResults=\"+msGetResults+\" \"+sql);\n" : "") +
+                        (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                        "finally{Database.freeCon(con);}\n"+
+                        "finally{" +
+                        (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+                        "Database.freeCon(con);}\n"+
                         (t.isCache ? """
                                 cachedResults.add(new CachedResult(sql, whereValues, list));
                                 return list;}
@@ -366,11 +367,15 @@ public class JavaCodeGenerator {
 
         // CREATE COUNT METHOD:
         classContentBuilder.append("" +
+                "public static int count(){ return count(null, null); }\n" +
+                "\n" +
                 "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "String sql = \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
                 "(where != null ? where : \"\"); \n" +
-                (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
-                "Connection con = Database.getCon();\n"+
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
+                "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
                 "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" + // Open try/catch
                 "if(where!=null && whereValues!=null)\n" +
                 "for (int i = 0; i < whereValues.length; i++) {\n" +
@@ -379,8 +384,11 @@ public class JavaCodeGenerator {
                 "}\n" +
                 "ResultSet rs = ps.executeQuery();\n" +
                 "if (rs.next()) return rs.getInt(\"recordCount\");\n" +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                "finally {Database.freeCon(con);}\n" +
+                "finally {" +
+                (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+                "Database.freeCon(con);}\n" +
                         "return 0;\n");
         classContentBuilder.append("}\n\n"); // Close count method
 
@@ -393,14 +401,18 @@ public class JavaCodeGenerator {
                 "@throws Exception when failed to find by id or other SQL issues.\n" +
                 "*/\n" +
                 "public static void update(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                "Connection con = Database.getCon();\n" +
-                "try (PreparedStatement ps = con.prepareStatement(\n" +
-                "                \"UPDATE " + tNameQuoted + " SET ");
+                "String sql = \"UPDATE " + tNameQuoted + " SET ");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append(t.columns.get(i).nameQuoted + "=?,");
         }
         classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted + "=?");
-        classContentBuilder.append(" WHERE id=\"+obj.id)) {\n" // Open try/catch
+        classContentBuilder.append(" WHERE id=\"+obj.id;\n");
+        classContentBuilder.append(
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
+                "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
+                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
@@ -408,8 +420,11 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "ps.executeUpdate();\n" +
+                        (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
-                "finally{Database.freeCon(con);}\n"
+                "finally{" +
+                        (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+                        "Database.freeCon(con);}\n"
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close update method
@@ -421,9 +436,7 @@ public class JavaCodeGenerator {
                 "Adds the provided object to the database (note that the id is not checked for duplicates).\n" +
                 "*/\n" +
                 "public static void add(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                "Connection con = Database.getCon();\n" +
-                "try (PreparedStatement ps = con.prepareStatement(\n" +
-                "                \"INSERT INTO " + tNameQuoted + " (");
+                "String sql = \"INSERT INTO " + tNameQuoted + " (");
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
@@ -432,9 +445,13 @@ public class JavaCodeGenerator {
         for (int i = 0; i < t.columns.size() - 1; i++) {
             classContentBuilder.append("?,");
         }
-        classContentBuilder.append("?)");
+        classContentBuilder.append("?)\";\n");
         classContentBuilder.append(
-                "\")) {\n" // Open try/catch
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
+                "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
+                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
@@ -442,8 +459,11 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "ps.executeUpdate();\n" +
+                        (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
-                "finally{Database.freeCon(con);}\n"
+                "finally{" +
+                        (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+                        "Database.freeCon(con);}\n"
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close add method
@@ -467,8 +487,10 @@ public class JavaCodeGenerator {
                 "public static void remove(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "java.util.Objects.requireNonNull(where);\n" +
                 "String sql = \"DELETE FROM " + tNameQuoted + " \"+where;\n" +
-                (t.isDebug ? "System.err.println(minimalStackString()+\" \"+sql);\n" : "") +
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
                 "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
                 "try (PreparedStatement ps = con.prepareStatement(sql)) {\n");// Open try/catch
         classContentBuilder.append(
                 "if(whereValues != null)\n" +
@@ -477,19 +499,28 @@ public class JavaCodeGenerator {
                         "                    ps.setObject(i+1, val);\n" +
                         "                }\n" +
                         "ps.executeUpdate();\n" +
+                        (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                        "finally{Database.freeCon(con);}\n"
+                        "finally{" +
+                        (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+                        "Database.freeCon(con);}\n"
         );
         if(t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close delete method
 
         classContentBuilder.append("public static void removeAll() "+(t.isNoExceptions ? "" : "throws Exception")+" {\n" +
-                "        Connection con = Database.getCon();\n" +
-                "        try (PreparedStatement ps = con.prepareStatement(\n" +
-                "                \"DELETE FROM "+tNameQuoted+"\")) {\n" +
+                "String sql = \"DELETE FROM "+tNameQuoted+"\";\n"+
+                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
+                "Connection con = Database.getCon();\n" +
+                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
+                "        try (PreparedStatement ps = con.prepareStatement(sql)) {\n" +
                 "            ps.executeUpdate();\n" +
+                (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                "        finally{Database.freeCon(con);}\n" +
+                "        finally{" +
+                (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+                "Database.freeCon(con);}\n" +
                 "    }\n\n");
 
         // CREATE CLONE METHOD
@@ -980,12 +1011,15 @@ public class JavaCodeGenerator {
                 "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors)."+
                 "*/\n" +
                 "public class Database{\n" +
-                "public static String rawUrl = " + rawUrl + ";\n" +
                 "public static String url = " + url + ";\n" +
+                "public static String rawUrl = "+rawUrl+";\n" +
                 "public static String name = " + name + ";\n" +
                 "public static String username = " + username + ";\n" +
                 "public static String password = " + password + ";\n" +
-                "private static final List<Connection> availableConnections = new ArrayList<>();\n" +
+                "/** \n" +
+                "* Use synchronized on this before doing changes to it. \n" +
+                "*/\n" +
+                "public static final List<Connection> availableConnections = new ArrayList<>();\n" +
                 "\n" +
                 "    static{create();} // Create database if not exists\n" +
                 "\n" +
@@ -1052,6 +1086,27 @@ public class JavaCodeGenerator {
                 "            availableConnections.add(connection);\n" +
                 "        }\n" +
                 "    }\n" +
+                "" +
+                "    /**\n" +
+                "     * Gets the raw database url without database name. <br>\n" +
+                "     * Before: \"jdbc:mysql://localhost/my_database\" <br>\n" +
+                "     * After: \"jdbc:mysql://localhost\" <br>\n" +
+                "     */\n" +
+                "    public static String getRawDbUrlFrom(String databaseUrl) {\n" +
+                "        int index = 0;\n" +
+                "        int count = 0;\n" +
+                "        for (int i = 0; i < databaseUrl.length(); i++) {\n" +
+                "            char c = databaseUrl.charAt(i);\n" +
+                "            if(c == '/'){\n" +
+                "                index = i;\n" +
+                "                count++;\n" +
+                "            }\n" +
+                "            if(count == 3) break;\n" +
+                "        }\n" +
+                "        if(count != 3) return databaseUrl; // Means there is less than 3 \"/\", thus may already be raw url, or totally wrong url\n" +
+                "        return databaseUrl.substring(0, index);\n" +
+                "    }" +
+                "" +
                 "}\n");
     }
 
