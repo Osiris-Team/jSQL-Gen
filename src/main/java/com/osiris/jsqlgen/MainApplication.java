@@ -565,6 +565,14 @@ public class MainApplication extends javafx.application.Application {
                 Data.save();
             });
 
+            final CheckBox isVaadinFlow = new CheckBox("Vaadin-Flow");
+            paneTable.getChildren().add(isVaadinFlow);
+            isVaadinFlow.setSelected(t.isVaadinFlowUI);
+            isVaadinFlow.setOnAction(event -> {
+                t.isVaadinFlowUI = isVaadinFlow.isSelected();
+                Data.save();
+            });
+
             VBox listColumns = new VBox();
             listTables.getItems().add(listColumns);
             listColumns.paddingProperty().setValue(new Insets(0, 0, 0, 50));

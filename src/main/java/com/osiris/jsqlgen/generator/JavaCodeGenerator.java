@@ -10,7 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class JavaCodeGenerator {
 
@@ -26,13 +28,13 @@ public class JavaCodeGenerator {
             if (col.type == null)
                 throw new Exception("Failed to generate code, because failed to find matching java type of definition '" + col.definition
                         + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
-            if(col.type.isEnum()){
+            if (col.type.isEnum()) {
                 String enumName = firstToUpperCase(col.name);
                 col.type = new ColumnType(ColumnType.ENUM.inSQL, enumName, ColumnType.ENUM.inJBDCSet, ColumnType.ENUM.inJBDCGet);
                 generatedEnumClasses.add(genEnum(enumName, col.definition));
             }
-            if(col.type.inJavaWithPackage != null)
-                importsList.add("import "+col.type.inJavaWithPackage+";");
+            if (col.type.inJavaWithPackage != null)
+                importsList.add("import " + col.type.inJavaWithPackage + ";");
         }
         Constructor constructor = genConstructor(t.name, t.columns);
         Constructor minimalConstructor = genMinimalConstructor(t.name, t.columns);
@@ -46,33 +48,86 @@ public class JavaCodeGenerator {
         importsList.add("import java.util.List;");
         importsList.add("import java.util.ArrayList;");
         importsList.add("import java.util.function.Consumer;");
-        if(t.isCache)
+        if (t.isCache)
             importsList.add("import java.util.Arrays;");
 
         StringBuilder classContentBuilder = new StringBuilder();
         classContentBuilder.append("/**\n" +
                 "Generated class by <a href=\"https://github.com/Osiris-Team/jSQL-Gen\">jSQL-Gen</a>\n" +
-                "that contains static methods for fetching/updating data from the \"" + t.name + "\" table.\n" +
+                "that contains static methods for fetching/updating data from the " + tNameQuoted + " table.\n" +
                 "A single object/instance of this class represents a single row in the table\n" +
-                "and data can be accessed via its public fields. <p>\n" +
-                "Its not recommended to modify this class but it should be OK to add new methods to it.\n" +
+                "and data can be accessed via its public fields. <br>\n" +
+                "<br>\n" +
+                "You can add your own code to the top of this class. <br>\n" +
+                "Do not modify the rest of this class since those changes will be removed at regeneration.\n" +
                 "If modifications are really needed create a pull request directly to jSQL-Gen instead. <br>\n" +
-                (t.isDebug ? "DEBUG is enabled, thus debug information will be printed out to System.err. <br>\n": "") +
-                (t.isNoExceptions ? "NO EXCEPTIONS is enabled which makes it possible to use this methods outside of try/catch" +
-                        " blocks because SQL errors will be caught and thrown as runtime exceptions instead. <br>\n": "") +
+                "<br>\n" +
+                "Enabled modifiers: <br>\n" +
+                (t.isDebug ? "- DEBUG is enabled, thus debug information will be printed out to System.err. <br>\n" : "") +
+                (t.isNoExceptions ? "- NO EXCEPTIONS is enabled which makes it possible to use this methods outside of try/catch" +
+                        " blocks because SQL errors will be caught and thrown as runtime exceptions instead. <br>\n" : "") +
                 (t.isCache ? """
-                        CACHE is enabled, which means that results of get() are saved in memory <br>
+                        - CACHE is enabled, which means that results of get() are saved in memory <br>
                         and returned the next time the same request is made. <br>
                         The returned list is a deep copy, thus you can modify the list and its elements fields in your thread safely. <br>
                         The cache gets cleared/invalidated at any update/insert/delete. <br>
                         """ : "") +
+                (t.isVaadinFlowUI ? """
+                        - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
+                        will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
+                        """ : "") +
+                "<br>\n"+
+                "Structure ("+t.columns.size()+" fields/columns): <br>\n");
+        for (Column col : t.columns) {
+            classContentBuilder.append("- "+col.type.inJava+" "+col.name+" = "+col.definition+" <br>\n");
+        }
+        classContentBuilder.append(
                 "*/\n" +
                 "public class " + t.name + "{\n"); // Open class
+
+        classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
+
+        // Handle additional code from existing/old generated class
+        if (oldGeneratedClass.exists()) {
+            List<String> additionalLines = new ArrayList<>();
+            List<String> lines = Files.readAllLines(oldGeneratedClass.toPath());
+            List<String> oldImportsList = new ArrayList<>();
+            boolean isAdditionalLine = false;
+            for (String line : lines) {
+                if (line.startsWith("import"))
+                    oldImportsList.add(line);
+                else if (line.contains("// Additional code start ->")) {
+                    isAdditionalLine = true;
+                    continue;
+                } else if (line.contains("// Additional code end <-"))
+                    isAdditionalLine = false;
+
+                if (isAdditionalLine)
+                    additionalLines.add(line);
+            }
+            importsList = mergeListContents(importsList, oldImportsList);
+            if (!additionalLines.isEmpty()) {
+                classContentBuilder.append("// Additional code start -> \n");
+                for (String additionalLine : additionalLines) {
+                    classContentBuilder.append(additionalLine).append("\n");
+                }
+                classContentBuilder.append("// Additional code end <- \n");
+            } else {
+                classContentBuilder.append("// Additional code start -> \n");
+                classContentBuilder.append("    private " + t.name + "(){}\n");
+                classContentBuilder.append("// Additional code end <- \n");
+            }
+        } else {
+            classContentBuilder.append("// Additional code start -> \n");
+            classContentBuilder.append("    private " + t.name + "(){}\n");
+            classContentBuilder.append("// Additional code end <- \n");
+        }
+
         // Append public inner enum classes
         for (String generatedEnumClass : generatedEnumClasses) {
             classContentBuilder.append(generatedEnumClass);
         }
-        if(t.isDebug)
+        if (t.isDebug)
             classContentBuilder.append("    /**\n" +
                     "     * Only works correctly if the package name is com.osiris.jsqlgen.\n" +
                     "     */\n" +
@@ -103,8 +158,7 @@ public class JavaCodeGenerator {
             classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.nameQuoted + " " + col.definition + "\");\n");
         }
         classContentBuilder.append(
-                        "}\n" +
-                        "" +
+                "}\n" +
                         "try (PreparedStatement ps = con.prepareStatement(\"SELECT id FROM " + tNameQuoted + " ORDER BY id DESC LIMIT 1\")) {\n" +
                         "ResultSet rs = ps.executeQuery();\n" +
                         "if (rs.next()) idCounter.set(rs.getInt(1) + 1);\n" +
@@ -112,27 +166,27 @@ public class JavaCodeGenerator {
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
                         "finally {Database.freeCon(con);}\n" +
-                                "}catch(Exception e){\n" +
-                                "e.printStackTrace();\n" +
-                                "System.err.println(\"Something went really wrong during table ("+t.name+") initialisation, thus the program will exit!\");" +
-                                "System.exit(1);}\n" +
+                        "}catch(Exception e){\n" +
+                        "e.printStackTrace();\n" +
+                        "System.err.println(\"Something went really wrong during table (" + t.name + ") initialisation, thus the program will exit!\");" +
+                        "System.exit(1);}\n" +
                         "}\n\n");
 
-        if(t.isCache)
+        if (t.isCache)
             classContentBuilder.append("    private static final List<CachedResult> cachedResults = new ArrayList<>();\n" +
                     "    private static class CachedResult {\n" +
                     "        public final String sql;\n" +
                     "        public final Object[] whereValues;\n" +
-                    "        public final List<"+t.name+"> results;\n" +
-                    "        public CachedResult(String sql, Object[] whereValues, List<"+t.name+"> results) {\n" +
+                    "        public final List<" + t.name + "> results;\n" +
+                    "        public CachedResult(String sql, Object[] whereValues, List<" + t.name + "> results) {\n" +
                     "            this.sql = sql;\n" +
                     "            this.whereValues = whereValues;\n" +
                     "            this.results = results;\n" +
                     "        }\n" +
-                    "        public List<"+t.name+"> getResultsCopy(){\n" +
+                    "        public List<" + t.name + "> getResultsCopy(){\n" +
                     "            synchronized (results){\n" +
-                    "                List<"+t.name+"> list = new ArrayList<>(results.size());\n" +
-                    "                for ("+t.name+" obj : results) {\n" +
+                    "                List<" + t.name + "> list = new ArrayList<>(results.size());\n" +
+                    "                for (" + t.name + " obj : results) {\n" +
                     "                    list.add(obj.clone());\n" +
                     "                }\n" +
                     "                return list;\n" +
@@ -163,9 +217,8 @@ public class JavaCodeGenerator {
         // CREATE FIELDS AKA COLUMNS:
         for (Column col : t.columns) {
             boolean notNull = UString.containsIgnoreCase(col.definition, "NOT NULL");
-            classContentBuilder.append("" +
-                    "/**\n" +
-                    "Database field/value. " + (notNull ? "Not null. " : "") + "<br>\n" +
+            classContentBuilder.append("/**\n" +
+                    "Database field/value: "+col.definition+". <br>\n" +
                     (col.comment != null ? (col.comment + "\n") : "") +
                     "*/\n" +
                     "public " + col.type.inJava + " " + col.name + ";\n");
@@ -185,15 +238,29 @@ public class JavaCodeGenerator {
         classContentBuilder.append(
                 "public static " + t.name + " create(" + minimalConstructor.params.replace(idParam, "")
                         + ") {\n" +
-                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
-                        "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        "return obj;\n");
+        classContentBuilder.append("}\n\n"); // Close create method
+
+        classContentBuilder.append("""
+                /**
+                Creates and returns an in-memory object with -1 as id, that can be added to this table
+                AFTER you manually did obj.id = idCounter.getAndIncrement().
+                This is useful for objects that may never be added to the table.
+                Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+                Also note that this method will NOT add the object to the table.
+                */
+                """);
+        classContentBuilder.append(
+                "public static " + t.name + " createInMem(" + minimalConstructor.params.replace(idParam, "")
+                        + ") {\n" +
+                        firstCol.type.inJava + " " + firstCol.name + " = -1;\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close create method
 
 
         if (hasMoreFields) {
-            classContentBuilder.append("" +
-                    "/**\n" +
+            classContentBuilder.append("/**\n" +
                     "Creates and returns an object that can be added to this table.\n" +
                     "Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).\n" +
                     "Note that this method will NOT add the object to the table.\n" +
@@ -201,39 +268,32 @@ public class JavaCodeGenerator {
             classContentBuilder.append(
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
                             + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
-                            "" + t.name + " obj = new " + t.name + "();\n" +
-                            "" + genFieldAssignments("obj", t.columns) + "\n" +
+                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "();\n" + genFieldAssignments("obj", t.columns) + "\n" +
                             "return obj;\n");
             classContentBuilder.append("}\n\n"); // Close create method
         }
 
-        classContentBuilder.append("" +
-                "/**\n" +
+        classContentBuilder.append("/**\n" +
                 "Convenience method for creating and directly adding a new object to the table.\n" +
                 "Note that the parameters of this method represent \"NOT NULL\" fields in the table and thus should not be null.\n" +
                 "*/\n");
         classContentBuilder.append(
                 "public static " + t.name + " createAndAdd(" + minimalConstructor.params.replace(idParam, "")
                         + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
-                        "" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "add(obj);\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close method
 
 
         if (hasMoreFields) {
-            classContentBuilder.append("" +
-                    "/**\n" +
+            classContentBuilder.append("/**\n" +
                     "Convenience method for creating and directly adding a new object to the table.\n" +
                     "*/\n");
             classContentBuilder.append(
                     "public static " + t.name + " createAndAdd(" + genParams(t.columns).replace(idParam, "")
                             + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" +
-                            "" + t.name + " obj = new " + t.name + "();\n" +
-                            "" + genFieldAssignments("obj", t.columns) + "\n" +
+                            firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "();\n" + genFieldAssignments("obj", t.columns) + "\n" +
                             "add(obj);\n" +
                             "return obj;\n");
             classContentBuilder.append("}\n\n"); // Close method
@@ -241,8 +301,7 @@ public class JavaCodeGenerator {
 
 
         // CREATE GET METHOD:
-        classContentBuilder.append("" +
-                "/**\n" +
+        classContentBuilder.append("/**\n" +
                 "@return a list containing all objects in this table.\n" +
                 "*/\n" +
                 "public static List<" + t.name + "> get() " + (t.isNoExceptions ? "" : "throws Exception") + " {return get(null);}\n" +
@@ -271,9 +330,10 @@ public class JavaCodeGenerator {
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
         classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
+        // Open while
         classContentBuilder.append("\" +\n" +
-                        "\" FROM " + tNameQuoted + "\" +\n" +
-                        "(where != null ? where : \"\");\n"+
+                "\" FROM " + tNameQuoted + "\" +\n" +
+                "(where != null ? where : \"\");\n" +
 
                 (t.isCache ? "synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);\n" +
                         "if(cachedResult != null) return cachedResult.getResultsCopy();\n" : "") +
@@ -283,19 +343,18 @@ public class JavaCodeGenerator {
                 (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
                 (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
                 "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" + // Open try/catch
-                        "if(where!=null && whereValues!=null)\n" +
-                        "for (int i = 0; i < whereValues.length; i++) {\n" +
-                        "Object val = whereValues[i];\n" +
-                        "ps.setObject(i+1, val);\n" +
-                        "}\n" +
-                        "ResultSet rs = ps.executeQuery();\n" +
-                        "while (rs.next()) {\n" + // Open while
-                        "" + t.name + " obj = new " + t.name + "();\n" +
-                        "list.add(obj);\n");
+                "if(where!=null && whereValues!=null)\n" +
+                "for (int i = 0; i < whereValues.length; i++) {\n" +
+                "Object val = whereValues[i];\n" +
+                "ps.setObject(i+1, val);\n" +
+                "}\n" +
+                "ResultSet rs = ps.executeQuery();\n" +
+                "while (rs.next()) {\n" + t.name + " obj = new " + t.name + "();\n" +
+                "list.add(obj);\n");
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
-            if(c.type.isEnum())
-                classContentBuilder.append("obj." + c.name + " = "+c.type.inJava+".valueOf(rs." + c.type.inJBDCGet + "(" + (i + 1) + "));\n");
+            if (c.type.isEnum())
+                classContentBuilder.append("obj." + c.name + " = " + c.type.inJava + ".valueOf(rs." + c.type.inJBDCGet + "(" + (i + 1) + "));\n");
             else
                 classContentBuilder.append("obj." + c.name + " = rs." + c.type.inJBDCGet + "(" + (i + 1) + ");\n");
         }
@@ -305,7 +364,7 @@ public class JavaCodeGenerator {
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                         "finally{" +
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                        "Database.freeCon(con);}\n"+
+                        "Database.freeCon(con);}\n" +
                         (t.isCache ? """
                                 cachedResults.add(new CachedResult(sql, whereValues, list));
                                 return list;}
@@ -316,25 +375,25 @@ public class JavaCodeGenerator {
         classContentBuilder.append("    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        getLazy(onResultReceived, null, 500, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, int limit)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        getLazy(onResultReceived, null, limit, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, Consumer<Long> onFinish)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        getLazy(onResultReceived, onFinish, 500, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, Consumer<Long> onFinish, int limit)"+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        getLazy(onResultReceived, onFinish, limit, null);\n" +
                 "    }\n" +
                 "    /**\n" +
@@ -345,12 +404,12 @@ public class JavaCodeGenerator {
                 "     * @param limit the maximum amount of elements for each fetch.\n" +
                 "     * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<"+t.name+">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) "+(t.isNoExceptions ? "" : "throws Exception")+"{\n" +
+                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) " + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        new Thread(() -> {\n" +
                 "            WHERE finalWhere;\n" +
                 "            if(where == null) finalWhere = new WHERE(\"\");\n" +
                 "            else finalWhere = where;\n" +
-                "            List<"+t.name+"> results;\n" +
+                "            List<" + t.name + "> results;\n" +
                 "            int lastId = -1;\n" +
                 "            long count = 0;\n" +
                 "            while(true){\n" +
@@ -366,8 +425,7 @@ public class JavaCodeGenerator {
 
 
         // CREATE COUNT METHOD:
-        classContentBuilder.append("" +
-                "public static int count(){ return count(null, null); }\n" +
+        classContentBuilder.append("public static int count(){ return count(null, null); }\n" +
                 "\n" +
                 "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "String sql = \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
@@ -389,13 +447,12 @@ public class JavaCodeGenerator {
                 "finally {" +
                 (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
                 "Database.freeCon(con);}\n" +
-                        "return 0;\n");
+                "return 0;\n");
         classContentBuilder.append("}\n\n"); // Close count method
 
 
         // CREATE UPDATE METHOD:
-        classContentBuilder.append("" +
-                "/**\n" +
+        classContentBuilder.append("/**\n" +
                 "Searches the provided object in the database (by its id),\n" +
                 "and updates all its fields.\n" +
                 "@throws Exception when failed to find by id or other SQL issues.\n" +
@@ -409,10 +466,10 @@ public class JavaCodeGenerator {
         classContentBuilder.append(" WHERE id=\"+obj.id;\n");
         classContentBuilder.append(
                 (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
-                "Connection con = Database.getCon();\n" +
-                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
-                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
-                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
+                        "Connection con = Database.getCon();\n" +
+                        (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                        (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
+                        "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
@@ -422,17 +479,16 @@ public class JavaCodeGenerator {
                 "ps.executeUpdate();\n" +
                         (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
-                "finally{" +
+                        "finally{" +
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
                         "Database.freeCon(con);}\n"
         );
-        if(t.isCache) classContentBuilder.append("clearCache();\n");
+        if (t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close update method
 
 
         // CREATE ADD METHOD:
-        classContentBuilder.append("" +
-                "/**\n" +
+        classContentBuilder.append("/**\n" +
                 "Adds the provided object to the database (note that the id is not checked for duplicates).\n" +
                 "*/\n" +
                 "public static void add(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
@@ -448,10 +504,10 @@ public class JavaCodeGenerator {
         classContentBuilder.append("?)\";\n");
         classContentBuilder.append(
                 (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
-                "Connection con = Database.getCon();\n" +
-                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
-                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
-                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
+                        "Connection con = Database.getCon();\n" +
+                        (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+                        (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
+                        "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
         );
         for (int i = 0; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
@@ -461,17 +517,16 @@ public class JavaCodeGenerator {
                 "ps.executeUpdate();\n" +
                         (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
-                "finally{" +
+                        "finally{" +
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
                         "Database.freeCon(con);}\n"
         );
-        if(t.isCache) classContentBuilder.append("clearCache();\n");
+        if (t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close add method
 
 
         // CREATE DELETE/REMOVE METHOD:
-        classContentBuilder.append("" +
-                "/**\n" +
+        classContentBuilder.append("/**\n" +
                 "Deletes the provided object from the database.\n" +
                 "*/\n" +
                 "public static void remove(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
@@ -505,11 +560,11 @@ public class JavaCodeGenerator {
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
                         "Database.freeCon(con);}\n"
         );
-        if(t.isCache) classContentBuilder.append("clearCache();\n");
+        if (t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close delete method
 
-        classContentBuilder.append("public static void removeAll() "+(t.isNoExceptions ? "" : "throws Exception")+" {\n" +
-                "String sql = \"DELETE FROM "+tNameQuoted+"\";\n"+
+        classContentBuilder.append("public static void removeAll() " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "String sql = \"DELETE FROM " + tNameQuoted + "\";\n" +
                 (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
                 "Connection con = Database.getCon();\n" +
                 (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
@@ -523,7 +578,7 @@ public class JavaCodeGenerator {
                 "Database.freeCon(con);}\n" +
                 "    }\n\n");
 
-        // CREATE CLONE METHOD
+        // CREATE OBJ CLONE METHOD
         classContentBuilder.append("public " + t.name + " clone(){\n" +
                 "return new " + t.name + "(");
         for (int i = 0; i < t.columns.size(); i++) {
@@ -535,7 +590,22 @@ public class JavaCodeGenerator {
         classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(");\n}\n");
 
-        // CREATE TOPRINTSTRING METHOD
+        // CREATE OBJ ADD METHOD
+        classContentBuilder.append("public " + t.name + " add(){\n" +
+                t.name + ".add(this);\n" +
+                "return this;\n}\n");
+
+        // CREATE OBJ UPDATE METHOD
+        classContentBuilder.append("public " + t.name + " update(){\n" +
+                t.name + ".update(this);\n" +
+                "return this;\n}\n");
+
+        // CREATE OBJ REMOVE METHOD
+        classContentBuilder.append("public " + t.name + " remove(){\n" +
+                t.name + ".remove(this);\n" +
+                "return this;\n}\n");
+
+        // CREATE OBJ TOPRINTSTRING METHOD
         classContentBuilder.append("public String toPrintString(){\n" +
                 "return  \"\"");
         for (int i = 0; i < t.columns.size(); i++) {
@@ -545,55 +615,25 @@ public class JavaCodeGenerator {
         classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(";\n}\n");
 
+        // CREATE OBJ TOVAADINCOMPONENT METHOD
+        if (t.isVaadinFlowUI)
+            classContentBuilder.append(generateVaadinFlow(t, importsList));
+
+        // CREATE OBJ ISONLYINMEMORY METHOD
+        classContentBuilder.append("public boolean isOnlyInMemory(){\n" +
+                "return id < 0;\n}\n");
+
         // SHORTCUT FOR WHERE METHODS
         for (Column col : t.columns) {
             String colType = col.type.inJava.equals("int") ? "Integer" : col.type.inJava; // We need the
-            if(col.type.isEnum()) colType = "String"; // Workaround to support enums right now
+            if (col.type.isEnum()) colType = "String"; // Workaround to support enums right now
             // TODO find a better solution for the above, since now typesafety for enums is gone
             classContentBuilder.append(
-                    "public static WHERE<"+firstToUpperCase(colType)+"> where" + firstToUpperCase(col.name) + "() {\n" +
-                            "return new WHERE<"+firstToUpperCase(colType)+">(\"" + col.nameQuoted + "\");\n" +
+                    "public static WHERE<" + firstToUpperCase(colType) + "> where" + firstToUpperCase(col.name) + "() {\n" +
+                            "return new WHERE<" + firstToUpperCase(colType) + ">(\"" + col.nameQuoted + "\");\n" +
                             "}\n");
         }
         classContentBuilder.append(generateWhereClass(t));
-        classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
-
-        // Handle additional code from existing/old generated class
-        if(oldGeneratedClass.exists()){
-            List<String> additionalLines = new ArrayList<>();
-            List<String> lines = Files.readAllLines(oldGeneratedClass.toPath());
-            List<String> oldImportsList = new ArrayList<>();
-            boolean isAdditionalLine = false;
-            for (String line : lines) {
-                if(line.startsWith("import"))
-                    oldImportsList.add(line);
-                else if(line.contains("// Additional code start ->")){
-                    isAdditionalLine = true;
-                    continue;
-                }
-                else if(line.contains("// Additional code end <-"))
-                    isAdditionalLine = false;
-
-                if(isAdditionalLine)
-                    additionalLines.add(line);
-            }
-            importsList = mergeListContents(importsList, oldImportsList);
-            if(!additionalLines.isEmpty()){
-                classContentBuilder.append("// Additional code start -> \n");
-                for (String additionalLine : additionalLines) {
-                    classContentBuilder.append(additionalLine).append("\n");
-                }
-                classContentBuilder.append("// Additional code end <- \n");
-            } else{
-                classContentBuilder.append("// Additional code start -> \n");
-                classContentBuilder.append("private " + t.name + "(){}\n");
-                classContentBuilder.append("// Additional code end <- \n");
-            }
-        } else{
-            classContentBuilder.append("// Additional code start -> \n");
-            classContentBuilder.append("private " + t.name + "(){}\n");
-            classContentBuilder.append("// Additional code end <- \n");
-        }
 
         classContentBuilder.append("}\n"); // Close class
 
@@ -606,7 +646,7 @@ public class JavaCodeGenerator {
     }
 
     private static String genJDBCSet(Column c, int i) {
-        if(c.type.isEnum())
+        if (c.type.isEnum())
             return "ps." + c.type.inJBDCSet + "(" + (i + 1) + ", obj." + c.name + ".name());\n";
         else
             return "ps." + c.type.inJBDCSet + "(" + (i + 1) + ", obj." + c.name + ");\n";
@@ -615,12 +655,12 @@ public class JavaCodeGenerator {
     private static String genEnum(String enumName, String definition) {
         definition = definition.substring(definition.indexOf("(") + 1, definition.lastIndexOf(")"));
         String[] enumTypeRawNames = definition.split(",");
-        String s = "public enum "+enumName+" {";
+        String s = "public enum " + enumName + " {";
         for (String enumTypeRawName : enumTypeRawNames) {
             s += enumTypeRawName.replace("\"", "")
                     .replace("'", "")
                     .replace("`", "")
-                    +",";
+                    + ",";
         }
         s += "}\n";
         return s;
@@ -630,7 +670,7 @@ public class JavaCodeGenerator {
         List<String> unified = new ArrayList<>();
         for (List<String> list : lists) {
             for (String s : list) {
-                if(!unified.contains(s))
+                if (!unified.contains(s))
                     unified.add(s);
             }
         }
@@ -657,8 +697,7 @@ public class JavaCodeGenerator {
 
         constructor.fieldAssignments = fieldsBuilder.toString();
 
-        constructor.asString = "" +
-                "/**\n" +
+        constructor.asString = "/**\n" +
                 "Use the static create method instead of this constructor,\n" +
                 "if you plan to add this object to the database in the future, since\n" +
                 "that method fetches and sets/reserves the {@link #id}.\n" +
@@ -693,8 +732,7 @@ public class JavaCodeGenerator {
 
         constructor.fieldAssignments = fieldsBuilder.toString();
 
-        constructor.asString = "" +
-                "/**\n" +
+        constructor.asString = "/**\n" +
                 "Use the static create method instead of this constructor,\n" +
                 "if you plan to add this object to the database in the future, since\n" +
                 "that method fetches and sets/reserves the {@link #id}.\n" +
@@ -992,8 +1030,7 @@ public class JavaCodeGenerator {
     public static void generateDatabaseFile(Database db, File databaseFile, String rawUrl, String url, String name, String username, String password) throws IOException {
         databaseFile.getParentFile().mkdirs();
         databaseFile.createNewFile();
-        Files.writeString(databaseFile.toPath(), "" +
-                (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+        Files.writeString(databaseFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
                 "import java.sql.Connection;\n" +
                 "import java.sql.DriverManager;\n" +
                 "import java.sql.SQLException;\n" +
@@ -1008,11 +1045,11 @@ public class JavaCodeGenerator {
                 "Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class. <br>\n" +
                 "All tables use the cached connection pool in this class which has following advantages: <br>\n" +
                 "- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.\n" +
-                "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors)."+
+                "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors)." +
                 "*/\n" +
                 "public class Database{\n" +
                 "public static String url = " + url + ";\n" +
-                "public static String rawUrl = "+rawUrl+";\n" +
+                "public static String rawUrl = " + rawUrl + ";\n" +
                 "public static String name = " + name + ";\n" +
                 "public static String username = " + username + ";\n" +
                 "public static String password = " + password + ";\n" +
@@ -1066,14 +1103,14 @@ public class JavaCodeGenerator {
                 "                if (!availableConnections.isEmpty()) {\n" +
                 "                    List<Connection> removableConnections = new ArrayList<>(0);\n" +
                 "                    for (Connection con : availableConnections) {\n" +
-                "                        if (!con.isValid(1)) {con.close(); removableConnections.add(con);}\n"+
+                "                        if (!con.isValid(1)) {con.close(); removableConnections.add(con);}\n" +
                 "                        else {availableCon = con; removableConnections.add(con); break;}\n" +
                 "                    }\n" +
                 "                    for (Connection removableConnection : removableConnections) {\n" +
                 "                        availableConnections.remove(removableConnection); // Remove invalid or used connections\n" +
                 "                    }\n" +
                 "                }\n" +
-                "                if (availableCon != null) return availableCon;\n"+
+                "                if (availableCon != null) return availableCon;\n" +
                 "                else return DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
                 "            } catch (Exception e) {\n" +
                 "                throw new RuntimeException(e);\n" +
@@ -1086,7 +1123,6 @@ public class JavaCodeGenerator {
                 "            availableConnections.add(connection);\n" +
                 "        }\n" +
                 "    }\n" +
-                "" +
                 "    /**\n" +
                 "     * Gets the raw database url without database name. <br>\n" +
                 "     * Before: \"jdbc:mysql://localhost/my_database\" <br>\n" +
@@ -1106,8 +1142,143 @@ public class JavaCodeGenerator {
                 "        if(count != 3) return databaseUrl; // Means there is less than 3 \"/\", thus may already be raw url, or totally wrong url\n" +
                 "        return databaseUrl.substring(0, index);\n" +
                 "    }" +
-                "" +
                 "}\n");
+    }
+
+    /**
+     * Should be compatible with Vaadin 14 and up.
+     */
+    public static String generateVaadinFlow(Table t, List<String> importsList) {
+        StringBuilder s = new StringBuilder();
+
+        // Add imports
+        importsList.add("import com.vaadin.flow.component.button.Button;");
+        importsList.add("import com.vaadin.flow.component.formlayout.FormLayout;");
+        importsList.add("import com.vaadin.flow.component.orderedlayout.HorizontalLayout;");
+        importsList.add("import com.vaadin.flow.component.orderedlayout.VerticalLayout;");
+        importsList.add("import com.vaadin.flow.component.select.Select;");
+        importsList.add("import com.vaadin.flow.component.textfield.NumberField;");
+        importsList.add("import com.vaadin.flow.component.textfield.TextField;");
+        importsList.add("import com.vaadin.flow.component.ClickEvent;");
+
+
+        // Create the class first
+        s.append("    public static class " + t.name + "Comp extends VerticalLayout{\n" +
+                "        public " + t.name + " data;\n" +
+                "\n" +
+                "        // Form and fields\n" +
+                "        public FormLayout form = new FormLayout();\n");
+        Map<Column, String> mapFieldnames = new HashMap<>();
+        for (Column col : t.columns) {
+            String colName = firstToUpperCase(col.name);
+            String fieldName = "";
+            if (col.type.isEnum()) {
+                fieldName = "sel" + colName;
+                s.append("        public Select<" + t.name + "." + col.type.inJava + "> " + fieldName +
+                        " = new Select<"+ t.name + "." + col.type.inJava +">();\n" +
+                        "        {"+fieldName+".setLabel(\""+colName+"\"); "+fieldName+".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
+            } else if (col.type.inJava.equals("String")) {
+                fieldName = "tf" + colName;
+                s.append("        public TextField " + fieldName + " = new TextField(\"" + colName + "\");\n");
+            } else {
+                fieldName = "nf" + colName;
+                s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
+            }
+            mapFieldnames.put(col, fieldName);
+        }
+
+        s.append("        // Buttons\n" +
+                "        public HorizontalLayout hlButtons = new HorizontalLayout();\n" +
+                "        public Button btnAdd = new Button(\"Add\");\n" +
+                "        public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {\n" +
+                "                btnAdd.setEnabled(false);\n" +
+                "                data.id = idCounter.getAndIncrement();\n" +
+                "                " + t.name + ".add(data);\n" +
+                "                e.unregisterListener(); // Make sure it gets only added once to the database\n" +
+                "                updateButtons();\n" +
+                "};\n" +
+                "        public Button btnSave = new Button(\"Save\");\n" +
+                "        public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {\n" +
+                "                btnSave.setEnabled(false);\n" +
+                "                updateData();\n" +
+                "                " + t.name + ".update(data);\n" +
+                "                btnSave.setEnabled(true);\n" +
+                "                updateButtons();\n" +
+                "};\n" +
+                "        public Button btnDelete = new Button(\"Delete\");\n" +
+                "        public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {\n" +
+                "                btnDelete.setEnabled(false);\n" +
+                "                " + t.name + ".remove(data);\n" +
+                "                e.unregisterListener(); // Make sure it gets only added once to the database\n" +
+                "                updateButtons();\n" +
+                "};\n" +
+                "\n" +
+                "        public " + t.name + "Comp(" + t.name + " data) {\n" +
+                "            this.data = data;\n" +
+                "            setWidthFull();\n" +
+                "            setPadding(false);\n" +
+                "\n" +
+                "            // Set defaults\n" +
+                "            updateFields();\n" +
+                "\n" +
+                "            // Add fields\n" +
+                "            addAndExpand(form);\n" +
+                "            form.setWidthFull();\n");
+        for (Column col : t.columns) {
+            String fieldName = mapFieldnames.get(col);
+            s.append("            form.add(" + fieldName + ");\n");
+        }
+        s.append("\n" +
+                "            // Add buttons\n" +
+                "            add(hlButtons);\n" +
+                "            hlButtons.setPadding(false);\n" +
+                "            hlButtons.setWidthFull();\n" +
+                "            updateButtons();\n" +
+                "\n" +
+                "            // Add button listeners\n" +
+                "            btnAdd.addClickListener(e -> {onBtnAddClick.accept(e);});\n" +
+                "            btnSave.addClickListener(e -> {onBtnSaveClick.accept(e);});\n" +
+                "            btnDelete.addClickListener(e -> {onBtnDeleteClick.accept(e);});\n" +
+                "        }\n" +
+                "\n" +
+                "        public void updateFields(){\n");
+        for (Column col : t.columns) {
+            String fieldName = mapFieldnames.get(col);
+            if (col.type.isNumber())
+                s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
+            else
+                s.append("            " + fieldName + ".setValue(data." + col.name + ");\n");
+        }
+        s.append("        }\n" +
+                "        public void updateData(){\n");
+        for (Column col : t.columns) {
+            String fieldName = mapFieldnames.get(col);
+            if (col.type.isNumber() || col.type.isDecimalNumber())
+                s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");
+            else
+                s.append("            data." + col.name + " = " + fieldName + ".getValue();\n");
+        }
+        s.append("        }\n" +
+                "\n" +
+                "        public void updateButtons(){\n" +
+                "            hlButtons.removeAll();\n" +
+                "\n" +
+                "            if(data.id < 0){ // In memory only, doesn't exist in db yet\n" +
+                "                hlButtons.addAndExpand(btnAdd);\n" +
+                "                return;\n" +
+                "            }\n" +
+                "            // Already exists\n" +
+                "            hlButtons.add(btnDelete);\n" +
+                "            hlButtons.addAndExpand(btnSave);\n" +
+                "        }\n" +
+                "    }\n" + // CLOSE CLASS
+                "\n" +
+                "    public " + t.name + "Comp toComp(){\n" +
+                "        return new " + t.name + "Comp(this);\n" +
+                "    }\n" +
+                "\n");
+
+        return s.toString();
     }
 
     public static class Constructor {

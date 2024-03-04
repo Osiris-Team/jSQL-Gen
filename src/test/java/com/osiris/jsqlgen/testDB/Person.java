@@ -7,22 +7,55 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.Arrays;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.ClickEvent;
 
 /**
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
-that contains static methods for fetching/updating data from the "Person" table.
+that contains static methods for fetching/updating data from the `person` table.
 A single object/instance of this class represents a single row in the table
-and data can be accessed via its public fields. <p>
-Its not recommended to modify this class but it should be OK to add new methods to it.
+and data can be accessed via its public fields. <br>
+<br>
+You can add your own code to the top of this class. <br>
+Do not modify the rest of this class since those changes will be removed at regeneration.
 If modifications are really needed create a pull request directly to jSQL-Gen instead. <br>
-DEBUG is enabled, thus debug information will be printed out to System.err. <br>
-NO EXCEPTIONS is enabled which makes it possible to use this methods outside of try/catch blocks because SQL errors will be caught and thrown as runtime exceptions instead. <br>
-CACHE is enabled, which means that results of get() are saved in memory <br>
+<br>
+Enabled modifiers: <br>
+- DEBUG is enabled, thus debug information will be printed out to System.err. <br>
+- NO EXCEPTIONS is enabled which makes it possible to use this methods outside of try/catch blocks because SQL errors will be caught and thrown as runtime exceptions instead. <br>
+- CACHE is enabled, which means that results of get() are saved in memory <br>
 and returned the next time the same request is made. <br>
 The returned list is a deep copy, thus you can modify the list and its elements fields in your thread safely. <br>
 The cache gets cleared/invalidated at any update/insert/delete. <br>
+- VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
+will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
+<br>
+Structure (4 fields/columns): <br>
+- int id = INT NOT NULL PRIMARY KEY <br>
+- String name = TEXT NOT NULL <br>
+- int age = INT NOT NULL <br>
+- Flair flair = ENUM('COOL', 'CHILL', 'FLY') NOT NULL <br>
 */
 public class Person{
+// The code below will not be removed when re-generating this class.
+// Additional code start -> 
+private Person(){}
+// Additional code end <- 
+public enum Flair {COOL, CHILL, FLY,}
     /**
      * Only works correctly if the package name is com.osiris.jsqlgen.
      */
@@ -48,6 +81,8 @@ try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `name` TEXT NOT NULL");}cat
 s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `name` TEXT NOT NULL");
 try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `age` INT NOT NULL");}catch(Exception ignored){}
 s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `age` INT NOT NULL");
+try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') NOT NULL");}catch(Exception ignored){}
+s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') NOT NULL");
 }
 try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `person` ORDER BY id DESC LIMIT 1")) {
 ResultSet rs = ps.executeQuery();
@@ -102,30 +137,47 @@ Use the static create method instead of this constructor,
 if you plan to add this object to the database in the future, since
 that method fetches and sets/reserves the {@link #id}.
 */
-public Person (int id, String name, int age){
-this.id = id;this.name = name;this.age = age;
+public Person (int id, String name, int age, Flair flair){
+this.id = id;this.name = name;this.age = age;this.flair = flair;
 }
 /**
-Database field/value. Not null. <br>
+Database field/value: INT NOT NULL PRIMARY KEY. <br>
 */
 public int id;
 /**
-Database field/value. Not null. <br>
+Database field/value: TEXT NOT NULL. <br>
 */
 public String name;
 /**
-Database field/value. Not null. <br>
+Database field/value: INT NOT NULL. <br>
 */
 public int age;
+/**
+Database field/value: ENUM('COOL', 'CHILL', 'FLY') NOT NULL. <br>
+*/
+public Flair flair;
 /**
 Creates and returns an object that can be added to this table.
 Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 Also note that this method will NOT add the object to the table.
 */
-public static Person create( String name, int age) {
+public static Person create( String name, int age, Flair flair) {
 int id = idCounter.getAndIncrement();
-Person obj = new Person(id, name, age);
+Person obj = new Person(id, name, age, flair);
+return obj;
+}
+
+/**
+Creates and returns an in-memory object with -1 as id, that can be added to this table
+AFTER you manually did obj.id = idCounter.getAndIncrement().
+This is useful for objects that may never be added to the table.
+Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+Also note that this method will NOT add the object to the table.
+*/
+public static Person createInMem( String name, int age, Flair flair) {
+int id = -1;
+Person obj = new Person(id, name, age, flair);
 return obj;
 }
 
@@ -133,9 +185,9 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
-public static Person createAndAdd( String name, int age)  {
+public static Person createAndAdd( String name, int age, Flair flair)  {
 int id = idCounter.getAndIncrement();
-Person obj = new Person(id, name, age);
+Person obj = new Person(id, name, age, flair);
 add(obj);
 return obj;
 }
@@ -164,7 +216,7 @@ get("WHERE username=? AND age=?", "Peter", 33);  <br>
 if that statement is null, returns all the contents of this table.
 */
 public static List<Person> get(String where, Object... whereValues)  {
-String sql = "SELECT `id`,`name`,`age`" +
+String sql = "SELECT `id`,`name`,`age`,`flair`" +
 " FROM `person`" +
 (where != null ? where : "");
 synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);
@@ -187,6 +239,7 @@ list.add(obj);
 obj.id = rs.getInt(1);
 obj.name = rs.getString(2);
 obj.age = rs.getInt(3);
+obj.flair = Flair.valueOf(rs.getString(4));
 }
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -277,7 +330,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(Person obj)  {
-String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=? WHERE id="+obj.id;
+String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=? WHERE id="+obj.id;
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -286,6 +339,7 @@ try (PreparedStatement ps = con.prepareStatement(sql)) {
 ps.setInt(1, obj.id);
 ps.setString(2, obj.name);
 ps.setInt(3, obj.age);
+ps.setString(4, obj.flair.name());
 ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -298,7 +352,7 @@ clearCache();
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(Person obj)  {
-String sql = "INSERT INTO `person` (`id`,`name`,`age`) VALUES (?,?,?)";
+String sql = "INSERT INTO `person` (`id`,`name`,`age`,`flair`) VALUES (?,?,?,?)";
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -307,6 +361,7 @@ try (PreparedStatement ps = con.prepareStatement(sql)) {
 ps.setInt(1, obj.id);
 ps.setString(2, obj.name);
 ps.setInt(3, obj.age);
+ps.setString(4, obj.flair.name());
 ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -364,10 +419,119 @@ Database.freeCon(con);}
     }
 
 public Person clone(){
-return new Person(this.id,this.name,this.age);
+return new Person(this.id,this.name,this.age,this.flair);
+}
+public Person add(){
+Person.add(this);
+return this;
+}
+public Person update(){
+Person.update(this);
+return this;
+}
+public Person remove(){
+Person.remove(this);
+return this;
 }
 public String toPrintString(){
-return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" ";
+return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" ";
+}
+    public static class PersonComp extends VerticalLayout{
+        public Person data;
+
+        // Form and fields
+        public FormLayout form = new FormLayout();
+        public NumberField nfId = new NumberField("Id");
+        public TextField tfName = new TextField("Name");
+        public NumberField nfAge = new NumberField("Age");
+        public Select<Person.Flair> selFlair = new Select<Person.Flair>();
+        {selFlair.setLabel("Flair"); selFlair.setItems(Person.Flair.values()); }
+        // Buttons
+        public HorizontalLayout hlButtons = new HorizontalLayout();
+        public Button btnAdd = new Button("Add");
+        public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {
+                btnAdd.setEnabled(false);
+                data.id = idCounter.getAndIncrement();
+                Person.add(data);
+                e.unregisterListener(); // Make sure it gets only added once to the database
+                updateButtons();
+};
+        public Button btnSave = new Button("Save");
+        public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {
+                btnSave.setEnabled(false);
+                updateData();
+                Person.update(data);
+                btnSave.setEnabled(true);
+                updateButtons();
+};
+        public Button btnDelete = new Button("Delete");
+        public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {
+                btnDelete.setEnabled(false);
+                Person.remove(data);
+                e.unregisterListener(); // Make sure it gets only added once to the database
+                updateButtons();
+};
+
+        public PersonComp(Person data) {
+            this.data = data;
+            setWidthFull();
+            setPadding(false);
+
+            // Set defaults
+            updateFields();
+
+            // Add fields
+            addAndExpand(form);
+            form.setWidthFull();
+            form.add(nfId);
+            form.add(tfName);
+            form.add(nfAge);
+            form.add(selFlair);
+
+            // Add buttons
+            add(hlButtons);
+            hlButtons.setPadding(false);
+            hlButtons.setWidthFull();
+            updateButtons();
+
+            // Add button listeners
+            btnAdd.addClickListener(e -> {onBtnAddClick.accept(e);});
+            btnSave.addClickListener(e -> {onBtnSaveClick.accept(e);});
+            btnDelete.addClickListener(e -> {onBtnDeleteClick.accept(e);});
+        }
+
+        public void updateFields(){
+            nfId.setValue(0.0 + data.id);
+            tfName.setValue(data.name);
+            nfAge.setValue(0.0 + data.age);
+            selFlair.setValue(data.flair);
+        }
+        public void updateData(){
+            data.id = (int) nfId.getValue().doubleValue();
+            data.name = tfName.getValue();
+            data.age = (int) nfAge.getValue().doubleValue();
+            data.flair = selFlair.getValue();
+        }
+
+        public void updateButtons(){
+            hlButtons.removeAll();
+
+            if(data.id < 0){ // In memory only, doesn't exist in db yet
+                hlButtons.addAndExpand(btnAdd);
+                return;
+            }
+            // Already exists
+            hlButtons.add(btnDelete);
+            hlButtons.addAndExpand(btnSave);
+        }
+    }
+
+    public PersonComp toComp(){
+        return new PersonComp(this);
+    }
+
+public boolean isOnlyInMemory(){
+return id < 0;
 }
 public static WHERE<Integer> whereId() {
 return new WHERE<Integer>("`id`");
@@ -377,6 +541,9 @@ return new WHERE<String>("`name`");
 }
 public static WHERE<Integer> whereAge() {
 return new WHERE<Integer>("`age`");
+}
+public static WHERE<String> whereFlair() {
+return new WHERE<String>("`flair`");
 }
 public static class WHERE<T> {
         /**
@@ -619,8 +786,4 @@ public static class WHERE<T> {
         }
 
     }
-// The code below will not be removed when re-generating this class.
-// Additional code start -> 
-private Person(){}
-// Additional code end <- 
 }

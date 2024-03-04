@@ -77,6 +77,26 @@ public class ColumnType {
         return inSQL[0].equals("ENUM");
     }
 
+    public boolean isNumber(){
+        return this == LONG || this == INT || this == SHORT || this == BYTE || this == BIT || this == YEAR;
+    }
+
+    public boolean isDecimalNumber(){
+        return this == DECIMAL || this == DOUBLE || this == FLOAT;
+    }
+
+    public boolean isDateOrTime(){
+        return this == DATE || this == TIMESTAMP || this == TIME || this == YEAR;
+    }
+
+    public boolean isText(){
+        return this == STRING;
+    }
+
+    public boolean isBlob(){
+        return this == BLOB;
+    }
+
     /**
      * Provided string must start with the SQL type name (case is ignored)
      * and can continue with anything else (perfect for SQL DEFINITION strings).

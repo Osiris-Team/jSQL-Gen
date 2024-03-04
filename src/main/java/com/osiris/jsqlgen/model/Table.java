@@ -8,6 +8,7 @@ public class Table {
     public boolean isDebug = false;
     public boolean isNoExceptions = true;
     public boolean isCache = false;
+    public boolean isVaadinFlowUI = false;
 
     public Table() {
         Column idColumn = new Column("id");
@@ -24,6 +25,7 @@ public class Table {
         t.isDebug = isDebug;
         t.isNoExceptions = isNoExceptions;
         t.isCache = isCache;
+        t.isVaadinFlowUI = isVaadinFlowUI;
         return t;
     }
 }

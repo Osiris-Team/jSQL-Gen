@@ -30,8 +30,10 @@ class JavaCodeGeneratorTest {
         t.name = "Person";
         t.columns.add(new Column("name").definition("TEXT NOT NULL"));
         t.columns.add(new Column("age").definition("INT NOT NULL"));
+        t.columns.add(new Column("flair").definition("ENUM('COOL', 'CHILL', 'FLY') NOT NULL"));
         t.isCache = true;
         t.isDebug = true;
+        t.isVaadinFlowUI = true;
         t.isNoExceptions = true;
         File javaFile = new File(dir + "/" + t.name + ".java");
         javaFile.createNewFile();
@@ -45,7 +47,7 @@ class JavaCodeGeneratorTest {
 
         SQLTestServer testDB = SQLTestServer.buildAndRun("testDB", 3307);
 
-        Person john = Person.createAndAdd("John", 32);
+        Person john = Person.createAndAdd("John", 32, Person.Flair.COOL);
         assertFalse(Person.whereName().is(john.name).get().isEmpty());
     }
 }
