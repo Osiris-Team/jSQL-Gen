@@ -1,5 +1,7 @@
 package com.osiris.jsqlgen.model;
 
+import com.osiris.jsqlgen.utils.UString;
+
 public class Column {
     public String name;
     public String nameQuoted;
@@ -27,5 +29,12 @@ public class Column {
         col.comment = comment;
         col.type = type;
         return col;
+    }
+
+    public String getDefaultValue() {
+        String val = definition.substring(definition.indexOf("DEFAULT"));
+        val = val.substring(val.indexOf(" ") + 1);
+        if(val.contains(" ")) val = val.substring(0, val.indexOf(" "));
+        return UString.removeOuterQuotes(val);
     }
 }

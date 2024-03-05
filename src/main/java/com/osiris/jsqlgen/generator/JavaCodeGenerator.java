@@ -9,10 +9,8 @@ import com.osiris.jsqlgen.utils.UString;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Blob;
+import java.util.*;
 
 public class JavaCodeGenerator {
 
@@ -223,6 +221,18 @@ public class JavaCodeGenerator {
                     "*/\n" +
                     "public " + col.type.inJava + " " + col.name + ";\n");
         }
+
+        // CREATE INIT DEFAULTS METHOD:
+        classContentBuilder.append("""
+                /**
+                Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
+                */
+                """);
+        classContentBuilder.append(
+                "protected " + t.name + " initDefaultFields() {\n" +
+                        genOnlyDefaultFieldAssignments(t.columns) +
+                        "return this;\n");
+        classContentBuilder.append("}\n\n"); // Close create method
 
         // CREATE CREATE METHODS:
         classContentBuilder.append("""
@@ -702,7 +712,7 @@ public class JavaCodeGenerator {
                 "if you plan to add this object to the database in the future, since\n" +
                 "that method fetches and sets/reserves the {@link #id}.\n" +
                 "*/\n" +
-                "public " + objName + " (" + constructor.params + "){\n" + constructor.fieldAssignments + "\n}\n";
+                "public " + objName + " (" + constructor.params + "){\ninitDefaultFields();\n" + constructor.fieldAssignments + "\n}\n";
 
         constructor.paramsWithoutTypes = paramsWithoutTypesBuilder.toString();
         if (constructor.paramsWithoutTypes.endsWith(", "))
@@ -737,7 +747,7 @@ public class JavaCodeGenerator {
                 "if you plan to add this object to the database in the future, since\n" +
                 "that method fetches and sets/reserves the {@link #id}.\n" +
                 "*/\n" +
-                "public " + objName + " (" + constructor.params + "){\n" + constructor.fieldAssignments + "\n}\n";
+                "public " + objName + " (" + constructor.params + "){\ninitDefaultFields();\n" + constructor.fieldAssignments + "\n}\n";
 
         constructor.paramsWithoutTypes = paramsWithoutTypesBuilder.toString();
         if (constructor.paramsWithoutTypes.endsWith(", "))
@@ -778,6 +788,30 @@ public class JavaCodeGenerator {
         for (Column col : columns) {
             if (UString.containsIgnoreCase(col.definition, "NOT NULL")) {
                 fieldsBuilder.append(objName + "." + col.name + "=" + col.name + "; ");
+            }
+        }
+        return fieldsBuilder.toString();
+    }
+
+    public static String genOnlyDefaultFieldAssignments(List<Column> columns) {
+        return genOnlyDefaultFieldAssignments("this", columns);
+    }
+
+    public static String genOnlyDefaultFieldAssignments(String objName, List<Column> columns) {
+        StringBuilder fieldsBuilder = new StringBuilder();
+        for (Column col : columns) {
+            if (UString.containsIgnoreCase(col.definition, "DEFAULT")) {
+                String val = col.getDefaultValue();
+                if(col.type.isEnum())
+                    fieldsBuilder.append(objName + "." + col.name + "="+col.type.inJava+"." + val + "; ");
+                else if(col.type.isText()){
+                    fieldsBuilder.append(objName + "." + col.name + "=\"" + val + "\"; ");
+                } else if(col.type.isDateOrTime()){
+                    if(col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
+                    else fieldsBuilder.append(objName + "." + col.name + "=new "+col.type.inJava+"(" + val + "); ");
+                } else{
+                    fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
+                }
             }
         }
         return fieldsBuilder.toString();
@@ -1192,6 +1226,7 @@ public class JavaCodeGenerator {
                 "        public Button btnAdd = new Button(\"Add\");\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {\n" +
                 "                btnAdd.setEnabled(false);\n" +
+                "                updateData();\n" +
                 "                data.id = idCounter.getAndIncrement();\n" +
                 "                " + t.name + ".add(data);\n" +
                 "                e.unregisterListener(); // Make sure it gets only added once to the database\n" +

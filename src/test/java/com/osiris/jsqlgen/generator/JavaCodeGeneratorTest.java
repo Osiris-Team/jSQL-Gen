@@ -30,7 +30,9 @@ class JavaCodeGeneratorTest {
         t.name = "Person";
         t.columns.add(new Column("name").definition("TEXT NOT NULL"));
         t.columns.add(new Column("age").definition("INT NOT NULL"));
-        t.columns.add(new Column("flair").definition("ENUM('COOL', 'CHILL', 'FLY') NOT NULL"));
+        t.columns.add(new Column("flair").definition("ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'"));
+        t.columns.add(new Column("lastName").definition("TEXT DEFAULT ''"));
+        t.columns.add(new Column("parentAge").definition("INT DEFAULT 10"));
         t.isCache = true;
         t.isDebug = true;
         t.isVaadinFlowUI = true;
@@ -47,7 +49,7 @@ class JavaCodeGeneratorTest {
 
         SQLTestServer testDB = SQLTestServer.buildAndRun("testDB", 3307);
 
-        Person john = Person.createAndAdd("John", 32, Person.Flair.COOL);
+        Person john = Person.createAndAdd("John", 32);
         assertFalse(Person.whereName().is(john.name).get().isEmpty());
     }
 }

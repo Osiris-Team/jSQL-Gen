@@ -44,11 +44,13 @@ The cache gets cleared/invalidated at any update/insert/delete. <br>
 - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
 will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
 <br>
-Structure (4 fields/columns): <br>
+Structure (6 fields/columns): <br>
 - int id = INT NOT NULL PRIMARY KEY <br>
 - String name = TEXT NOT NULL <br>
 - int age = INT NOT NULL <br>
-- Flair flair = ENUM('COOL', 'CHILL', 'FLY') NOT NULL <br>
+- Flair flair = ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL' <br>
+- String lastName = TEXT DEFAULT '' <br>
+- int parentAge = INT DEFAULT 10 <br>
 */
 public class Person{
 // The code below will not be removed when re-generating this class.
@@ -81,8 +83,12 @@ try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `name` TEXT NOT NULL");}cat
 s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `name` TEXT NOT NULL");
 try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `age` INT NOT NULL");}catch(Exception ignored){}
 s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `age` INT NOT NULL");
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') NOT NULL");}catch(Exception ignored){}
-s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') NOT NULL");
+try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'");}catch(Exception ignored){}
+s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'");
+try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `lastName` TEXT DEFAULT ''");}catch(Exception ignored){}
+s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `lastName` TEXT DEFAULT ''");
+try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `parentAge` INT DEFAULT 10");}catch(Exception ignored){}
+s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `parentAge` INT DEFAULT 10");
 }
 try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `person` ORDER BY id DESC LIMIT 1")) {
 ResultSet rs = ps.executeQuery();
@@ -137,8 +143,18 @@ Use the static create method instead of this constructor,
 if you plan to add this object to the database in the future, since
 that method fetches and sets/reserves the {@link #id}.
 */
-public Person (int id, String name, int age, Flair flair){
-this.id = id;this.name = name;this.age = age;this.flair = flair;
+public Person (int id, String name, int age){
+initDefaultFields();
+this.id = id;this.name = name;this.age = age;
+}
+/**
+Use the static create method instead of this constructor,
+if you plan to add this object to the database in the future, since
+that method fetches and sets/reserves the {@link #id}.
+*/
+public Person (int id, String name, int age, Flair flair, String lastName, int parentAge){
+initDefaultFields();
+this.id = id;this.name = name;this.age = age;this.flair = flair;this.lastName = lastName;this.parentAge = parentAge;
 }
 /**
 Database field/value: INT NOT NULL PRIMARY KEY. <br>
@@ -153,18 +169,33 @@ Database field/value: INT NOT NULL. <br>
 */
 public int age;
 /**
-Database field/value: ENUM('COOL', 'CHILL', 'FLY') NOT NULL. <br>
+Database field/value: ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'. <br>
 */
 public Flair flair;
+/**
+Database field/value: TEXT DEFAULT ''. <br>
+*/
+public String lastName;
+/**
+Database field/value: INT DEFAULT 10. <br>
+*/
+public int parentAge;
+/**
+Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
+*/
+protected Person initDefaultFields() {
+this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; return this;
+}
+
 /**
 Creates and returns an object that can be added to this table.
 Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 Also note that this method will NOT add the object to the table.
 */
-public static Person create( String name, int age, Flair flair) {
+public static Person create( String name, int age) {
 int id = idCounter.getAndIncrement();
-Person obj = new Person(id, name, age, flair);
+Person obj = new Person(id, name, age);
 return obj;
 }
 
@@ -175,9 +206,21 @@ This is useful for objects that may never be added to the table.
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 Also note that this method will NOT add the object to the table.
 */
-public static Person createInMem( String name, int age, Flair flair) {
+public static Person createInMem( String name, int age) {
 int id = -1;
-Person obj = new Person(id, name, age, flair);
+Person obj = new Person(id, name, age);
+return obj;
+}
+
+/**
+Creates and returns an object that can be added to this table.
+Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
+Note that this method will NOT add the object to the table.
+*/
+public static Person create( String name, int age, Flair flair, String lastName, int parentAge)  {
+int id = idCounter.getAndIncrement();
+Person obj = new Person();
+obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; 
 return obj;
 }
 
@@ -185,9 +228,20 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
-public static Person createAndAdd( String name, int age, Flair flair)  {
+public static Person createAndAdd( String name, int age)  {
 int id = idCounter.getAndIncrement();
-Person obj = new Person(id, name, age, flair);
+Person obj = new Person(id, name, age);
+add(obj);
+return obj;
+}
+
+/**
+Convenience method for creating and directly adding a new object to the table.
+*/
+public static Person createAndAdd( String name, int age, Flair flair, String lastName, int parentAge)  {
+int id = idCounter.getAndIncrement();
+Person obj = new Person();
+obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; 
 add(obj);
 return obj;
 }
@@ -216,7 +270,7 @@ get("WHERE username=? AND age=?", "Peter", 33);  <br>
 if that statement is null, returns all the contents of this table.
 */
 public static List<Person> get(String where, Object... whereValues)  {
-String sql = "SELECT `id`,`name`,`age`,`flair`" +
+String sql = "SELECT `id`,`name`,`age`,`flair`,`lastName`,`parentAge`" +
 " FROM `person`" +
 (where != null ? where : "");
 synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);
@@ -240,6 +294,8 @@ obj.id = rs.getInt(1);
 obj.name = rs.getString(2);
 obj.age = rs.getInt(3);
 obj.flair = Flair.valueOf(rs.getString(4));
+obj.lastName = rs.getString(5);
+obj.parentAge = rs.getInt(6);
 }
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -330,7 +386,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(Person obj)  {
-String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=? WHERE id="+obj.id;
+String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=?,`lastName`=?,`parentAge`=? WHERE id="+obj.id;
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -340,6 +396,8 @@ ps.setInt(1, obj.id);
 ps.setString(2, obj.name);
 ps.setInt(3, obj.age);
 ps.setString(4, obj.flair.name());
+ps.setString(5, obj.lastName);
+ps.setInt(6, obj.parentAge);
 ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -352,7 +410,7 @@ clearCache();
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(Person obj)  {
-String sql = "INSERT INTO `person` (`id`,`name`,`age`,`flair`) VALUES (?,?,?,?)";
+String sql = "INSERT INTO `person` (`id`,`name`,`age`,`flair`,`lastName`,`parentAge`) VALUES (?,?,?,?,?,?)";
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -362,6 +420,8 @@ ps.setInt(1, obj.id);
 ps.setString(2, obj.name);
 ps.setInt(3, obj.age);
 ps.setString(4, obj.flair.name());
+ps.setString(5, obj.lastName);
+ps.setInt(6, obj.parentAge);
 ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -419,7 +479,7 @@ Database.freeCon(con);}
     }
 
 public Person clone(){
-return new Person(this.id,this.name,this.age,this.flair);
+return new Person(this.id,this.name,this.age,this.flair,this.lastName,this.parentAge);
 }
 public Person add(){
 Person.add(this);
@@ -434,7 +494,7 @@ Person.remove(this);
 return this;
 }
 public String toPrintString(){
-return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" ";
+return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" "+"lastName="+this.lastName+" "+"parentAge="+this.parentAge+" ";
 }
     public static class PersonComp extends VerticalLayout{
         public Person data;
@@ -446,11 +506,14 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
         public NumberField nfAge = new NumberField("Age");
         public Select<Person.Flair> selFlair = new Select<Person.Flair>();
         {selFlair.setLabel("Flair"); selFlair.setItems(Person.Flair.values()); }
+        public TextField tfLastName = new TextField("LastName");
+        public NumberField nfParentAge = new NumberField("ParentAge");
         // Buttons
         public HorizontalLayout hlButtons = new HorizontalLayout();
         public Button btnAdd = new Button("Add");
         public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {
                 btnAdd.setEnabled(false);
+                updateData();
                 data.id = idCounter.getAndIncrement();
                 Person.add(data);
                 e.unregisterListener(); // Make sure it gets only added once to the database
@@ -487,6 +550,8 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
             form.add(tfName);
             form.add(nfAge);
             form.add(selFlair);
+            form.add(tfLastName);
+            form.add(nfParentAge);
 
             // Add buttons
             add(hlButtons);
@@ -505,12 +570,16 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
             tfName.setValue(data.name);
             nfAge.setValue(0.0 + data.age);
             selFlair.setValue(data.flair);
+            tfLastName.setValue(data.lastName);
+            nfParentAge.setValue(0.0 + data.parentAge);
         }
         public void updateData(){
             data.id = (int) nfId.getValue().doubleValue();
             data.name = tfName.getValue();
             data.age = (int) nfAge.getValue().doubleValue();
             data.flair = selFlair.getValue();
+            data.lastName = tfLastName.getValue();
+            data.parentAge = (int) nfParentAge.getValue().doubleValue();
         }
 
         public void updateButtons(){
@@ -544,6 +613,12 @@ return new WHERE<Integer>("`age`");
 }
 public static WHERE<String> whereFlair() {
 return new WHERE<String>("`flair`");
+}
+public static WHERE<String> whereLastName() {
+return new WHERE<String>("`lastName`");
+}
+public static WHERE<Integer> whereParentAge() {
+return new WHERE<Integer>("`parentAge`");
 }
 public static class WHERE<T> {
         /**
