@@ -84,6 +84,7 @@ simply a map with SQL statements mapped to their results lists).
 - The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 - The generated SQL code should be compatible with all types of SQL databases.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
+- (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 
 #### Cons
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
