@@ -85,6 +85,8 @@ simply a map with SQL statements mapped to their results lists).
 - The generated SQL code should be compatible with all types of SQL databases.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
+- SQL NULL is NOT allowed, instead use the DEFAULT keyword.
+- Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`
 
 #### Cons
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").

@@ -3,26 +3,24 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Blob;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.Arrays;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.*;
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.ClickEvent;
 
 /**
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
@@ -58,6 +56,74 @@ public class Person{
 private Person(){}
 // Additional code end <- 
 public enum Flair {COOL, CHILL, FLY,}
+class DefaultBlob implements Blob{
+    private byte[] data;
+
+    // Constructor that accepts a byte array
+    public DefaultBlob(byte[] data) {
+        this.data = data;
+    }
+    @Override
+    public long length() throws SQLException {
+        return data.length;
+    }
+
+    @Override
+    public byte[] getBytes(long pos, int length) throws SQLException {
+        return data;
+    }
+
+    @Override
+    public InputStream getBinaryStream() throws SQLException {
+        return new ByteArrayInputStream(data);
+    }
+
+    @Override
+    public long position(byte[] pattern, long start) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public long position(Blob pattern, long start) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int setBytes(long pos, byte[] bytes) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public OutputStream setBinaryStream(long pos) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public void truncate(long len) throws SQLException {
+
+    }
+
+    @Override
+    public void free() throws SQLException {
+
+    }
+
+    @Override
+    public InputStream getBinaryStream(long pos, long length) throws SQLException {
+        return new ByteArrayInputStream(data);
+    }
+}
+/** Limitation: Not executed in constructor, but only the create methods. */
+public static CopyOnWriteArrayList<Consumer<Person>> onCreate = new CopyOnWriteArrayList<Consumer<Person>>();
+public static CopyOnWriteArrayList<Consumer<Person>> onAdd = new CopyOnWriteArrayList<Consumer<Person>>();
+public static CopyOnWriteArrayList<Consumer<Person>> onUpdate = new CopyOnWriteArrayList<Consumer<Person>>();
+/** Limitation: Only executed in remove(obj) method. */
+public static CopyOnWriteArrayList<Consumer<Person>> onRemove = new CopyOnWriteArrayList<Consumer<Person>>();
     /**
      * Only works correctly if the package name is com.osiris.jsqlgen.
      */
@@ -196,6 +262,7 @@ Also note that this method will NOT add the object to the table.
 public static Person create( String name, int age) {
 int id = idCounter.getAndIncrement();
 Person obj = new Person(id, name, age);
+onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
 
@@ -209,6 +276,7 @@ Also note that this method will NOT add the object to the table.
 public static Person createInMem( String name, int age) {
 int id = -1;
 Person obj = new Person(id, name, age);
+onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
 
@@ -221,6 +289,7 @@ public static Person create( String name, int age, Flair flair, String lastName,
 int id = idCounter.getAndIncrement();
 Person obj = new Person();
 obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; 
+onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
 
@@ -231,6 +300,7 @@ Note that the parameters of this method represent "NOT NULL" fields in the table
 public static Person createAndAdd( String name, int age)  {
 int id = idCounter.getAndIncrement();
 Person obj = new Person(id, name, age);
+onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
 }
@@ -242,6 +312,7 @@ public static Person createAndAdd( String name, int age, Flair flair, String las
 int id = idCounter.getAndIncrement();
 Person obj = new Person();
 obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; 
+onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
 }
@@ -376,7 +447,8 @@ if (rs.next()) return rs.getInt("recordCount");
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally {System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
-Database.freeCon(con);}
+Database.freeCon(con);
+}
 return 0;
 }
 
@@ -402,8 +474,10 @@ ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
-Database.freeCon(con);}
+Database.freeCon(con);
 clearCache();
+onUpdate.forEach(code -> code.accept(obj));
+}
 }
 
 /**
@@ -426,8 +500,10 @@ ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
-Database.freeCon(con);}
+Database.freeCon(con);
 clearCache();
+onAdd.forEach(code -> code.accept(obj));
+}
 }
 
 /**
@@ -435,6 +511,7 @@ Deletes the provided object from the database.
 */
 public static void remove(Person obj)  {
 remove("WHERE id = "+obj.id);
+onRemove.forEach(code -> code.accept(obj));
 }
 /**
 Example: <br>
@@ -460,8 +537,9 @@ ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
-Database.freeCon(con);}
+Database.freeCon(con);
 clearCache();
+}
 }
 
 public static void removeAll()  {
@@ -475,7 +553,9 @@ msJDBC = System.currentTimeMillis();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
         finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
-Database.freeCon(con);}
+Database.freeCon(con);
+clearCache();
+}
     }
 
 public Person clone(){

@@ -9,8 +9,10 @@ import com.osiris.jsqlgen.utils.UString;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.sql.Blob;
+
 import java.util.*;
+
+import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
 
 public class JavaCodeGenerator {
 
@@ -18,7 +20,20 @@ public class JavaCodeGenerator {
      * Generates Java source code, for the provided table.
      */
     public static String generateTableFile(File oldGeneratedClass, Table t) throws Exception {
-        List<String> importsList = new ArrayList<>();
+
+        // MAKE EVERYTHING THAT HAS NOT "DEFAULT" OR ONLY "NULL" IN THEIR DEFINITION NOT NULL
+        for (Column col : t.columns) {
+            if(containsIgnoreCase(col.definition,"DEFAULT")) continue;
+            if(containsIgnoreCase(col.definition,"NOT NULL")) continue;
+            if(containsIgnoreCase(col.definition, "NULL")) {
+                throw new Exception("Found suspicious definition using NULL! Please use the DEFAULT keyword instead!");
+            } else{
+                System.out.println("Found suspicious definition without NOT NULL, appended it.");
+                col.definition = col.definition + " NOT NULL";
+            }
+        }
+
+        LinkedHashSet<String> importsList = new LinkedHashSet<>();
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         List<String> generatedEnumClasses = new ArrayList<>();
         for (Column col : t.columns) {
@@ -34,6 +49,7 @@ public class JavaCodeGenerator {
             if (col.type.inJavaWithPackage != null)
                 importsList.add("import " + col.type.inJavaWithPackage + ";");
         }
+
         Constructor constructor = genConstructor(t.name, t.columns);
         Constructor minimalConstructor = genMinimalConstructor(t.name, t.columns);
         boolean hasMoreFields = genFieldAssignments(t.columns).length() != genOnlyNotNullFieldAssignments(t.columns).length();
@@ -42,9 +58,11 @@ public class JavaCodeGenerator {
         importsList.add("import java.sql.PreparedStatement;");
         importsList.add("import java.sql.ResultSet;");
         importsList.add("import java.sql.Statement;");
+        importsList.add("import java.sql.Blob;");
 
         importsList.add("import java.util.List;");
         importsList.add("import java.util.ArrayList;");
+        importsList.add("import java.util.concurrent.CopyOnWriteArrayList;");
         importsList.add("import java.util.function.Consumer;");
         if (t.isCache)
             importsList.add("import java.util.Arrays;");
@@ -89,7 +107,7 @@ public class JavaCodeGenerator {
         if (oldGeneratedClass.exists()) {
             List<String> additionalLines = new ArrayList<>();
             List<String> lines = Files.readAllLines(oldGeneratedClass.toPath());
-            List<String> oldImportsList = new ArrayList<>();
+            LinkedHashSet<String> oldImportsList = new LinkedHashSet<>();
             boolean isAdditionalLine = false;
             for (String line : lines) {
                 if (line.startsWith("import"))
@@ -125,6 +143,19 @@ public class JavaCodeGenerator {
         for (String generatedEnumClass : generatedEnumClasses) {
             classContentBuilder.append(generatedEnumClass);
         }
+
+        // Add other dependencies
+        classContentBuilder.append(genDefaultBlobClass());
+
+        // Add listeners
+        classContentBuilder.append("" +
+                "/** Limitation: Not executed in constructor, but only the create methods. */\n" +
+                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onCreate = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n"+
+                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onAdd = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n"+
+                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onUpdate = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n"+
+                "/** Limitation: Only executed in remove(obj) method. */\n" +
+                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onRemove = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n");
+
         if (t.isDebug)
             classContentBuilder.append("    /**\n" +
                     "     * Only works correctly if the package name is com.osiris.jsqlgen.\n" +
@@ -214,7 +245,7 @@ public class JavaCodeGenerator {
 
         // CREATE FIELDS AKA COLUMNS:
         for (Column col : t.columns) {
-            boolean notNull = UString.containsIgnoreCase(col.definition, "NOT NULL");
+            boolean notNull = containsIgnoreCase(col.definition, "NOT NULL");
             classContentBuilder.append("/**\n" +
                     "Database field/value: "+col.definition+". <br>\n" +
                     (col.comment != null ? (col.comment + "\n") : "") +
@@ -249,6 +280,7 @@ public class JavaCodeGenerator {
                 "public static " + t.name + " create(" + minimalConstructor.params.replace(idParam, "")
                         + ") {\n" +
                         firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        "onCreate.forEach(code -> code.accept(obj));\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close create method
 
@@ -265,6 +297,7 @@ public class JavaCodeGenerator {
                 "public static " + t.name + " createInMem(" + minimalConstructor.params.replace(idParam, "")
                         + ") {\n" +
                         firstCol.type.inJava + " " + firstCol.name + " = -1;\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        "onCreate.forEach(code -> code.accept(obj));\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close create method
 
@@ -279,6 +312,7 @@ public class JavaCodeGenerator {
                     "public static " + t.name + " create(" + genParams(t.columns).replace(idParam, "")
                             + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "();\n" + genFieldAssignments("obj", t.columns) + "\n" +
+                            "onCreate.forEach(code -> code.accept(obj));\n" +
                             "return obj;\n");
             classContentBuilder.append("}\n\n"); // Close create method
         }
@@ -291,6 +325,7 @@ public class JavaCodeGenerator {
                 "public static " + t.name + " createAndAdd(" + minimalConstructor.params.replace(idParam, "")
                         + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                         firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        "onCreate.forEach(code -> code.accept(obj));\n" +
                         "add(obj);\n" +
                         "return obj;\n");
         classContentBuilder.append("}\n\n"); // Close method
@@ -304,6 +339,7 @@ public class JavaCodeGenerator {
                     "public static " + t.name + " createAndAdd(" + genParams(t.columns).replace(idParam, "")
                             + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                             firstCol.type.inJava + " " + firstCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "();\n" + genFieldAssignments("obj", t.columns) + "\n" +
+                            "onCreate.forEach(code -> code.accept(obj));\n" +
                             "add(obj);\n" +
                             "return obj;\n");
             classContentBuilder.append("}\n\n"); // Close method
@@ -456,7 +492,8 @@ public class JavaCodeGenerator {
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                 "finally {" +
                 (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                "Database.freeCon(con);}\n" +
+                "Database.freeCon(con);\n" +
+                "}\n" +
                 "return 0;\n");
         classContentBuilder.append("}\n\n"); // Close count method
 
@@ -491,9 +528,11 @@ public class JavaCodeGenerator {
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
                         "finally{" +
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                        "Database.freeCon(con);}\n"
+                        "Database.freeCon(con);\n" +
+                        (t.isCache ? "clearCache();\n" : "") +
+                        "onUpdate.forEach(code -> code.accept(obj));\n" +
+                        "}\n"
         );
-        if (t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close update method
 
 
@@ -529,9 +568,11 @@ public class JavaCodeGenerator {
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
                         "finally{" +
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                        "Database.freeCon(con);}\n"
+                        "Database.freeCon(con);\n" +
+                        (t.isCache ? "clearCache();\n" : "") +
+                        "onAdd.forEach(code -> code.accept(obj));\n" +
+                        "}\n"
         );
-        if (t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close add method
 
 
@@ -541,6 +582,7 @@ public class JavaCodeGenerator {
                 "*/\n" +
                 "public static void remove(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "remove(\"WHERE id = \"+obj.id);\n" +
+                "onRemove.forEach(code -> code.accept(obj));\n" +
                 "}\n" +
                 "/**\n" +
                 "Example: <br>\n" +
@@ -568,9 +610,10 @@ public class JavaCodeGenerator {
                         (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                         "finally{" +
                         (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                        "Database.freeCon(con);}\n"
+                        "Database.freeCon(con);\n" +
+                        (t.isCache ? "clearCache();\n" : "") +
+                        "}\n"
         );
-        if (t.isCache) classContentBuilder.append("clearCache();\n");
         classContentBuilder.append("}\n\n"); // Close delete method
 
         classContentBuilder.append("public static void removeAll() " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
@@ -585,7 +628,9 @@ public class JavaCodeGenerator {
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
                 "        finally{" +
                 (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                "Database.freeCon(con);}\n" +
+                "Database.freeCon(con);\n" +
+                (t.isCache ? "clearCache();\n" : "") +
+                "}\n" +
                 "    }\n\n");
 
         // CREATE OBJ CLONE METHOD
@@ -687,6 +732,17 @@ public class JavaCodeGenerator {
         return unified;
     }
 
+    private static LinkedHashSet<String> mergeListContents(LinkedHashSet<String>... lists) {
+        LinkedHashSet<String> unified = new LinkedHashSet<>();
+        for (LinkedHashSet<String> list : lists) {
+            for (String s : list) {
+                if (!unified.contains(s))
+                    unified.add(s);
+            }
+        }
+        return unified;
+    }
+
     private static String firstToUpperCase(String s) {
         return ("" + s.charAt(0)).toUpperCase() + s.substring(1);
     }
@@ -729,7 +785,7 @@ public class JavaCodeGenerator {
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
         for (Column col : columns) {
-            if (UString.containsIgnoreCase(col.definition, "NOT NULL")) {
+            if (containsIgnoreCase(col.definition, "NOT NULL")) {
                 paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
                 paramsWithoutTypesBuilder.append(col.name + ", ");
                 fieldsBuilder.append("this." + col.name + " = " + col.name + ";");
@@ -786,7 +842,7 @@ public class JavaCodeGenerator {
     public static String genOnlyNotNullFieldAssignments(String objName, List<Column> columns) {
         StringBuilder fieldsBuilder = new StringBuilder();
         for (Column col : columns) {
-            if (UString.containsIgnoreCase(col.definition, "NOT NULL")) {
+            if (containsIgnoreCase(col.definition, "NOT NULL")) {
                 fieldsBuilder.append(objName + "." + col.name + "=" + col.name + "; ");
             }
         }
@@ -800,7 +856,7 @@ public class JavaCodeGenerator {
     public static String genOnlyDefaultFieldAssignments(String objName, List<Column> columns) {
         StringBuilder fieldsBuilder = new StringBuilder();
         for (Column col : columns) {
-            if (UString.containsIgnoreCase(col.definition, "DEFAULT")) {
+            if (containsIgnoreCase(col.definition, "DEFAULT")) {
                 String val = col.getDefaultValue();
                 if(col.type.isEnum())
                     fieldsBuilder.append(objName + "." + col.name + "="+col.type.inJava+"." + val + "; ");
@@ -809,8 +865,15 @@ public class JavaCodeGenerator {
                 } else if(col.type.isDateOrTime()){
                     if(col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
                     else fieldsBuilder.append(objName + "." + col.name + "=new "+col.type.inJava+"(" + val + "); ");
-                } else{
+                } else if(col.type.isBlob()){
+                    fieldsBuilder.append(objName + "." + col.name + "=new DefaultBlob(new byte[0]); ");
+                    // This is not directly supported by SQL
+                }
+                else if(col.type.isNumber() || col.type.isDecimalNumber()){
                     fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
+                }
+                else {
+                    fieldsBuilder.append(objName + "." + col.name + "=new "+col.type.inJava+"(" + val + "); ");
                 }
             }
         }
@@ -1182,7 +1245,7 @@ public class JavaCodeGenerator {
     /**
      * Should be compatible with Vaadin 14 and up.
      */
-    public static String generateVaadinFlow(Table t, List<String> importsList) {
+    public static String generateVaadinFlow(Table t, LinkedHashSet<String> importsList) {
         StringBuilder s = new StringBuilder();
 
         // Add imports
@@ -1314,6 +1377,73 @@ public class JavaCodeGenerator {
                 "\n");
 
         return s.toString();
+    }
+
+    public static String genDefaultBlobClass(LinkedHashSet<String> imports){
+        imports.add("import java.io.ByteArrayInputStream;");
+        imports.add("import java.sql.Blob;");
+        return "class DefaultBlob implements Blob{\n" +
+                "    private byte[] data;\n" +
+                "\n" +
+                "    // Constructor that accepts a byte array\n" +
+                "    public DefaultBlob(byte[] data) {\n" +
+                "        this.data = data;\n" +
+                "    }\n" +
+                "    @Override\n" +
+                "    public long length() throws SQLException {\n" +
+                "        return data.length;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public byte[] getBytes(long pos, int length) throws SQLException {\n" +
+                "        return data;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public InputStream getBinaryStream() throws SQLException {\n" +
+                "        return new ByteArrayInputStream(data);\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public long position(byte[] pattern, long start) throws SQLException {\n" +
+                "        return 0;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public long position(Blob pattern, long start) throws SQLException {\n" +
+                "        return 0;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public int setBytes(long pos, byte[] bytes) throws SQLException {\n" +
+                "        return 0;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {\n" +
+                "        return 0;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public OutputStream setBinaryStream(long pos) throws SQLException {\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public void truncate(long len) throws SQLException {\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public void free() throws SQLException {\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public InputStream getBinaryStream(long pos, long length) throws SQLException {\n" +
+                "        return new ByteArrayInputStream(data);\n" +
+                "    }\n" +
+                "}\n";
     }
 
     public static class Constructor {
