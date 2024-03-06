@@ -145,7 +145,7 @@ public class JavaCodeGenerator {
         }
 
         // Add other dependencies
-        classContentBuilder.append(genDefaultBlobClass());
+        classContentBuilder.append(genDefaultBlobClass(importsList));
 
         // Add listeners
         classContentBuilder.append("" +
