@@ -85,6 +85,18 @@ public class ColumnType {
         return this == DECIMAL || this == DOUBLE || this == FLOAT;
     }
 
+    public boolean isDate(){
+        return this == DATE;
+    }
+
+    public boolean isTime(){
+        return this == TIME;
+    }
+
+    public boolean isTimestamp(){
+        return this == TIMESTAMP;
+    }
+
     public boolean isDateOrTime(){
         return this == DATE || this == TIMESTAMP || this == TIME || this == YEAR;
     }

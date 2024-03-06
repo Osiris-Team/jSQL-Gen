@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
@@ -1257,6 +1258,9 @@ public class JavaCodeGenerator {
         importsList.add("import com.vaadin.flow.component.textfield.NumberField;");
         importsList.add("import com.vaadin.flow.component.textfield.TextField;");
         importsList.add("import com.vaadin.flow.component.ClickEvent;");
+        importsList.add("import com.vaadin.flow.component.datepicker.DatePicker;");
+        importsList.add("import com.vaadin.flow.component.datetimepicker.DateTimePicker;");
+        importsList.add("import java.time.LocalDateTime;");
 
 
         // Create the class first
@@ -1267,6 +1271,9 @@ public class JavaCodeGenerator {
                 "        public FormLayout form = new FormLayout();\n");
         Map<Column, String> mapFieldnames = new HashMap<>();
         for (Column col : t.columns) {
+            if (col.type.isBlob()){
+                continue; // TODO currently not supported
+            }
             String colName = firstToUpperCase(col.name);
             String fieldName = "";
             if (col.type.isEnum()) {
@@ -1277,7 +1284,17 @@ public class JavaCodeGenerator {
             } else if (col.type.inJava.equals("String")) {
                 fieldName = "tf" + colName;
                 s.append("        public TextField " + fieldName + " = new TextField(\"" + colName + "\");\n");
-            } else {
+            } else if (col.type.isDate()){
+                fieldName = "df" + colName;
+                s.append("        public DatePicker " + fieldName + " = new DatePicker(" + colName + ".toLocalDate());\n");
+            } else if(col.type.isTime()){
+                fieldName = "df" + colName;
+                s.append("        public DateTimePicker " + fieldName + " = new DatePicker(LocalDateTime.from(" + colName + ".toLocalTime()));\n");
+            } else if(col.type.isTimestamp()){
+                fieldName = "df" + colName;
+                s.append("        public DateTimePicker " + fieldName + " = new DatePicker(" + colName + ".toLocalDateTime());\n");
+            }
+            else {
                 fieldName = "nf" + colName;
                 s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
             }
@@ -1323,6 +1340,9 @@ public class JavaCodeGenerator {
                 "            addAndExpand(form);\n" +
                 "            form.setWidthFull();\n");
         for (Column col : t.columns) {
+            if (col.type.isBlob()){
+                continue; // TODO currently not supported
+            }
             String fieldName = mapFieldnames.get(col);
             s.append("            form.add(" + fieldName + ");\n");
         }
@@ -1341,6 +1361,9 @@ public class JavaCodeGenerator {
                 "\n" +
                 "        public void updateFields(){\n");
         for (Column col : t.columns) {
+            if (col.type.isBlob()){
+                continue; // TODO currently not supported
+            }
             String fieldName = mapFieldnames.get(col);
             if (col.type.isNumber())
                 s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
@@ -1350,6 +1373,9 @@ public class JavaCodeGenerator {
         s.append("        }\n" +
                 "        public void updateData(){\n");
         for (Column col : t.columns) {
+            if (col.type.isBlob()){
+                continue; // TODO currently not supported
+            }
             String fieldName = mapFieldnames.get(col);
             if (col.type.isNumber() || col.type.isDecimalNumber())
                 s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");

@@ -33,6 +33,7 @@ class JavaCodeGeneratorTest {
         t.columns.add(new Column("flair").definition("ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'"));
         t.columns.add(new Column("lastName").definition("TEXT DEFAULT ''"));
         t.columns.add(new Column("parentAge").definition("INT DEFAULT 10"));
+        t.columns.add(new Column("myblob").definition("BLOB DEFAULT ''"));
         t.isCache = true;
         t.isDebug = true;
         t.isVaadinFlowUI = true;
