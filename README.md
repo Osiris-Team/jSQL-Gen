@@ -106,8 +106,8 @@ PRs for these issues are greatly appreciated (sorted from most important, to lea
 A fix for this is being worked on: https://github.com/Osiris-Team/jSQL-Gen/issues/7
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
 - Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
-- No support for `FOREIGN KEY` / references between tables.
-- No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
+- Java Code Generator: No support for `FOREIGN KEY` / references between tables.
+- Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
