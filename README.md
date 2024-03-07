@@ -103,6 +103,7 @@ one row and has public fields like `obj.id obj.name etc...`.
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
 A fix for this is being worked on: https://github.com/Osiris-Team/jSQL-Gen/issues/7
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
+- Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
