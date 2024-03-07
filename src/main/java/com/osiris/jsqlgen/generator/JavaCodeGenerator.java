@@ -1417,8 +1417,12 @@ public class JavaCodeGenerator {
     }
 
     public static String genDefaultBlobClass(LinkedHashSet<String> imports) {
+        imports.add("import java.io.InputStream;");
+        imports.add("import java.io.OutputStream;");
         imports.add("import java.io.ByteArrayInputStream;");
         imports.add("import java.sql.Blob;");
+        imports.add("import java.sql.SQLException;");
+
         return "class DefaultBlob implements Blob{\n" +
                 "    private byte[] data;\n" +
                 "\n" +
