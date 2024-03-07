@@ -34,12 +34,12 @@ the generated code into my project. Then I can do the following:
 
 // Inserting rows:
 Person john = Person.create("John", 34); // id gets automatically set and incremented
-Person.add(john);
+Person.add(john); // Or: john.add();
 Person.createAndAdd("John", 34); // The shorter variant
 
 // Updating existing rows:
 john.age = 36;
-Person.update(john);
+Person.update(john); // Or: john.update();
 
 // Getting rows:
 List<Person> all = Person.get(); // Gets all rows.
@@ -53,29 +53,30 @@ Person.getLazy(results -> { // List with 1000 persons
 }, 1000); // Limit for each request 
 
 // Deleting rows:
-Person.remove(john);
+Person.remove(john); // Or: john.remove();
 Person.whereName().is("John").remove(); // Removes all rows where the name equals "John"
 ```
 
-## How?
-Generates one class for each table.
-The generated class contains static methods like `get() delete() update() add() etc...` to interact with the table.
-Each instance/objectof the class represents
-one row and has public fields like `obj.id obj.name etc...`.
-
-## Features
+## Overview
 
 ### ⚡️ 0% boilerplate, minimal code, fast development and prototyping via GUI
 ### ⚡️ Compile-/Typesafe SQL queries via WHERE class
 ### ⚡️ Various utility methods, like fetching results lazily
 
-### Safety
+Generates one class for each table.
+The generated class contains static methods like `get() remove() update() add() etc...` to interact with the table.
+Each instance/object of the class represents
+one row and has public fields like `obj.id obj.name etc...`.
+
+## Features
+
+### 🛡 Safety
 - Secured against SQL-Injection by using prepared statements.
 - Protection against timed out connections.
 - 0% boilerplate and simple code decreasing the risk for bugs.
 - (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
 
-### Performance
+### ⚡️ Performance
 - No runtime overhead for class generation (unlike other ORMs).
 - Cached connection pool ensures optimal performance on small and huge databases.
   Besides that it provides protection against timed out connections.
@@ -83,18 +84,18 @@ one row and has public fields like `obj.id obj.name etc...`.
   (cache gets cleared after INSERT/UPDATE/DELETE operations and is
   simply a map with SQL statements mapped to their results lists).
 
-### Customization
+### 🛠 Customization
 - Generated classes can be enhanced by adding your own custom code at the top of the class.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
 
-### SQL & JDBC
+### 🗄 SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
 - `NULL` is not allowed, instead use the `DEFAULT ''` keyword.
 - Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`.
 - Supports SQL DEFAULT for `NOW(), CURDATE(), CURTIME()`.
 
-### Other
+### ✴️ Other
 - Simple UI to design databases within minutes.
 - Database structure/design as JSON file.
 - Autosuggestions for field definitions.
@@ -102,11 +103,14 @@ one row and has public fields like `obj.id obj.name etc...`.
 - The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 
-### Cons
+### 🔴 Cons / Todo
+PRs for these issues are greatly appreciated (sorted from most important, to least important).
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
 A fix for this is being worked on: https://github.com/Osiris-Team/jSQL-Gen/issues/7
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
 - Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
+- Java Code Generator: No support for `FOREIGN KEY` / references between tables.
+- Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
