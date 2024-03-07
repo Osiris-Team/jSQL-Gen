@@ -90,6 +90,7 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 ### 🗄 SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.
+- The generated Java (and JDBC) code does not require any third party libraries and should work with Java 8 or higher.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
 - `NULL` is not allowed, instead use the `DEFAULT ''` keyword.
 - Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`.
@@ -97,10 +98,9 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 ### ✴️ Other
 - Simple UI to design databases within minutes.
-- Database structure/design as JSON file.
 - Autosuggestions for field definitions.
+- Database structure/design as JSON file.
 - Easily use multiple databases in a single project.
-- The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 
 ### 🔴 Cons / Todo
