@@ -28,6 +28,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.sql.SQLException;
 
 /**
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>

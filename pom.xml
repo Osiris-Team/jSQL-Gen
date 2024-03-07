@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.osiris.jsqlgen</groupId>
     <artifactId>jSQL-Gen</artifactId>
-    <version>1.37</version>
+    <version>1.38</version>
     <name>jSQL-Gen</name>
 
     <properties>
         <vaadin.version>14.10.10</vaadin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <exec.mainClass>com.osiris.jsqlgen.Main</exec.mainClass>
+        <jarName>${project.name}-${project.version}.jar</jarName>
     </properties>
 
     <repositories>
@@ -189,6 +190,22 @@
                 </executions>
             </plugin>
 
+            <!--
+            Make this jar executable.
+            Remember to check the the jars entry point (main.class property above).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${exec.mainClass}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -210,12 +227,7 @@
             <plugin>
                 <groupId>io.github.fvarrui</groupId>
                 <artifactId>javapackager</artifactId>
-                <version>1.6.7</version>
-                <configuration>
-                    <bundleJre>false</bundleJre>
-                    <mainClass>${exec.mainClass}</mainClass>
-                    <generateInstaller>false</generateInstaller>
-                </configuration>
+                <version>1.7.5</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -223,8 +235,8 @@
                             <goal>package</goal>
                         </goals>
                         <configuration>
-                            <platform>windows</platform>
                             <mainClass>${exec.mainClass}</mainClass>
+                            <runnableJar>${project.build.directory}/${jarName}</runnableJar>
                             <createZipball>true</createZipball>
                             <generateInstaller>true</generateInstaller>
                             <forceInstaller>true</forceInstaller>
