@@ -16,7 +16,7 @@ it possible to use SQL databases without writing one line of SQL (compile-safe S
 <p>
 <sub>
 *Select a project directory to directly generate the code in there.
-**Instead of inserting raw, readable crendentials you can provide functions that fetch
+**Instead of inserting raw, readable credentials you can provide functions that fetch
 those from a file. 
 ***Its expected that you have a database specific SQL driver in your projects like
 <a href="https://github.com/mysql/mysql-connector-j">mysql-connector-j</a> for example.
