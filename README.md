@@ -31,12 +31,12 @@ the generated code into my project. Then I can do the following:
 
 // Inserting rows:
 Person john = Person.create("John", 34); // id gets automatically set and incremented
-Person.add(john);
+Person.add(john); // Or: john.add();
 Person.createAndAdd("John", 34); // The shorter variant
 
 // Updating existing rows:
 john.age = 36;
-Person.update(john);
+Person.update(john); // Or: john.update();
 
 // Getting rows:
 List<Person> all = Person.get(); // Gets all rows.
@@ -50,7 +50,7 @@ Person.getLazy(results -> { // List with 1000 persons
 }, 1000); // Limit for each request 
 
 // Deleting rows:
-Person.remove(john);
+Person.remove(john); // Or: john.remove();
 Person.whereName().is("John").remove(); // Removes all rows where the name equals "John"
 ```
 
