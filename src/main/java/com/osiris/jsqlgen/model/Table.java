@@ -18,7 +18,7 @@ public class Table {
 
     public Table duplicate() {
         Table t = new Table();
-        t.name = "COPY-"+name;
+        t.name = name;
         for (int i = 1; i < columns.size(); i++) { // Start at 1 to skip id column
             t.columns.add(columns.get(i).duplicate());
         }

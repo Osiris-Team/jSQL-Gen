@@ -34,6 +34,7 @@ class JavaCodeGeneratorTest {
         t.columns.add(new Column("lastName").definition("TEXT DEFAULT ''"));
         t.columns.add(new Column("parentAge").definition("INT DEFAULT 10"));
         t.columns.add(new Column("myblob").definition("BLOB DEFAULT ''"));
+        t.columns.add(new Column("timestamp").definition("TIMESTAMP DEFAULT NOW()"));
         t.isCache = true;
         t.isDebug = true;
         t.isVaadinFlowUI = true;
@@ -44,12 +45,13 @@ class JavaCodeGeneratorTest {
                 JavaCodeGenerator.generateTableFile(javaFile, t));
 
         System.err.println("""
-                Remember that the above generated classes are source code which
-                has to be recompiled at some point, thus the below tests probably run with the last compiled classes,
-                not the current ones. So if encountering errors re-run this.""");
+                !>>>> Remember that the above generated classes are source code which
+                !>>>> has to be recompiled at some point, thus the below tests probably run with the last compiled classes,
+                !>>>> not the current ones. So if encountering errors re-run this.""");
 
         SQLTestServer testDB = SQLTestServer.buildAndRun("testDB", 3307);
 
+        Person.removeAll();
         Person john = Person.createAndAdd("John", 32);
         assertFalse(Person.whereName().is(john.name).get().isEmpty());
     }

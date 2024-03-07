@@ -519,7 +519,9 @@ public class MainApplication extends javafx.application.Application {
                     if (command.equals("Delete"))
                         deleteTable(dbName, t.name);
                     else if (command.equals("Duplicate")) {
-                        db.tables.add(finalI, t.duplicate());
+                        Table newT = t.duplicate();
+                        newT.name = "COPY_"+t.name;
+                        db.tables.add(finalI, newT);
                         updateTablesList(dbName);
                         Data.save();
                     } else

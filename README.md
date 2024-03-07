@@ -62,39 +62,53 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 ## Features
 
-### ⚡️ 0% boilerplate, fast development and prototyping with UI
+### ⚡️ 0% boilerplate, minimal code, fast development and prototyping via GUI
 ### ⚡️ Compile-/Typesafe SQL queries via WHERE class
 ### ⚡️ Various utility methods, like fetching results lazily
 
 #### Pros
-- No runtime overhead for class generation (unlike other ORMs).
-- Generated classes can be enhanced by adding your own custom code at the bottom of the class.
-- 0% boilerplate, thus fast development and prototyping possible.
-- Cached connection pool ensures optimal performance on small and huge databases.
-Besides that it provides protection against timed out connections.
-- (Optional) Cached results for ultra-fast data retrieval 
-(cache gets cleared after INSERT/UPDATE/DELETE operations and is
-simply a map with SQL statements mapped to their results lists).
-- (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
+
+##### Safety
 - Secured against SQL-Injection by using prepared statements.
-- Simple UI to design databases within minutes.
-- Autosuggestions for field definitions.
+- Protection against timed out connections.
+- 0% boilerplate and simple code decreasing the risk for bugs.
+- (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
+
+##### Performance
+- No runtime overhead for class generation (unlike other ORMs).
+- Cached connection pool ensures optimal performance on small and huge databases.
+  Besides that it provides protection against timed out connections.
+- (Optional) Cached results for ultra-fast data retrieval
+  (cache gets cleared after INSERT/UPDATE/DELETE operations and is
+  simply a map with SQL statements mapped to their results lists).
+
+##### Customization
+- Generated classes can be enhanced by adding your own custom code at the top of the class.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
-- Easily use multiple databases in a single project.
-- The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
+
+##### SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
+- `NULL` is not allowed, instead use the `DEFAULT ''` keyword.
+- Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`.
+- Supports SQL DEFAULT for `NOW(), CURDATE(), CURTIME()`.
+
+##### Other
+- Simple UI to design databases within minutes.
+- Database structure/design as JSON file.
+- Autosuggestions for field definitions.
+- Easily use multiple databases in a single project.
+- The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
-- SQL NULL is NOT allowed, instead use the DEFAULT keyword.
-- Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`
 
 #### Cons
 - Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
 A fix for this is being worked on: https://github.com/Osiris-Team/jSQL-Gen/issues/7
+- You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
-- Its possible to add additional Java code at the bottom of each generated class (only works when a project directory was selected).
+- Its possible to add additional Java code at the top of each generated class (only works when a project directory was selected).
 - Its recommended to name your tables like you name your regular
 Java objects, and your columns like your objects' fields.
 - You can rename/refactor generated Java classes and their fields/methods etc., but keep

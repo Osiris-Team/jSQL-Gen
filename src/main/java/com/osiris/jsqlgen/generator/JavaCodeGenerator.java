@@ -4,13 +4,10 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
-import com.osiris.jsqlgen.utils.UString;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
@@ -20,15 +17,16 @@ public class JavaCodeGenerator {
     /**
      * Generates Java source code, for the provided table.
      */
-    public static String generateTableFile(File oldGeneratedClass, Table t) throws Exception {
+    public static String generateTableFile(File oldGeneratedClass, Table t_) throws Exception {
+        final Table t = t_.duplicate(); // To make modifications to definition possible without changing original definition
 
         // MAKE EVERYTHING THAT HAS NOT "DEFAULT" OR ONLY "NULL" IN THEIR DEFINITION NOT NULL
         for (Column col : t.columns) {
-            if(containsIgnoreCase(col.definition,"DEFAULT")) continue;
-            if(containsIgnoreCase(col.definition,"NOT NULL")) continue;
-            if(containsIgnoreCase(col.definition, "NULL")) {
+            if (containsIgnoreCase(col.definition, "DEFAULT")) continue;
+            if (containsIgnoreCase(col.definition, "NOT NULL")) continue;
+            if (containsIgnoreCase(col.definition, "NULL")) {
                 throw new Exception("Found suspicious definition using NULL! Please use the DEFAULT keyword instead!");
-            } else{
+            } else {
                 System.out.println("Found suspicious definition without NOT NULL, appended it.");
                 col.definition = col.definition + " NOT NULL";
             }
@@ -93,14 +91,14 @@ public class JavaCodeGenerator {
                         - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
                         will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
                         """ : "") +
-                "<br>\n"+
-                "Structure ("+t.columns.size()+" fields/columns): <br>\n");
+                "<br>\n" +
+                "Structure (" + t.columns.size() + " fields/columns): <br>\n");
         for (Column col : t.columns) {
-            classContentBuilder.append("- "+col.type.inJava+" "+col.name+" = "+col.definition+" <br>\n");
+            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition + " <br>\n");
         }
         classContentBuilder.append(
                 "*/\n" +
-                "public class " + t.name + "{\n"); // Open class
+                        "public class " + t.name + "{\n"); // Open class
 
         classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
 
@@ -149,13 +147,12 @@ public class JavaCodeGenerator {
         classContentBuilder.append(genDefaultBlobClass(importsList));
 
         // Add listeners
-        classContentBuilder.append("" +
-                "/** Limitation: Not executed in constructor, but only the create methods. */\n" +
-                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onCreate = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n"+
-                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onAdd = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n"+
-                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onUpdate = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n"+
+        classContentBuilder.append("/** Limitation: Not executed in constructor, but only the create methods. */\n" +
+                "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onCreate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+                "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onAdd = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+                "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "/** Limitation: Only executed in remove(obj) method. */\n" +
-                "public static CopyOnWriteArrayList<Consumer<"+t.name+">> onRemove = new CopyOnWriteArrayList<Consumer<"+t.name+">>();\n");
+                "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n");
 
         if (t.isDebug)
             classContentBuilder.append("    /**\n" +
@@ -248,7 +245,7 @@ public class JavaCodeGenerator {
         for (Column col : t.columns) {
             boolean notNull = containsIgnoreCase(col.definition, "NOT NULL");
             classContentBuilder.append("/**\n" +
-                    "Database field/value: "+col.definition+". <br>\n" +
+                    "Database field/value: " + col.definition + ". <br>\n" +
                     (col.comment != null ? (col.comment + "\n") : "") +
                     "*/\n" +
                     "public " + col.type.inJava + " " + col.name + ";\n");
@@ -737,8 +734,7 @@ public class JavaCodeGenerator {
         LinkedHashSet<String> unified = new LinkedHashSet<>();
         for (LinkedHashSet<String> list : lists) {
             for (String s : list) {
-                if (!unified.contains(s))
-                    unified.add(s);
+                unified.add(s);
             }
         }
         return unified;
@@ -859,22 +855,23 @@ public class JavaCodeGenerator {
         for (Column col : columns) {
             if (containsIgnoreCase(col.definition, "DEFAULT")) {
                 String val = col.getDefaultValue();
-                if(col.type.isEnum())
-                    fieldsBuilder.append(objName + "." + col.name + "="+col.type.inJava+"." + val + "; ");
-                else if(col.type.isText()){
+                if (col.type.isEnum())
+                    fieldsBuilder.append(objName + "." + col.name + "=" + col.type.inJava + "." + val + "; ");
+                else if (col.type.isText()) {
                     fieldsBuilder.append(objName + "." + col.name + "=\"" + val + "\"; ");
-                } else if(col.type.isDateOrTime()){
-                    if(col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
-                    else fieldsBuilder.append(objName + "." + col.name + "=new "+col.type.inJava+"(" + val + "); ");
-                } else if(col.type.isBlob()){
+                } else if (col.type.isDateOrTime()) {
+                    if(containsIgnoreCase(val, "NOW")
+                            || containsIgnoreCase(val, "CURDATE")
+                            || containsIgnoreCase(val, "CURTIME")) val = "System.currentTimeMillis()";
+                    if (col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
+                    else fieldsBuilder.append(objName + "." + col.name + "=new " + col.type.inJava + "(" + val + "); ");
+                } else if (col.type.isBlob()) {
                     fieldsBuilder.append(objName + "." + col.name + "=new DefaultBlob(new byte[0]); ");
                     // This is not directly supported by SQL
-                }
-                else if(col.type.isNumber() || col.type.isDecimalNumber()){
+                } else if (col.type.isNumber() || col.type.isDecimalNumber()) {
                     fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
-                }
-                else {
-                    fieldsBuilder.append(objName + "." + col.name + "=new "+col.type.inJava+"(" + val + "); ");
+                } else {
+                    fieldsBuilder.append(objName + "." + col.name + "=new " + col.type.inJava + "(" + val + "); ");
                 }
             }
         }
@@ -1261,6 +1258,7 @@ public class JavaCodeGenerator {
         importsList.add("import com.vaadin.flow.component.datepicker.DatePicker;");
         importsList.add("import com.vaadin.flow.component.datetimepicker.DateTimePicker;");
         importsList.add("import java.time.LocalDateTime;");
+        importsList.add("import java.time.OffsetDateTime;");
 
 
         // Create the class first
@@ -1271,7 +1269,7 @@ public class JavaCodeGenerator {
                 "        public FormLayout form = new FormLayout();\n");
         Map<Column, String> mapFieldnames = new HashMap<>();
         for (Column col : t.columns) {
-            if (col.type.isBlob()){
+            if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
             String colName = firstToUpperCase(col.name);
@@ -1279,22 +1277,21 @@ public class JavaCodeGenerator {
             if (col.type.isEnum()) {
                 fieldName = "sel" + colName;
                 s.append("        public Select<" + t.name + "." + col.type.inJava + "> " + fieldName +
-                        " = new Select<"+ t.name + "." + col.type.inJava +">();\n" +
-                        "        {"+fieldName+".setLabel(\""+colName+"\"); "+fieldName+".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
+                        " = new Select<" + t.name + "." + col.type.inJava + ">();\n" +
+                        "        {" + fieldName + ".setLabel(\"" + colName + "\"); " + fieldName + ".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
             } else if (col.type.inJava.equals("String")) {
                 fieldName = "tf" + colName;
                 s.append("        public TextField " + fieldName + " = new TextField(\"" + colName + "\");\n");
-            } else if (col.type.isDate()){
+            } else if (col.type.isDate()) {
                 fieldName = "df" + colName;
-                s.append("        public DatePicker " + fieldName + " = new DatePicker(" + colName + ".toLocalDate());\n");
-            } else if(col.type.isTime()){
+                s.append("        public DatePicker " + fieldName + " = new DatePicker(\"" + colName + "\");\n");
+            } else if (col.type.isTime()) {
                 fieldName = "df" + colName;
-                s.append("        public DateTimePicker " + fieldName + " = new DatePicker(LocalDateTime.from(" + colName + ".toLocalTime()));\n");
-            } else if(col.type.isTimestamp()){
+                s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+            } else if (col.type.isTimestamp()) {
                 fieldName = "df" + colName;
-                s.append("        public DateTimePicker " + fieldName + " = new DatePicker(" + colName + ".toLocalDateTime());\n");
-            }
-            else {
+                s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+            } else {
                 fieldName = "nf" + colName;
                 s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
             }
@@ -1340,7 +1337,7 @@ public class JavaCodeGenerator {
                 "            addAndExpand(form);\n" +
                 "            form.setWidthFull();\n");
         for (Column col : t.columns) {
-            if (col.type.isBlob()){
+            if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
             String fieldName = mapFieldnames.get(col);
@@ -1361,24 +1358,38 @@ public class JavaCodeGenerator {
                 "\n" +
                 "        public void updateFields(){\n");
         for (Column col : t.columns) {
-            if (col.type.isBlob()){
+            if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
             String fieldName = mapFieldnames.get(col);
+
             if (col.type.isNumber())
                 s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
-            else
+            else if (col.type.isDate()) {
+                s.append("            " + fieldName + ".setValue(data." + col.name + ".toLocalDate());\n");
+            } else if (col.type.isTime()) {
+                s.append("            " + fieldName + ".setValue(LocalDateTime.from(data." + col.name + ".toLocalTime()));\n");
+            } else if (col.type.isTimestamp()) {
+                s.append("            " + fieldName + ".setValue(data." + col.name + ".toLocalDateTime());\n");
+            } else
                 s.append("            " + fieldName + ".setValue(data." + col.name + ");\n");
         }
         s.append("        }\n" +
                 "        public void updateData(){\n");
         for (Column col : t.columns) {
-            if (col.type.isBlob()){
+            if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
             String fieldName = mapFieldnames.get(col);
             if (col.type.isNumber() || col.type.isDecimalNumber())
                 s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");
+            else if (col.type.isDate()) {
+                s.append("            data." + col.name + " = new java.sql.Date(" + fieldName + ".getValue().toEpochDay() * 86400000L);\n");
+            } else if (col.type.isTime()) {
+                s.append("            data." + col.name + " = new java.sql.Time("+fieldName+".getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);\n");
+            } else if (col.type.isTimestamp()) {
+                s.append("            data." + col.name + " = new java.sql.Timestamp("+fieldName+".getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);\n");
+            }
             else
                 s.append("            data." + col.name + " = " + fieldName + ".getValue();\n");
         }
@@ -1405,7 +1416,7 @@ public class JavaCodeGenerator {
         return s.toString();
     }
 
-    public static String genDefaultBlobClass(LinkedHashSet<String> imports){
+    public static String genDefaultBlobClass(LinkedHashSet<String> imports) {
         imports.add("import java.io.ByteArrayInputStream;");
         imports.add("import java.sql.Blob;");
         return "class DefaultBlob implements Blob{\n" +

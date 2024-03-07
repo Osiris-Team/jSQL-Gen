@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.testDB;
 import java.sql.Blob;
+import java.sql.Timestamp;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,7 +10,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.Arrays;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.Date;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -25,6 +26,8 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
@@ -46,7 +49,7 @@ The cache gets cleared/invalidated at any update/insert/delete. <br>
 - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
 will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
 <br>
-Structure (7 fields/columns): <br>
+Structure (8 fields/columns): <br>
 - int id = INT NOT NULL PRIMARY KEY <br>
 - String name = TEXT NOT NULL <br>
 - int age = INT NOT NULL <br>
@@ -54,6 +57,7 @@ Structure (7 fields/columns): <br>
 - String lastName = TEXT DEFAULT '' <br>
 - int parentAge = INT DEFAULT 10 <br>
 - Blob myblob = BLOB DEFAULT '' <br>
+- Timestamp timestamp = TIMESTAMP DEFAULT NOW() <br>
 */
 public class Person{
 // The code below will not be removed when re-generating this class.
@@ -162,6 +166,8 @@ try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `parentAge` INT DEFAULT 10"
 s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `parentAge` INT DEFAULT 10");
 try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `myblob` BLOB DEFAULT ''");}catch(Exception ignored){}
 s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `myblob` BLOB DEFAULT ''");
+try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `timestamp` TIMESTAMP DEFAULT NOW()");}catch(Exception ignored){}
+s.executeUpdate("ALTER TABLE `person` MODIFY COLUMN `timestamp` TIMESTAMP DEFAULT NOW()");
 }
 try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `person` ORDER BY id DESC LIMIT 1")) {
 ResultSet rs = ps.executeQuery();
@@ -225,9 +231,9 @@ Use the static create method instead of this constructor,
 if you plan to add this object to the database in the future, since
 that method fetches and sets/reserves the {@link #id}.
 */
-public Person (int id, String name, int age, Flair flair, String lastName, int parentAge, Blob myblob){
+public Person (int id, String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp){
 initDefaultFields();
-this.id = id;this.name = name;this.age = age;this.flair = flair;this.lastName = lastName;this.parentAge = parentAge;this.myblob = myblob;
+this.id = id;this.name = name;this.age = age;this.flair = flair;this.lastName = lastName;this.parentAge = parentAge;this.myblob = myblob;this.timestamp = timestamp;
 }
 /**
 Database field/value: INT NOT NULL PRIMARY KEY. <br>
@@ -258,10 +264,14 @@ Database field/value: BLOB DEFAULT ''. <br>
 */
 public Blob myblob;
 /**
+Database field/value: TIMESTAMP DEFAULT NOW(). <br>
+*/
+public Timestamp timestamp;
+/**
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
 protected Person initDefaultFields() {
-this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new DefaultBlob(new byte[0]); return this;
+this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new DefaultBlob(new byte[0]); this.timestamp=new Timestamp(System.currentTimeMillis()); return this;
 }
 
 /**
@@ -296,10 +306,10 @@ Creates and returns an object that can be added to this table.
 Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
 Note that this method will NOT add the object to the table.
 */
-public static Person create( String name, int age, Flair flair, String lastName, int parentAge, Blob myblob)  {
+public static Person create( String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
 int id = idCounter.getAndIncrement();
 Person obj = new Person();
-obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; 
+obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
 onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
@@ -319,10 +329,10 @@ return obj;
 /**
 Convenience method for creating and directly adding a new object to the table.
 */
-public static Person createAndAdd( String name, int age, Flair flair, String lastName, int parentAge, Blob myblob)  {
+public static Person createAndAdd( String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
 int id = idCounter.getAndIncrement();
 Person obj = new Person();
-obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; 
+obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
@@ -352,7 +362,7 @@ get("WHERE username=? AND age=?", "Peter", 33);  <br>
 if that statement is null, returns all the contents of this table.
 */
 public static List<Person> get(String where, Object... whereValues)  {
-String sql = "SELECT `id`,`name`,`age`,`flair`,`lastName`,`parentAge`,`myblob`" +
+String sql = "SELECT `id`,`name`,`age`,`flair`,`lastName`,`parentAge`,`myblob`,`timestamp`" +
 " FROM `person`" +
 (where != null ? where : "");
 synchronized(cachedResults){ CachedResult cachedResult = cacheContains(sql, whereValues);
@@ -379,6 +389,7 @@ obj.flair = Flair.valueOf(rs.getString(4));
 obj.lastName = rs.getString(5);
 obj.parentAge = rs.getInt(6);
 obj.myblob = rs.getBlob(7);
+obj.timestamp = rs.getTimestamp(8);
 }
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -470,7 +481,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(Person obj)  {
-String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=?,`lastName`=?,`parentAge`=?,`myblob`=? WHERE id="+obj.id;
+String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=?,`lastName`=?,`parentAge`=?,`myblob`=?,`timestamp`=? WHERE id="+obj.id;
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -483,6 +494,7 @@ ps.setString(4, obj.flair.name());
 ps.setString(5, obj.lastName);
 ps.setInt(6, obj.parentAge);
 ps.setBlob(7, obj.myblob);
+ps.setTimestamp(8, obj.timestamp);
 ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -497,7 +509,7 @@ onUpdate.forEach(code -> code.accept(obj));
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(Person obj)  {
-String sql = "INSERT INTO `person` (`id`,`name`,`age`,`flair`,`lastName`,`parentAge`,`myblob`) VALUES (?,?,?,?,?,?,?)";
+String sql = "INSERT INTO `person` (`id`,`name`,`age`,`flair`,`lastName`,`parentAge`,`myblob`,`timestamp`) VALUES (?,?,?,?,?,?,?,?)";
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -510,6 +522,7 @@ ps.setString(4, obj.flair.name());
 ps.setString(5, obj.lastName);
 ps.setInt(6, obj.parentAge);
 ps.setBlob(7, obj.myblob);
+ps.setTimestamp(8, obj.timestamp);
 ps.executeUpdate();
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
@@ -573,7 +586,7 @@ clearCache();
     }
 
 public Person clone(){
-return new Person(this.id,this.name,this.age,this.flair,this.lastName,this.parentAge,this.myblob);
+return new Person(this.id,this.name,this.age,this.flair,this.lastName,this.parentAge,this.myblob,this.timestamp);
 }
 public Person add(){
 Person.add(this);
@@ -588,7 +601,7 @@ Person.remove(this);
 return this;
 }
 public String toPrintString(){
-return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" "+"lastName="+this.lastName+" "+"parentAge="+this.parentAge+" "+"myblob="+this.myblob+" ";
+return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" "+"lastName="+this.lastName+" "+"parentAge="+this.parentAge+" "+"myblob="+this.myblob+" "+"timestamp="+this.timestamp+" ";
 }
     public static class PersonComp extends VerticalLayout{
         public Person data;
@@ -602,6 +615,7 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
         {selFlair.setLabel("Flair"); selFlair.setItems(Person.Flair.values()); }
         public TextField tfLastName = new TextField("LastName");
         public NumberField nfParentAge = new NumberField("ParentAge");
+        public DateTimePicker dfTimestamp = new DateTimePicker("Timestamp");
         // Buttons
         public HorizontalLayout hlButtons = new HorizontalLayout();
         public Button btnAdd = new Button("Add");
@@ -646,6 +660,7 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
             form.add(selFlair);
             form.add(tfLastName);
             form.add(nfParentAge);
+            form.add(dfTimestamp);
 
             // Add buttons
             add(hlButtons);
@@ -666,6 +681,7 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
             selFlair.setValue(data.flair);
             tfLastName.setValue(data.lastName);
             nfParentAge.setValue(0.0 + data.parentAge);
+            dfTimestamp.setValue(data.timestamp.toLocalDateTime());
         }
         public void updateData(){
             data.id = (int) nfId.getValue().doubleValue();
@@ -674,6 +690,7 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
             data.flair = selFlair.getValue();
             data.lastName = tfLastName.getValue();
             data.parentAge = (int) nfParentAge.getValue().doubleValue();
+            data.timestamp = new java.sql.Timestamp(dfTimestamp.getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);
         }
 
         public void updateButtons(){
@@ -716,6 +733,9 @@ return new WHERE<Integer>("`parentAge`");
 }
 public static WHERE<Blob> whereMyblob() {
 return new WHERE<Blob>("`myblob`");
+}
+public static WHERE<Timestamp> whereTimestamp() {
+return new WHERE<Timestamp>("`timestamp`");
 }
 public static class WHERE<T> {
         /**
