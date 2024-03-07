@@ -54,17 +54,18 @@ Person.remove(john);
 Person.whereName().is("John").remove(); // Removes all rows where the name equals "John"
 ```
 
-## How?
-Generates one class for each table.
-The generated class contains static methods like `get() delete() update() add() etc...` to interact with the table.
-Each instance/objectof the class represents
-one row and has public fields like `obj.id obj.name etc...`.
-
-## Features
+## Overview
 
 ### ⚡️ 0% boilerplate, minimal code, fast development and prototyping via GUI
 ### ⚡️ Compile-/Typesafe SQL queries via WHERE class
 ### ⚡️ Various utility methods, like fetching results lazily
+
+Generates one class for each table.
+The generated class contains static methods like `get() remove() update() add() etc...` to interact with the table.
+Each instance/object of the class represents
+one row and has public fields like `obj.id obj.name etc...`.
+
+## Features
 
 ### 🛡 Safety
 - Secured against SQL-Injection by using prepared statements.
