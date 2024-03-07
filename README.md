@@ -66,13 +66,13 @@ one row and has public fields like `obj.id obj.name etc...`.
 ### ⚡️ Compile-/Typesafe SQL queries via WHERE class
 ### ⚡️ Various utility methods, like fetching results lazily
 
-### Safety
+### 🛡 Safety
 - Secured against SQL-Injection by using prepared statements.
 - Protection against timed out connections.
 - 0% boilerplate and simple code decreasing the risk for bugs.
 - (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
 
-### Performance
+### ⚡️ Performance
 - No runtime overhead for class generation (unlike other ORMs).
 - Cached connection pool ensures optimal performance on small and huge databases.
   Besides that it provides protection against timed out connections.
@@ -80,18 +80,18 @@ one row and has public fields like `obj.id obj.name etc...`.
   (cache gets cleared after INSERT/UPDATE/DELETE operations and is
   simply a map with SQL statements mapped to their results lists).
 
-### Customization
+### 🛠 Customization
 - Generated classes can be enhanced by adding your own custom code at the top of the class.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
 
-### SQL & JDBC
+### 🗄 SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
 - `NULL` is not allowed, instead use the `DEFAULT ''` keyword.
 - Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`.
 - Supports SQL DEFAULT for `NOW(), CURDATE(), CURTIME()`.
 
-### Other
+### ✴️ Other
 - Simple UI to design databases within minutes.
 - Database structure/design as JSON file.
 - Autosuggestions for field definitions.
