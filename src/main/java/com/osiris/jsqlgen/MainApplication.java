@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.osiris.jsqlgen.generator.GenDatabaseFile;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
@@ -477,7 +478,7 @@ public class MainApplication extends javafx.application.Application {
                 }
             }
             databaseFile.createNewFile();
-            JavaCodeGenerator.generateDatabaseFile(db, databaseFile, rawUrl, url, name, username, password);
+            GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
             files.add(databaseFile);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");

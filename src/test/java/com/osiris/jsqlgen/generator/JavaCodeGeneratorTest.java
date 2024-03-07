@@ -20,7 +20,7 @@ class JavaCodeGeneratorTest {
         db.name = "testDB";
         File dir = new File(System.getProperty("user.dir")+"/src/test/java/com/osiris/jsqlgen/testDB");
         db.javaProjectDir = dir;
-        JavaCodeGenerator.generateDatabaseFile(db, new File(dir+"/Database.java"),
+        GenDatabaseFile.s(db, new File(dir+"/Database.java"),
                 "getRawDbUrlFrom(url)",
                 "\"jdbc:mysql://localhost:3307/testDB\"",
                 "\"testDB\"", "\"root\"", "\"\"");

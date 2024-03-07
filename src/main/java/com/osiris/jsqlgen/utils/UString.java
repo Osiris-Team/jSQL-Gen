@@ -1,6 +1,11 @@
 package com.osiris.jsqlgen.utils;
 
 public class UString {
+
+    public static String firstToUpperCase(String s) {
+        return ("" + s.charAt(0)).toUpperCase() + s.substring(1);
+    }
+
     public static boolean startsWithWordIgnoreCase(String s, String query) {
         String firstWord = s.split(" ")[0];
         firstWord = firstWord.trim();
