@@ -24,8 +24,9 @@ those from a file.
 </p>
 
 ## Example
-I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
-the generated code into my project. Then I can do the following:
+<p><b>I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
+the generated code into my project. Then I can do the following:</b></p>
+
 ![image](https://github.com/Osiris-Team/jSQL-Gen/assets/59899645/0bcb328f-00c1-4e93-8ef3-0c8ee5cdcd1e)
 
 ```java
@@ -90,6 +91,7 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 ### 🗄 SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.
+- The generated Java (and JDBC) code does not require any third party libraries and should work with Java 8 or higher.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
 - `NULL` is not allowed, instead use the `DEFAULT ''` keyword.
 - Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`.
@@ -97,10 +99,9 @@ one row and has public fields like `obj.id obj.name etc...`.
 
 ### ✴️ Other
 - Simple UI to design databases within minutes.
-- Database structure/design as JSON file.
 - Autosuggestions for field definitions.
+- Database structure/design as JSON file.
 - Easily use multiple databases in a single project.
-- The generated Java code does not require any third party libraries and should work with Java 8 or higher. It uses the built in JDBC API for SQL queries.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 
 ### 🔴 Cons / Todo
