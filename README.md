@@ -125,3 +125,4 @@ in mind that those changes won't affect the actual database tables/columns.
 or use the lazy loading methods.
 - Make sure that all NOT NULL fields are on the upper half of the fields and the rest below. The generated functions will make more sense and will
 be generally less error prone.
+- If you want a list of items as a field or mappings between tables, create a new table named something like `PersonAndOrder` add fields for personId and orderId, and optionally any additional fields that are relevant for that relation.
