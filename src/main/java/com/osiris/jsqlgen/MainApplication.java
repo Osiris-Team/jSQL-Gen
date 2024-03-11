@@ -480,12 +480,13 @@ public class MainApplication extends javafx.application.Application {
             databaseFile.createNewFile();
             GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
             files.add(databaseFile);
+            JavaCodeGenerator.prepareTables(db);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");
                 javaFile.createNewFile();
                 files.add(javaFile);
                 Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                        JavaCodeGenerator.generateTableFile(javaFile, t));
+                        JavaCodeGenerator.generateTableFile(javaFile, t, db));
             }
         }
         return files;

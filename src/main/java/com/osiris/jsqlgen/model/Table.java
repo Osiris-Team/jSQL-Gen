@@ -19,7 +19,8 @@ public class Table {
     public Table duplicate() {
         Table t = new Table();
         t.name = name;
-        for (int i = 1; i < columns.size(); i++) { // Start at 1 to skip id column
+        t.columns.clear();
+        for (int i = 0; i < columns.size(); i++) {
             t.columns.add(columns.get(i).duplicate());
         }
         t.isDebug = isDebug;

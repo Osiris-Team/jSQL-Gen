@@ -1,19 +1,33 @@
 package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.model.Column;
+import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
+import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
 import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
 
 public class GenVaadinFlow {
+    public static class ExtraInfo{
+        public String fieldName;
+        public boolean isColumnRef;
+        public Table refTable;
+
+        public ExtraInfo(String fieldName, boolean isColumnRef, Table refTable) {
+            this.fieldName = fieldName;
+            this.isColumnRef = isColumnRef;
+            this.refTable = refTable;
+        }
+    }
     /**
      * Should be compatible with Vaadin 14 and up.
      */
-    public static String s(Table t, LinkedHashSet<String> importsList) {
+    public static String s(Database db, Table t, LinkedHashSet<String> importsList) {
         StringBuilder s = new StringBuilder();
 
         // Add imports
@@ -29,6 +43,9 @@ public class GenVaadinFlow {
         importsList.add("import com.vaadin.flow.component.datetimepicker.DateTimePicker;");
         importsList.add("import java.time.LocalDateTime;");
         importsList.add("import java.time.OffsetDateTime;");
+        importsList.add("import com.vaadin.flow.component.combobox.ComboBox;");
+        importsList.add("import com.vaadin.flow.component.html.Div;");
+        importsList.add("import com.vaadin.flow.data.renderer.ComponentRenderer;");
 
 
         // Create the class first
@@ -37,13 +54,15 @@ public class GenVaadinFlow {
                 "\n" +
                 "        // Form and fields\n" +
                 "        public FormLayout form = new FormLayout();\n");
-        Map<Column, String> mapFieldnames = new HashMap<>();
+        Map<Column, ExtraInfo> mapExtraInfo = new HashMap<>();
         for (Column col : t.columns) {
             if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
             String colName = firstToUpperCase(col.name);
             String fieldName = "";
+            boolean isColumnRef = false;
+            Table refTable = null;
             if (col.type.isEnum()) {
                 fieldName = "sel" + colName;
                 s.append("        public Select<" + t.name + "." + col.type.inJava + "> " + fieldName +
@@ -62,10 +81,37 @@ public class GenVaadinFlow {
                 fieldName = "df" + colName;
                 s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
             } else {
-                fieldName = "nf" + colName;
-                s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
+                // This might be an id / reference to another table
+                if(colName.toLowerCase().endsWith("id"))
+                    for (Table t2 : db.tables) {
+                        if(containsIgnoreCase(colName, t2.name)) {
+                            refTable = t2;
+                            break;
+                        }
+                    }
+                if(colName.toLowerCase().endsWith("id") && refTable != null){
+                    isColumnRef = true;
+                    colName = colName.substring(0, colName.toLowerCase().lastIndexOf("id"));
+                    fieldName = "cb" + colName;
+                    s.append("        public ComboBox<"+refTable.name+"> " + fieldName + " = new ComboBox<"+refTable.name+">(\"" + colName + "\");\n");
+                    s.append("        {"+fieldName+".setItems("+refTable.name+".get());\n" +
+                            "            "+fieldName+".setRenderer(new ComponentRenderer<>(obj -> {\n" +
+                            "                Div div = new Div();\n"+
+                            "                div.setText(\"\"+");
+                    for (Column refCol : refTable.columns) {
+                        if (refCol.type.isBlob() || refCol.type.isDateOrTime()) continue;
+                        s.append("obj." + refCol.name);
+                        s.append("+\"; \"+");
+                    }
+                    s.append("\"\");\n" +
+                            "            return div;}));\n" +
+                            "        }");
+                } else{
+                    fieldName = "nf" + colName;
+                    s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
+                }
             }
-            mapFieldnames.put(col, fieldName);
+            mapExtraInfo.put(col, new ExtraInfo(fieldName, isColumnRef, refTable));
         }
 
         s.append("        // Buttons\n" +
@@ -110,7 +156,8 @@ public class GenVaadinFlow {
             if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
-            String fieldName = mapFieldnames.get(col);
+            ExtraInfo extraInfo = mapExtraInfo.get(col);
+            String fieldName = extraInfo.fieldName;
             s.append("            form.add(" + fieldName + ");\n");
         }
         s.append("\n" +
@@ -131,9 +178,12 @@ public class GenVaadinFlow {
             if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
-            String fieldName = mapFieldnames.get(col);
+            ExtraInfo extra = mapExtraInfo.get(col);
+            String fieldName = extra.fieldName;
 
-            if (col.type.isNumber())
+            if(extra.isColumnRef)
+                s.append("            " + fieldName + ".setValue(data." + col.name + " != -1 ? "+extra.refTable.name+".get(data." + col.name + ") : null);\n");
+            else if (col.type.isNumber())
                 s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
             else if (col.type.isDate()) {
                 s.append("            " + fieldName + ".setValue(data." + col.name + ".toLocalDate());\n");
@@ -150,8 +200,11 @@ public class GenVaadinFlow {
             if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
-            String fieldName = mapFieldnames.get(col);
-            if (col.type.isNumber() || col.type.isDecimalNumber())
+            ExtraInfo extra = mapExtraInfo.get(col);
+            String fieldName = extra.fieldName;
+            if(extra.isColumnRef)
+                s.append("            data." + col.name + " = " + fieldName + ".getValue() != null ? " + fieldName + ".getValue().id : -1;\n");
+            else if (col.type.isNumber() || col.type.isDecimalNumber())
                 s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");
             else if (col.type.isDate()) {
                 s.append("            data." + col.name + " = new java.sql.Date(" + fieldName + ".getValue().toEpochDay() * 86400000L);\n");

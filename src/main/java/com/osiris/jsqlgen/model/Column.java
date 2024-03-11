@@ -37,4 +37,15 @@ public class Column {
         if(val.contains(" ")) val = val.substring(0, val.indexOf(" "));
         return UString.removeOuterQuotes(val);
     }
+
+    @Override
+    public String toString() {
+        return "Column{" +
+                "name='" + name + '\'' +
+                ", nameQuoted='" + nameQuoted + '\'' +
+                ", definition='" + definition + '\'' +
+                ", comment='" + comment + '\'' +
+                ", type=" + type +
+                '}';
+    }
 }

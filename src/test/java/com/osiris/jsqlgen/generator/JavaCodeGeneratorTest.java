@@ -39,10 +39,28 @@ class JavaCodeGeneratorTest {
         t.isDebug = true;
         t.isVaadinFlowUI = true;
         t.isNoExceptions = true;
+
+        Table t2 = new Table();
+        db.tables.add(t2);
+        t2.name = "PersonOrder";
+        t2.columns.add(new Column("personId").definition("INT"));
+        t2.columns.add(new Column("name").definition("TEXT DEFAULT ''"));
+        t2.isCache = true;
+        t2.isDebug = true;
+        t2.isVaadinFlowUI = true;
+        t2.isNoExceptions = true;
+
+        JavaCodeGenerator.prepareTables(db);
+
         File javaFile = new File(dir + "/" + t.name + ".java");
         javaFile.createNewFile();
         Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                JavaCodeGenerator.generateTableFile(javaFile, t));
+                JavaCodeGenerator.generateTableFile(javaFile, db.tables.get(0), db));
+
+        File javaFile2 = new File(dir + "/" + t2.name + ".java");
+        javaFile2.createNewFile();
+        Files.writeString(javaFile2.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+                JavaCodeGenerator.generateTableFile(javaFile2, db.tables.get(1), db));
 
         System.err.println("""
                 !>>>> Remember that the above generated classes are source code which

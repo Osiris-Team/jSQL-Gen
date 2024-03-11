@@ -6,7 +6,6 @@ import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -15,32 +14,42 @@ import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
 
 public class JavaCodeGenerator {
 
+    public static void prepareTables(Database db) throws Exception {
+        for (Table t : db.tables) {
+            for (Column col : t.columns) {
+                // MAKE EVERYTHING THAT HAS NOT "DEFAULT" OR ONLY "NULL" IN THEIR DEFINITION NOT NULL
+                if (containsIgnoreCase(col.definition, "DEFAULT")) continue;
+                if (containsIgnoreCase(col.definition, "NOT NULL")) continue;
+                if (containsIgnoreCase(col.definition, "NULL")) {
+                    throw new Exception("Found suspicious definition using NULL! Please use the DEFAULT keyword instead!");
+                } else {
+                    System.out.println("Found suspicious definition without NOT NULL, appended it.");
+                    col.definition = col.definition + " NOT NULL";
+                }
+            }
+        }
+
+        for (Table t : db.tables) {
+            for (Column col : t.columns) {
+                // GENERATE TYPES
+                col.type = ColumnType.findBySQLDefinition(col.definition);
+                if (col.type == null)
+                    throw new Exception("Failed to generate code, because failed to find matching java type of definition '" + col.definition
+                            + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
+            }
+        }
+    }
+
     /**
      * Generates Java source code, for the provided table.
      */
-    public static String generateTableFile(File oldGeneratedClass, Table t_) throws Exception {
+    public static String generateTableFile(File oldGeneratedClass, Table t_, Database db) throws Exception {
         final Table t = t_.duplicate(); // To make modifications to definition possible without changing original definition
-
-        // MAKE EVERYTHING THAT HAS NOT "DEFAULT" OR ONLY "NULL" IN THEIR DEFINITION NOT NULL
-        for (Column col : t.columns) {
-            if (containsIgnoreCase(col.definition, "DEFAULT")) continue;
-            if (containsIgnoreCase(col.definition, "NOT NULL")) continue;
-            if (containsIgnoreCase(col.definition, "NULL")) {
-                throw new Exception("Found suspicious definition using NULL! Please use the DEFAULT keyword instead!");
-            } else {
-                System.out.println("Found suspicious definition without NOT NULL, appended it.");
-                col.definition = col.definition + " NOT NULL";
-            }
-        }
 
         LinkedHashSet<String> importsList = new LinkedHashSet<>();
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         List<String> generatedEnumClasses = new ArrayList<>();
         for (Column col : t.columns) {
-            col.type = ColumnType.findBySQLDefinition(col.definition);
-            if (col.type == null)
-                throw new Exception("Failed to generate code, because failed to find matching java type of definition '" + col.definition
-                        + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
             if (col.type.isEnum()) {
                 String enumName = firstToUpperCase(col.name);
                 col.type = new ColumnType(ColumnType.ENUM.inSQL, enumName, ColumnType.ENUM.inJBDCSet, ColumnType.ENUM.inJBDCGet);
@@ -416,7 +425,7 @@ public class JavaCodeGenerator {
 
         // CREATE OBJ TOVAADINCOMPONENT METHOD
         if (t.isVaadinFlowUI)
-            classContentBuilder.append(GenVaadinFlow.s(t, importsList));
+            classContentBuilder.append(GenVaadinFlow.s(db, t, importsList));
 
         // CREATE OBJ ISONLYINMEMORY METHOD
         classContentBuilder.append("public boolean isOnlyInMemory(){\n" +
