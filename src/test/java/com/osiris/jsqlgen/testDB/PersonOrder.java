@@ -564,7 +564,11 @@ return  ""+"id="+this.id+" "+"personId="+this.personId+" "+"name="+this.name+" "
                 Div div = new Div();
                 div.setText(""+obj.id+"; "+obj.name+"; "+obj.age+"; "+obj.flair+"; "+obj.lastName+"; "+obj.parentAge+"; "+"");
             return div;}));
-        }        public TextField tfName = new TextField("Name");
+            cbPerson.setItemLabelGenerator(obj -> {
+                return ""+obj.id+"; "+obj.name+"; "+obj.age+"; "+obj.flair+"; "+obj.lastName+"; "+obj.parentAge+"; "+"";
+            });
+        }
+        public TextField tfName = new TextField("Name");
         // Buttons
         public HorizontalLayout hlButtons = new HorizontalLayout();
         public Button btnAdd = new Button("Add");

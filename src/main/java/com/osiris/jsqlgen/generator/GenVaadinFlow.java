@@ -97,15 +97,20 @@ public class GenVaadinFlow {
                     s.append("        {"+fieldName+".setItems("+refTable.name+".get());\n" +
                             "            "+fieldName+".setRenderer(new ComponentRenderer<>(obj -> {\n" +
                             "                Div div = new Div();\n"+
-                            "                div.setText(\"\"+");
+                            "                div.setText(");
+                    String valAsString = "\"\"+";
                     for (Column refCol : refTable.columns) {
                         if (refCol.type.isBlob() || refCol.type.isDateOrTime()) continue;
-                        s.append("obj." + refCol.name);
-                        s.append("+\"; \"+");
+                        valAsString += "obj." + refCol.name;
+                        valAsString += "+\"; \"+";
                     }
-                    s.append("\"\");\n" +
+                    valAsString += "\"\"";
+                    s.append(valAsString + ");\n" +
                             "            return div;}));\n" +
-                            "        }");
+                            "            "+fieldName+".setItemLabelGenerator(obj -> {\n" +
+                            "                return "+valAsString+";\n" +
+                            "            });\n" +
+                            "        }\n");
                 } else{
                     fieldName = "nf" + colName;
                     s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
