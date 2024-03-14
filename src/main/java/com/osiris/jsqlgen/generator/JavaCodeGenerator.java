@@ -192,7 +192,7 @@ public class JavaCodeGenerator {
 
         // STATIC TABLE INIT METHOD
         TableChange currentTableChange = GetTableChange.get(t, oldDatabases);
-        t.changes.add(currentTableChange);
+        if(t.changes.isEmpty() || currentTableChange.hasChanges()) t.changes.add(currentTableChange);
         classContentBuilder.append(GenStaticTableConstructor.s(t, tNameQuoted));
 
         if (t.isCache)
