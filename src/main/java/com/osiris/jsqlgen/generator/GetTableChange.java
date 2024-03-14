@@ -23,8 +23,8 @@ public class GetTableChange {
         // Generate current table change
         TableChange newChange = new TableChange();
 
-        if(oldT == null){
-            // Means this is a brand new table
+        if(oldT == null || t.changes.isEmpty()){
+            // Means this is a brand new table, or a table without the initial change to create it
             newChange.oldTableName = t.name;
             newChange.newTableName = t.name;
             for (Column c : t.columns) {

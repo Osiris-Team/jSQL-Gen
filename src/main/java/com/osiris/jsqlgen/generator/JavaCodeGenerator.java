@@ -50,8 +50,7 @@ public class JavaCodeGenerator {
     /**
      * Generates Java source code, for the provided table.
      */
-    public static String generateTableFile(File oldGeneratedClass, Table t_, Database db) throws Exception {
-        final Table t = t_.duplicate(); // To make modifications to definition possible without changing original definition
+    public static String generateTableFile(File oldGeneratedClass, Table t, Database db) throws Exception {
 
         // GENERATE COLUMN TYPES
         LinkedHashSet<String> importsList = new LinkedHashSet<>();
@@ -456,11 +455,7 @@ public class JavaCodeGenerator {
                 });
             }
         }
-        // SUCCESS, thus update this table in the current db
-        db.tables.replaceAll(t__ -> {
-            if(t__.id == t.id) return t;
-            else return t__;
-        });
+        // SUCCESS, thus save the data
         Data.save();
 
         return imports.toString() + classContentBuilder;
