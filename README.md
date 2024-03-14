@@ -108,6 +108,7 @@ to the database directly could result in issues.
 - Database structure/design as JSON file.
 - Easily use multiple databases in a single project.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
+- Vaadin Flow also supports references (your field must be named `<table>Id` for example `personId`), meaning it will create a ComboBox that displays the object/row as string instead of only the id.
 
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
