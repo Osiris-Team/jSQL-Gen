@@ -27,7 +27,7 @@ those from a file.
 <p><b>I want to have a table named Person with the fields id, name and age. So I create it with the jSQL-Gen GUI and copy
 the generated code into my project. Then I can do the following:</b></p>
 
-![image](https://github.com/Osiris-Team/jSQL-Gen/assets/59899645/0bcb328f-00c1-4e93-8ef3-0c8ee5cdcd1e)
+![image](./img_1.png)
 
 ```java
 // The first time you use Person, the database, Person table 
