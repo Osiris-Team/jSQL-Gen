@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GenDatabaseFile {
     public static void s(Database db, File databaseFile, String rawUrl, String url, String name, String username, String password) throws IOException {
@@ -44,7 +45,7 @@ public class GenDatabaseFile {
                 "public static final List<Connection> availableConnections = new ArrayList<>();\n" +
                 "public static final TableMetaData[] tables = new TableMetaData[]{");
 
-        ArrayList<Table> tables = db.tables;
+        CopyOnWriteArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
             Table t = tables.get(i);
             int latestTableVersion = t.changes.size(); // TODO t.changes has not latest change included at this point yet

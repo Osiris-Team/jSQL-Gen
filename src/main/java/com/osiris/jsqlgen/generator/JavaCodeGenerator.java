@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.generator;
 
+import com.osiris.jsqlgen.Data;
 import com.osiris.jsqlgen.model.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -436,7 +437,7 @@ public class JavaCodeGenerator {
         }
         imports.append("\n");
 
-        // SUCCESS, thus update this table in oldDatabases
+        // SUCCESS, thus update this table in oldDatabases (not original, but duplicate is created)
         for (Database oldDB : oldDatabases) {
             Table oldT = null;
             for (Table oldT_ : oldDB.tables) {
@@ -447,14 +448,20 @@ public class JavaCodeGenerator {
             }
             if(oldT == null){
                 // New table
-                oldDB.tables.add(t);
+                oldDB.tables.add(t.duplicate());
             } else{
                 oldDB.tables.replaceAll(oldT_ -> {
-                    if(oldT_.id == t.id) return t;
+                    if(oldT_.id == t.id) return t.duplicate();
                     else return oldT_;
                 });
             }
         }
+        // SUCCESS, thus update this table in the current db
+        db.tables.replaceAll(t__ -> {
+            if(t__.id == t.id) return t;
+            else return t__;
+        });
+        Data.save();
 
         return imports.toString() + classContentBuilder;
     }

@@ -31,6 +31,7 @@ import org.controlsfx.control.Notifications;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainApplication extends javafx.application.Application {
@@ -495,7 +496,7 @@ public class MainApplication extends javafx.application.Application {
     private void updateTablesList(String dbName) throws IOException {
         listTables.getItems().clear();
         Database db = Data.getDatabase(dbName);
-        ArrayList<Table> tables = db.tables;
+        CopyOnWriteArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
             Table t = tables.get(i);
             VBox wrapperTable = new VBox();

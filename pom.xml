@@ -6,7 +6,7 @@
 
     <groupId>com.osiris.jsqlgen</groupId>
     <artifactId>jSQL-Gen</artifactId>
-    <version>1.41</version>
+    <version>1.42</version>
     <name>jSQL-Gen</name>
 
     <properties>
