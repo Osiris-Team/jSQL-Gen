@@ -24,7 +24,7 @@ public class TableChange {
     public ArrayList<String> addedColumnDefinitions = new ArrayList<>();
     
     public boolean hasChanges(){
-        return !oldTableName.isEmpty() ||
+        return !oldTableName.equals(newTableName) ||
                 !oldColumnNames.isEmpty() ||
                 !oldColumnDefinitions.isEmpty() ||
                 !deletedColumnNames.isEmpty() ||
