@@ -25,6 +25,7 @@ public class Table {
 
     public Table duplicate() {
         Table t = new Table();
+        t.id = id;
         t.name = name;
         for (Column c : columns) {
             t.columns.add(c.duplicate());
