@@ -3,24 +3,18 @@ package com.osiris.jsqlgen;
 import com.google.gson.*;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
-import com.osiris.jsqlgen.model.Rectangle;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.FileTypeAdapter;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Data {
-    public static File dir = new File(System.getProperty("user.home") + "/jSQL-Gen");
-    public static final File file = new File(dir + "/data.yml");
+    public static final File file = new File(Main.dir + "/data.yml");
     public static final DataJson instance;
     private static AtomicBoolean save = new AtomicBoolean(false);
     public static Gson parser = new GsonBuilder().registerTypeAdapter(File.class, new FileTypeAdapter())
@@ -66,6 +60,16 @@ public class Data {
                                 //System.out.println(out);
                                 Files.writeString(file.toPath(), out);
                             }
+
+                            // Also update config
+                            try{
+                                Config c = new Config();
+                                c.idCounter.setValues(Main.idCounter.get());
+                                c.save();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+
                             System.out.println("Saved/Updated data.");
                             save.set(false);
                         }

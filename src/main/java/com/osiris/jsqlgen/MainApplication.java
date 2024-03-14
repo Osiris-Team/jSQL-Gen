@@ -402,7 +402,7 @@ public class MainApplication extends javafx.application.Application {
         System.out.println("Generating code...");
         try {
             List<File> files = generateCode(Collections.singletonList(Data.getDatabase(choiceDatabase.getValue())),
-                    new File(Data.dir + "/generated"), true);
+                    new File(Main.dir + "/generated"), true);
             System.out.println("Generated code/files: ");
             for (File f : files) {
                 System.out.println(f);
@@ -620,6 +620,8 @@ public class MainApplication extends javafx.application.Application {
                 throw new IOException("Table '"+tableName.toLowerCase()+"' already exists for this database!");
         }
         Table t = new Table();
+        t.id = Main.idCounter.getAndIncrement();
+        t.addIdColumn();
         db.tables.add(t);
         t.name = tableName;
         Data.save();
@@ -769,6 +771,7 @@ public class MainApplication extends javafx.application.Application {
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = new Column(columnName);
+        col.id = Main.idCounter.getAndIncrement();
         t.columns.add(col);
         col.definition = columnDefinition;
         Data.save();

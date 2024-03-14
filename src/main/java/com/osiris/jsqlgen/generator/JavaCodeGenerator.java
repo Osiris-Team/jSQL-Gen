@@ -1,9 +1,7 @@
 package com.osiris.jsqlgen.generator;
 
-import com.osiris.jsqlgen.model.Column;
-import com.osiris.jsqlgen.model.ColumnType;
-import com.osiris.jsqlgen.model.Database;
-import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.model.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -41,11 +39,20 @@ public class JavaCodeGenerator {
     }
 
     /**
+     * Contains a copy of the databases once jSQL-Gen was started and gets
+     * updated at the end of {@link #generateTableFile(File, Table, Database)} if the generation of the table was a success. <br>
+     * This is for versioning databases and keeping track of changes between the last and current database. <br>
+     * This means that each time you press "Generate Files" the version is incremented by one (if there were changes). <br>
+     */
+    public static List<Database> oldDatabases = new ArrayList<>();
+
+    /**
      * Generates Java source code, for the provided table.
      */
     public static String generateTableFile(File oldGeneratedClass, Table t_, Database db) throws Exception {
         final Table t = t_.duplicate(); // To make modifications to definition possible without changing original definition
 
+        // GENERATE COLUMN TYPES
         LinkedHashSet<String> importsList = new LinkedHashSet<>();
         String tNameQuoted = "`" + t.name.toLowerCase() + "`";
         List<String> generatedEnumClasses = new ArrayList<>();
@@ -181,33 +188,11 @@ public class JavaCodeGenerator {
                     "        return s +\"...\"+ stack[1].toString(); //stack[0] == current method, gets ignored\n" +
                     "    }\n");
         classContentBuilder.append("public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
-        classContentBuilder.append("static {\n" +
-                "try{\n" + // Without this additional try/catch that encapsulates the complete code inside static constructor
-                // we somehow get problems like class not found exception
-                "Connection con = Database.getCon();\n" +
-                "try{\n" +
-                "try (Statement s = con.createStatement()) {\n" +
-                "s.executeUpdate(\"CREATE TABLE IF NOT EXISTS " + tNameQuoted + " (" + t.columns.get(0).nameQuoted // EXPECTS ID
-                + " " + t.columns.get(0).definition + ")\");\n");
-        for (int i = 1; i < t.columns.size(); i++) { // Skip first column (id) to avoid "SQLSyntaxErrorException: Multiple primary key defined"
-            Column col = t.columns.get(i);
-            classContentBuilder.append("try{s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " ADD COLUMN " + col.nameQuoted + " " + col.definition + "\");}catch(Exception ignored){}\n");
-            classContentBuilder.append("s.executeUpdate(\"ALTER TABLE " + tNameQuoted + " MODIFY COLUMN " + col.nameQuoted + " " + col.definition + "\");\n");
-        }
-        classContentBuilder.append(
-                "}\n" +
-                        "try (PreparedStatement ps = con.prepareStatement(\"SELECT id FROM " + tNameQuoted + " ORDER BY id DESC LIMIT 1\")) {\n" +
-                        "ResultSet rs = ps.executeQuery();\n" +
-                        "if (rs.next()) idCounter.set(rs.getInt(1) + 1);\n" +
-                        "}\n" +
-                        "}\n" +
-                        "catch(Exception e){ throw new RuntimeException(e); }\n" +
-                        "finally {Database.freeCon(con);}\n" +
-                        "}catch(Exception e){\n" +
-                        "e.printStackTrace();\n" +
-                        "System.err.println(\"Something went really wrong during table (" + t.name + ") initialisation, thus the program will exit!\");" +
-                        "System.exit(1);}\n" +
-                        "}\n\n");
+
+        // STATIC TABLE INIT METHOD
+        TableChange currentTableChange = GetTableChange.get(t, oldDatabases);
+        t.changes.add(currentTableChange);
+        classContentBuilder.append(GenStaticTableConstructor.s(t, tNameQuoted));
 
         if (t.isCache)
             classContentBuilder.append("    private static final List<CachedResult> cachedResults = new ArrayList<>();\n" +
@@ -450,6 +435,27 @@ public class JavaCodeGenerator {
             imports.append(s).append("\n");
         }
         imports.append("\n");
+
+        // SUCCESS, thus update this table in oldDatabases
+        for (Database oldDB : oldDatabases) {
+            Table oldT = null;
+            for (Table oldT_ : oldDB.tables) {
+                if(oldT_.id == t.id) {
+                    oldT = oldT_;
+                    break;
+                }
+            }
+            if(oldT == null){
+                // New table
+                oldDB.tables.add(t);
+            } else{
+                oldDB.tables.replaceAll(oldT_ -> {
+                    if(oldT_.id == t.id) return t;
+                    else return oldT_;
+                });
+            }
+        }
+
         return imports.toString() + classContentBuilder;
     }
 

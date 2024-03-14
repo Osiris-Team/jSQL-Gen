@@ -12,6 +12,7 @@ module com.osiris.jsqlgen {
     requires com.github.javaparser.core;
     requires maven.model;
     requires plexus.utils;
+    requires Dyml;
 
     opens com.osiris.jsqlgen to javafx.fxml;
     exports com.osiris.jsqlgen;

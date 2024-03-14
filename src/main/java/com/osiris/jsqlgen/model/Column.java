@@ -3,6 +3,7 @@ package com.osiris.jsqlgen.model;
 import com.osiris.jsqlgen.utils.UString;
 
 public class Column {
+    public long id = 0; // Gson always sets to 0 if field doesn't exist yet, no matter what we write here
     public String name;
     public String nameQuoted;
     public String definition;
@@ -25,6 +26,7 @@ public class Column {
 
     public Column duplicate() {
         Column col = new Column(name);
+        col.id = id;
         col.definition = definition;
         col.comment = comment;
         col.type = type;

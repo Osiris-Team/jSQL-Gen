@@ -28,6 +28,7 @@ import java.time.OffsetDateTime;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.component.button.ButtonVariant;
 
 /**
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
@@ -147,11 +148,16 @@ try{
 Connection con = Database.getCon();
 try{
 try (Statement s = con.createStatement()) {
+Database.TableMetaData t = Database.getTableMetaData(0);
+for (int i = t.version; i < 1; i++) {
+if(i == 0){
 s.executeUpdate("CREATE TABLE IF NOT EXISTS `personorder` (`id` INT NOT NULL PRIMARY KEY)");
 try{s.executeUpdate("ALTER TABLE `personorder` ADD COLUMN `personId` INT NOT NULL");}catch(Exception ignored){}
-s.executeUpdate("ALTER TABLE `personorder` MODIFY COLUMN `personId` INT NOT NULL");
 try{s.executeUpdate("ALTER TABLE `personorder` ADD COLUMN `name` TEXT DEFAULT ''");}catch(Exception ignored){}
-s.executeUpdate("ALTER TABLE `personorder` MODIFY COLUMN `name` TEXT DEFAULT ''");
+t.version++;
+Database.updateTableMetaData(t);
+}
+}
 }
 try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `personorder` ORDER BY id DESC LIMIT 1")) {
 ResultSet rs = ps.executeQuery();
@@ -572,6 +578,7 @@ return  ""+"id="+this.id+" "+"personId="+this.personId+" "+"name="+this.name+" "
         // Buttons
         public HorizontalLayout hlButtons = new HorizontalLayout();
         public Button btnAdd = new Button("Add");
+        {btnAdd.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}
         public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {
                 btnAdd.setEnabled(false);
                 updateData();
@@ -581,6 +588,7 @@ return  ""+"id="+this.id+" "+"personId="+this.personId+" "+"name="+this.name+" "
                 updateButtons();
 };
         public Button btnSave = new Button("Save");
+        {btnSave.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}
         public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {
                 btnSave.setEnabled(false);
                 updateData();
@@ -589,6 +597,7 @@ return  ""+"id="+this.id+" "+"personId="+this.personId+" "+"name="+this.name+" "
                 updateButtons();
 };
         public Button btnDelete = new Button("Delete");
+        {btnDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);}
         public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {
                 btnDelete.setEnabled(false);
                 PersonOrder.remove(data);

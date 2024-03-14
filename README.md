@@ -88,6 +88,10 @@ one row and has public fields like `obj.id obj.name etc...`.
 ### 🛠 Customization
 - Generated classes can be enhanced by adding your own custom code at the top of the class.
 - Name your tables/columns however you like since internally names are encapsulated in backticks.
+- You can add/rename/delete tables and columns (also change types/definitions) whenever you want,
+since each time you press "Generate Files", change details between the current and last version are generated
+(if there were any) and via an additional table with
+table metadata jSQL-Gen keeps track of the actual tables state/version.
 
 ### 🗄 SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.

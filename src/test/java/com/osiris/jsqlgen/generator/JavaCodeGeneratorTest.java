@@ -25,9 +25,10 @@ class JavaCodeGeneratorTest {
                 "\"jdbc:mysql://localhost:3307/testDB\"",
                 "\"testDB\"", "\"root\"", "\"\"");
 
-        Table t = new Table();
+        Table t = new Table().addIdColumn();
         db.tables.add(t);
         t.name = "Person";
+        t.id = 1;
         t.columns.add(new Column("name").definition("TEXT NOT NULL"));
         t.columns.add(new Column("age").definition("INT NOT NULL"));
         t.columns.add(new Column("flair").definition("ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'"));
@@ -40,8 +41,9 @@ class JavaCodeGeneratorTest {
         t.isVaadinFlowUI = true;
         t.isNoExceptions = true;
 
-        Table t2 = new Table();
+        Table t2 = new Table().addIdColumn();
         db.tables.add(t2);
+        t2.id = 2;
         t2.name = "PersonOrder";
         t2.columns.add(new Column("personId").definition("INT"));
         t2.columns.add(new Column("name").definition("TEXT DEFAULT ''"));
@@ -64,7 +66,7 @@ class JavaCodeGeneratorTest {
 
         System.err.println("""
                 !>>>> Remember that the above generated classes are source code which
-                !>>>> has to be recompiled at some point, thus the below tests probably run with the last compiled classes,
+                !>>>> has to be recompiled at some pointhus the below tests probably run with the last compiled classes,
                 !>>>> not the current ones. So if encountering errors re-run this.""");
 
         SQLTestServer testDB = SQLTestServer.buildAndRun("testDB", 3307);

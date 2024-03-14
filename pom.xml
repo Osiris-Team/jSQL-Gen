@@ -122,6 +122,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.Osiris-Team</groupId>
+            <artifactId>Dyml</artifactId>
+            <version>9.8.3</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-core</artifactId>
             <exclusions>

@@ -46,6 +46,7 @@ public class GenVaadinFlow {
         importsList.add("import com.vaadin.flow.component.combobox.ComboBox;");
         importsList.add("import com.vaadin.flow.component.html.Div;");
         importsList.add("import com.vaadin.flow.data.renderer.ComponentRenderer;");
+        importsList.add("import com.vaadin.flow.component.button.ButtonVariant;");
 
 
         // Create the class first
@@ -122,6 +123,7 @@ public class GenVaadinFlow {
         s.append("        // Buttons\n" +
                 "        public HorizontalLayout hlButtons = new HorizontalLayout();\n" +
                 "        public Button btnAdd = new Button(\"Add\");\n" +
+                "        {btnAdd.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {\n" +
                 "                btnAdd.setEnabled(false);\n" +
                 "                updateData();\n" +
@@ -131,6 +133,7 @@ public class GenVaadinFlow {
                 "                updateButtons();\n" +
                 "};\n" +
                 "        public Button btnSave = new Button(\"Save\");\n" +
+                "        {btnSave.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {\n" +
                 "                btnSave.setEnabled(false);\n" +
                 "                updateData();\n" +
@@ -139,6 +142,7 @@ public class GenVaadinFlow {
                 "                updateButtons();\n" +
                 "};\n" +
                 "        public Button btnDelete = new Button(\"Delete\");\n" +
+                "        {btnDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);}\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {\n" +
                 "                btnDelete.setEnabled(false);\n" +
                 "                " + t.name + ".remove(data);\n" +

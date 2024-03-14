@@ -1,20 +1,25 @@
 package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.model.Database;
+import com.osiris.jsqlgen.model.Table;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 
 public class GenDatabaseFile {
     public static void s(Database db, File databaseFile, String rawUrl, String url, String name, String username, String password) throws IOException {
         databaseFile.getParentFile().mkdirs();
         databaseFile.createNewFile();
-        Files.writeString(databaseFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+
+        StringBuilder s = new StringBuilder((db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
                 "import java.sql.Connection;\n" +
                 "import java.sql.DriverManager;\n" +
                 "import java.sql.SQLException;\n" +
                 "import java.sql.Statement;\n" +
+                "import java.sql.PreparedStatement;\n" +
+                "import java.sql.ResultSet;\n" +
                 "import java.util.Arrays;\n" +
                 "import java.util.Objects;\n" +
                 "import java.util.ArrayList;\n" +
@@ -37,6 +42,19 @@ public class GenDatabaseFile {
                 "* Use synchronized on this before doing changes to it. \n" +
                 "*/\n" +
                 "public static final List<Connection> availableConnections = new ArrayList<>();\n" +
+                "public static final TableMetaData[] tables = new TableMetaData[]{");
+
+        ArrayList<Table> tables = db.tables;
+        for (int i = 0; i < tables.size(); i++) {
+            Table t = tables.get(i);
+            int latestTableVersion = t.changes.size(); // TODO t.changes has not latest change included at this point yet
+            // TODO since this gets generated before the tables get generated.
+            s.append("new TableMetaData("+t.id+", "+latestTableVersion+")");
+
+            if(i != tables.size() - 1) s.append(", ");
+        }
+
+        s.append("};\n" +
                 "\n" +
                 "    static{create();} // Create database if not exists\n" +
                 "\n" +
@@ -69,6 +87,17 @@ public class GenDatabaseFile {
                 "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
                 "            Statement s = c.createStatement();) {\n" +
                 "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
+                "        } catch (SQLException e) {\n" +
+                "            e.printStackTrace();\n" +
+                "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+                "            System.exit(1);\n" +
+                "        }\n" +
+                "        // Create metadata table if not exists\n" +
+                "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
+                "             Statement s = c.createStatement()) {\n" +
+                "            s.executeUpdate(\"CREATE TABLE IF NOT EXISTS `jsqlgen_metadata` (`tableId` INT NOT NULL PRIMARY KEY)\");\n" +
+                "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `tableVersion` INT NOT NULL\");} catch (Exception ignored) {}\n" +
+                "\n" +
                 "        } catch (SQLException e) {\n" +
                 "            e.printStackTrace();\n" +
                 "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
@@ -121,7 +150,73 @@ public class GenDatabaseFile {
                 "        }\n" +
                 "        if(count != 3) return databaseUrl; // Means there is less than 3 \"/\", thus may already be raw url, or totally wrong url\n" +
                 "        return databaseUrl.substring(0, index);\n" +
-                "    }" +
+                "    }\n" +
+                "" +
+                "    public static TableMetaData getTableMetaData(int tableId) {\n" +
+                "        TableMetaData t = new TableMetaData(tableId, 0);\n" +
+                "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
+                "             Statement s = c.createStatement()) {\n" +
+                "            try (ResultSet rs = s.executeQuery(\"SELECT `tableId`,`tableVersion`\" +\n" +
+                "                    \" FROM `jsqlgen_metadata` WHERE tableId=\"+tableId)) {\n" +
+                "                boolean exists = false;\n" +
+                "                while (rs.next()) {\n" +
+                "                    exists = true;\n" +
+                "                    tableId = rs.getInt(1);\n" +
+                "                    int tableVersion = rs.getInt(2);\n" +
+                "                    t.id = tableId;\n" +
+                "                    t.version = tableVersion;\n" +
+                "                }\n" +
+                "                if(!exists){\n" +
+                "                    // Insert new row\n" +
+                "                    String insertQuery = \"INSERT INTO `jsqlgen_metadata` (`tableId`, `tableVersion`) VALUES (?, ?)\";\n" +
+                "                    try (PreparedStatement ps = c.prepareStatement(insertQuery)) {\n" +
+                "                        ps.setLong(1, t.id);\n" +
+                "                        ps.setLong(2, t.version);\n" +
+                "                        ps.executeUpdate();\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "            // In each table at start, get this metadata object and compare with the actual table version\n" +
+                "            // that was generated by jsqlgen, then execute all the SQL changes for missing inbetween versions.\n" +
+                "\n" +
+                "        } catch (SQLException e) {\n" +
+                "            e.printStackTrace();\n" +
+                "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+                "            System.exit(1);\n" +
+                "        }\n" +
+                "        return t;\n" +
+                "    }\n" +
+                "\n" +
+                "    public static void updateTableMetaData(TableMetaData t) {\n" +
+                "        // Create metadata table if not exists\n" +
+                "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password)) {\n" +
+                "            // Update existing row\n" +
+                "            String updateQuery = \"UPDATE `jsqlgen_metadata` SET `tableId`=?, `tableVersion`=? WHERE `tableId`=?\";\n" +
+                "            try (PreparedStatement ps = c.prepareStatement(updateQuery)) {\n" +
+                "                ps.setLong(1, t.id);\n" +
+                "                ps.setLong(2, t.version);\n" +
+                "                ps.setLong(3, t.id);\n" +
+                "                ps.executeUpdate();\n" +
+                "            } \n" +
+                "        } catch (SQLException e) {\n" +
+                "            e.printStackTrace();\n" +
+                "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+                "            System.exit(1);\n" +
+                "        }\n" +
+                "    }\n" +
+                "\n" +
+                "    public static class TableMetaData {\n" +
+                "        public int id;\n" +
+                "        public int version;\n" +
+                "\n" +
+                "        public TableMetaData(int id, int version) {\n" +
+                "            this.id = id;\n" +
+                "            this.version = version;\n" +
+                "        }\n" +
+                "    }\n" +
                 "}\n");
+
+
+        Files.writeString(databaseFile.toPath(), s.toString());
     }
 }
