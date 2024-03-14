@@ -91,7 +91,8 @@ one row and has public fields like `obj.id obj.name etc...`.
 - You can add/rename/delete tables and columns (also change types/definitions) whenever you want,
 since each time you press "Generate Files", change details between the current and last version are generated
 (if there were any) and via an additional table with
-table metadata jSQL-Gen keeps track of the actual tables state/version.
+table metadata jSQL-Gen keeps track of the actual tables state/version. Keep in mind that manual changes
+to the database directly could result in issues.
 
 ### 🗄 SQL & JDBC
 - The generated SQL code should be compatible with all types of SQL databases.
@@ -110,8 +111,6 @@ table metadata jSQL-Gen keeps track of the actual tables state/version.
 
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
-- Updating existing tables is a bit rough (removed fields/columns must be also removed manually from the database, especially "not null fields").
-A fix for this is being worked on: https://github.com/Osiris-Team/jSQL-Gen/issues/7
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
 - Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
 - Java Code Generator: No support for `FOREIGN KEY` / references between tables.
