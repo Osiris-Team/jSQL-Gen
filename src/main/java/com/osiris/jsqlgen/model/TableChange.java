@@ -10,6 +10,7 @@ public class TableChange {
     // Column rename
     public ArrayList<String> oldColumnNames = new ArrayList<>();
     public ArrayList<String> newColumnNames = new ArrayList<>();
+    public ArrayList<String> newColumnNames_Definitions = new ArrayList<>();
 
     // Column definition change
     public ArrayList<String> oldColumnDefinitions = new ArrayList<>();

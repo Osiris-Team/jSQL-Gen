@@ -109,6 +109,10 @@ public class ColumnType {
         return this == BLOB;
     }
 
+    public boolean isBitOrBoolean() {
+        return this == BIT;
+    }
+
     /**
      * Provided string must start with the SQL type name (case is ignored)
      * and can continue with anything else (perfect for SQL DEFINITION strings).
@@ -124,6 +128,8 @@ public class ColumnType {
         }
         return null;
     }
+
+
 
     // TODO SPATIAL DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
     // TODO JSON DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html

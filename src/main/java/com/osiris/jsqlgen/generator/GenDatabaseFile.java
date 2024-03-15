@@ -50,7 +50,8 @@ public class GenDatabaseFile {
             Table t = tables.get(i);
             int latestTableVersion = t.changes.size(); // TODO t.changes has not latest change included at this point yet
             // TODO since this gets generated before the tables get generated.
-            s.append("new TableMetaData("+t.id+", "+latestTableVersion+")");
+            // id, tableVersion, steps
+            s.append("new TableMetaData("+t.id+", "+latestTableVersion+", 0)");
 
             if(i != tables.size() - 1) s.append(", ");
         }
@@ -98,6 +99,7 @@ public class GenDatabaseFile {
                 "             Statement s = c.createStatement()) {\n" +
                 "            s.executeUpdate(\"CREATE TABLE IF NOT EXISTS `jsqlgen_metadata` (`tableId` INT NOT NULL PRIMARY KEY)\");\n" +
                 "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `tableVersion` INT NOT NULL\");} catch (Exception ignored) {}\n" +
+                "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `steps` INT NOT NULL\");} catch (Exception ignored) {}\n" +
                 "\n" +
                 "        } catch (SQLException e) {\n" +
                 "            e.printStackTrace();\n" +
@@ -154,25 +156,28 @@ public class GenDatabaseFile {
                 "    }\n" +
                 "" +
                 "    public static TableMetaData getTableMetaData(int tableId) {\n" +
-                "        TableMetaData t = new TableMetaData(tableId, 0);\n" +
+                "        TableMetaData t = new TableMetaData(tableId, 0, 0);\n" + // tableId, tableVersion, steps
                 "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
                 "             Statement s = c.createStatement()) {\n" +
-                "            try (ResultSet rs = s.executeQuery(\"SELECT `tableId`,`tableVersion`\" +\n" +
+                "            try (ResultSet rs = s.executeQuery(\"SELECT `tableId`,`tableVersion`,`steps`\" +\n" +
                 "                    \" FROM `jsqlgen_metadata` WHERE tableId=\"+tableId)) {\n" +
                 "                boolean exists = false;\n" +
                 "                while (rs.next()) {\n" +
                 "                    exists = true;\n" +
                 "                    tableId = rs.getInt(1);\n" +
                 "                    int tableVersion = rs.getInt(2);\n" +
+                "                    int steps = rs.getInt(3);\n" +
                 "                    t.id = tableId;\n" +
                 "                    t.version = tableVersion;\n" +
+                "                    t.steps = steps;\n" +
                 "                }\n" +
                 "                if(!exists){\n" +
                 "                    // Insert new row\n" +
-                "                    String insertQuery = \"INSERT INTO `jsqlgen_metadata` (`tableId`, `tableVersion`) VALUES (?, ?)\";\n" +
+                "                    String insertQuery = \"INSERT INTO `jsqlgen_metadata` (`tableId`, `tableVersion`, `steps`) VALUES (?, ?, ?)\";\n" +
                 "                    try (PreparedStatement ps = c.prepareStatement(insertQuery)) {\n" +
-                "                        ps.setLong(1, t.id);\n" +
-                "                        ps.setLong(2, t.version);\n" +
+                "                        ps.setInt(1, t.id);\n" +
+                "                        ps.setInt(2, t.version);\n" +
+                "                        ps.setInt(3, t.steps);\n" +
                 "                        ps.executeUpdate();\n" +
                 "                    }\n" +
                 "                }\n" +
@@ -192,11 +197,12 @@ public class GenDatabaseFile {
                 "        // Create metadata table if not exists\n" +
                 "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password)) {\n" +
                 "            // Update existing row\n" +
-                "            String updateQuery = \"UPDATE `jsqlgen_metadata` SET `tableId`=?, `tableVersion`=? WHERE `tableId`=?\";\n" +
+                "            String updateQuery = \"UPDATE `jsqlgen_metadata` SET `tableId`=?, `tableVersion`=?, `steps`=? WHERE `tableId`=?\";\n" +
                 "            try (PreparedStatement ps = c.prepareStatement(updateQuery)) {\n" +
                 "                ps.setLong(1, t.id);\n" +
                 "                ps.setLong(2, t.version);\n" +
-                "                ps.setLong(3, t.id);\n" +
+                "                ps.setLong(3, t.steps);\n" +
+                "                ps.setLong(4, t.id);\n" +
                 "                ps.executeUpdate();\n" +
                 "            } \n" +
                 "        } catch (SQLException e) {\n" +
@@ -209,10 +215,12 @@ public class GenDatabaseFile {
                 "    public static class TableMetaData {\n" +
                 "        public int id;\n" +
                 "        public int version;\n" +
+                "        public int steps;\n" +
                 "\n" +
-                "        public TableMetaData(int id, int version) {\n" +
+                "        public TableMetaData(int id, int version, int steps) {\n" +
                 "            this.id = id;\n" +
                 "            this.version = version;\n" +
+                "            this.steps = steps;\n" +
                 "        }\n" +
                 "    }\n" +
                 "}\n");

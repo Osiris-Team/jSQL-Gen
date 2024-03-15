@@ -2,7 +2,6 @@ package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.Data;
 import com.osiris.jsqlgen.model.*;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -54,7 +53,7 @@ public class JavaCodeGenerator {
 
         // GENERATE COLUMN TYPES
         LinkedHashSet<String> importsList = new LinkedHashSet<>();
-        String tNameQuoted = "`" + t.name.toLowerCase() + "`";
+        String tNameQuoted = getSQLTableNameQuoted(t.name);
         List<String> generatedEnumClasses = new ArrayList<>();
         for (Column col : t.columns) {
             if (col.type.isEnum()) {
@@ -459,6 +458,10 @@ public class JavaCodeGenerator {
         Data.save();
 
         return imports.toString() + classContentBuilder;
+    }
+
+    public static String getSQLTableNameQuoted(String s) {
+        return "`" + s.toLowerCase() + "`";
     }
 
     private static String genJDBCSet(Column c, int i) {

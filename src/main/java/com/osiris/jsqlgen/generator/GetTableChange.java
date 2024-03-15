@@ -54,6 +54,7 @@ public class GetTableChange {
                     // Existing column, check for changes
                     if(!c.name.equals(oldC.name)) {
                         newChange.newColumnNames.add(c.name);
+                        newChange.newColumnNames_Definitions.add(c.definition);
                         newChange.oldColumnNames.add(oldC.name);
                     }
                     if(!c.definition.equals(oldC.definition)) {
@@ -75,6 +76,9 @@ public class GetTableChange {
                 if(!stillExists) newChange.deletedColumnNames.add(oldC.name);
             }
         }
+
+        if(newChange.newTableName.isEmpty()) newChange.newTableName = t.name;
+        if(newChange.oldTableName.isEmpty()) newChange.oldTableName = t.name;
         return newChange;
     }
 }

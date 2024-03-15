@@ -4,7 +4,6 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -50,7 +49,10 @@ public class GenVaadinFlow {
 
 
         // Create the class first
-        s.append("    public static class " + t.name + "Comp extends VerticalLayout{\n" +
+        s.append("    public static class Comp extends VerticalLayout{\n" +
+                "\n" +
+                genBooleanSelectClass(importsList) +
+                "\n" +
                 "        public " + t.name + " data;\n" +
                 "\n" +
                 "        // Form and fields\n" +
@@ -81,6 +83,9 @@ public class GenVaadinFlow {
             } else if (col.type.isTimestamp()) {
                 fieldName = "df" + colName;
                 s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+            } else if (col.type.isBitOrBoolean()) {
+                fieldName = "bs" + colName;
+                s.append("        public BooleanSelect " + fieldName + " = new BooleanSelect(\"" + colName + "\", false);\n");
             } else {
                 // This might be an id / reference to another table
                 if(colName.toLowerCase().endsWith("id"))
@@ -150,7 +155,7 @@ public class GenVaadinFlow {
                 "                updateButtons();\n" +
                 "};\n" +
                 "\n" +
-                "        public " + t.name + "Comp(" + t.name + " data) {\n" +
+                "        public Comp(" + t.name + " data) {\n" +
                 "            this.data = data;\n" +
                 "            setWidthFull();\n" +
                 "            setPadding(false);\n" +
@@ -192,7 +197,7 @@ public class GenVaadinFlow {
 
             if(extra.isColumnRef)
                 s.append("            " + fieldName + ".setValue(data." + col.name + " != -1 ? "+extra.refTable.name+".get(data." + col.name + ") : null);\n");
-            else if (col.type.isNumber())
+            else if (!col.type.isBitOrBoolean() && col.type.isNumber())
                 s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
             else if (col.type.isDate()) {
                 s.append("            " + fieldName + ".setValue(data." + col.name + ".toLocalDate());\n");
@@ -213,7 +218,7 @@ public class GenVaadinFlow {
             String fieldName = extra.fieldName;
             if(extra.isColumnRef)
                 s.append("            data." + col.name + " = " + fieldName + ".getValue() != null ? " + fieldName + ".getValue().id : -1;\n");
-            else if (col.type.isNumber() || col.type.isDecimalNumber())
+            else if (!col.type.isBitOrBoolean() && (col.type.isNumber() || col.type.isDecimalNumber()))
                 s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");
             else if (col.type.isDate()) {
                 s.append("            data." + col.name + " = new java.sql.Date(" + fieldName + ".getValue().toEpochDay() * 86400000L);\n");
@@ -240,11 +245,61 @@ public class GenVaadinFlow {
                 "        }\n" +
                 "    }\n" + // CLOSE CLASS
                 "\n" +
-                "    public " + t.name + "Comp toComp(){\n" +
-                "        return new " + t.name + "Comp(this);\n" +
+                "    public " + t.name + ".Comp toComp(){\n" +
+                "        return new " + t.name + ".Comp(this);\n" +
                 "    }\n" +
                 "\n");
 
+        return s.toString();
+    }
+
+
+    public static String genBooleanSelectClass(LinkedHashSet<String> importsList){
+        importsList.add("import com.vaadin.flow.component.html.Span;");
+        importsList.add("import com.vaadin.flow.component.select.Select;");
+        importsList.add("import com.vaadin.flow.data.renderer.ComponentRenderer;");
+        StringBuilder s = new StringBuilder();
+
+        s.append(
+                "public static class BooleanSelect extends Select<Boolean> {\n" +
+                "    public Span yes = genYesLabel();\n" +
+                "    public Span no = genNoLabel();\n" +
+                "\n" +
+                "    public BooleanSelect(String label, boolean b) {\n" +
+                "        super();\n" +
+                "        setLabel(label);\n" +
+                "        setItems(true, false);\n" +
+                "        setRenderer(new ComponentRenderer<>(b_ -> {\n" +
+                "            if(b_) return yes;\n" +
+                "            else return no;\n" +
+                "        }));\n" +
+                "        setValue(b);\n" +
+                "    }\n" +
+                "\n" +
+                "    public Span genLabel(){\n" +
+                "        Span txt = new Span(\"\");\n" +
+                "        txt.getStyle().set(\"color\", \"var(--lumo-base-color)\");\n" +
+                "        txt.getStyle().set(\"text-align\", \"center\");\n" +
+                "        txt.getStyle().set(\"padding-left\", \"10px\");\n" +
+                "        txt.getStyle().set(\"padding-right\", \"10px\");\n" +
+                "        txt.getStyle().set(\"border-radius\", \"10px\");\n" +
+                "        return txt;\n" +
+                "    }\n" +
+                "\n" +
+                "    public Span genYesLabel(){\n" +
+                "        Span txt = genLabel();\n" +
+                "        txt.setText(\"Yes\");\n" +
+                "        txt.getStyle().set(\"background-color\", \"var(--lumo-success-color)\");\n" +
+                "        return txt;\n" +
+                "    }\n" +
+                "\n" +
+                "    public Span genNoLabel(){\n" +
+                "        Span txt = genLabel();\n" +
+                "        txt.setText(\"No\");\n" +
+                "        txt.getStyle().set(\"background-color\", \"var(--lumo-error-color)\");\n" +
+                "        return txt;\n" +
+                "    }\n" +
+                "}");
         return s.toString();
     }
 }
