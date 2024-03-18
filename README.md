@@ -6,7 +6,7 @@ it possible to use SQL databases without writing one line of SQL (compile-safe S
 
 ## Usage
 1. Install the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest). 
-    - Windows: Download the .exe installer file.
+    - Windows: Download the .exe installer file (anti-virus might flag it since its not signed, upload to [virustotal.com](https://www.virustotal.com/) if you want certainty).
     - Other platforms: Make sure you have [latest Java](https://www.oracle.com/java/technologies/downloads/)
       installed, then download the large .jar file and double-click it (if that doesn't work, open a terminal and run `java -jar NAME.jar`).
 2. Create a database, tables and their columns via the GUI. 
