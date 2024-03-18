@@ -68,7 +68,7 @@ Person.whereName().is("John").remove(); // Removes all rows where the name equal
 Generates one class for each table.
 The generated class contains static methods like get(), add(), update(), remove() etc. to interact with the table.
 Each instance/object of the class represents
-one row and has public fields like `obj.id obj.name etc...`.
+one row and has public fields like obj.id obj.name etc. that can be changed.
 
 #### Why should I use this?
 If you used the default JDBC API at least once you will know why.
