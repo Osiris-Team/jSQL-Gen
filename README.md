@@ -64,10 +64,15 @@ Person.whereName().is("John").remove(); // Removes all rows where the name equal
 ### ⚡️ Compile-/Typesafe SQL queries via WHERE class
 ### ⚡️ Various utility methods, like fetching results lazily
 
+##### How does it work?
 Generates one class for each table.
-The generated class contains static methods like `get() remove() update() add() etc...` to interact with the table.
+The generated class contains static methods like get(), add(), update(), remove() etc. to interact with the table.
 Each instance/object of the class represents
 one row and has public fields like `obj.id obj.name etc...`.
+
+#### Why should I use this?
+If you used the default JDBC API at least once you will know why.
+Just reading the "Safety" section below will already give you an idea.
 
 ## Features
 
