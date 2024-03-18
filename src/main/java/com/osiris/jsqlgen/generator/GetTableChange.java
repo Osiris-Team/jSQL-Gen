@@ -48,7 +48,7 @@ public class GetTableChange {
                 }
                 if(oldC == null){
                     // New column
-                    newChange.addedColumnNames.add(c.nameQuoted);
+                    newChange.addedColumnNames.add(c.name);
                     newChange.addedColumnDefinitions.add(c.definition);
                 } else{
                     // Existing column, check for changes
