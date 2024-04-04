@@ -63,7 +63,7 @@ Person.whereName().is("John").remove(); // Removes all rows where the name equal
 ### ⚡️ Low code ⚡️ Bug and SQL safety ⚡️ Powerful API
 Fast development and prototyping due to 0% boilerplate and developer friendly API.
 Compile-/Typesafe SQL queries via WHERE class.
-Extensive utility methods, like fetching results lazily and DB reflection.
+Extensive utility methods, like fetching results lazily, DB reflection and much more (see "Features" for a complete list).
 
 #### How does it work?
 Generates one class for each table.
