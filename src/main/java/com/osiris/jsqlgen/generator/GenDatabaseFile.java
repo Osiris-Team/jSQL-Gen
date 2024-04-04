@@ -232,15 +232,6 @@ public class GenDatabaseFile {
                 "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
                 "            System.exit(1);\n" +
                 "        }\n" +
-                "\n" +
-                "        // Implementations for the following methods are provided in the array initialisation of 'tables'\n" +
-                "\n" +
-                "        public Class<?> getTableClass(){throw new RuntimeException(\"Not implemented!\");}\n" + // Class is not provided as field to prevent static constructor execution
-                "        public List<Database.Row> get(){throw new RuntimeException(\"Not implemented!\");}\n" +
-                "        public Database.Row get(int i){throw new RuntimeException(\"Not implemented!\");}\n" +
-                "        public void update(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
-                "        public void add(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
-                "        public void remove(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "    }\n" +
                 "    public interface Row<T extends Row>{\n" +
                 "        T update();\n" +
@@ -266,10 +257,26 @@ public class GenDatabaseFile {
                 "            this.columns = columns;\n" +
                 "            this.definitions = definitions;\n" +
                 "        }\n" +
+                "\n" +
+                "        // Implementations for the following methods are provided in the array initialisation of 'tables'\n" +
+                "\n" +
+                "        public Class<?> getTableClass(){throw new RuntimeException(\"Not implemented!\");}\n" + // Class is not provided as field to prevent static constructor execution
+                "        public List<Database.Row> get(){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public Database.Row get(int i){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public void update(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public void add(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public void remove(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "    }\n");
         for (Table t : tables) {
             if(t.isDebug){
-                s.append(GenDBPrinterClass.s());
+                s.append("""
+                                public static synchronized void printTable(TableMetaData table) {
+                                    List<Row> rows = table.get();
+                                    System.err.println("Printing table " + table.name+" with size = "+rows.size());
+                                    for (Database.Row row : rows) {
+                                        System.err.println(row.toPrintString());
+                                    }
+                                }""");
                 break;
             }
         }
