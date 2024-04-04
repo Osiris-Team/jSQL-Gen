@@ -60,6 +60,7 @@ public class GetTableChange {
                     if(!c.definition.equals(oldC.definition)) {
                         newChange.newColumnDefinitions.add(c.definition);
                         newChange.oldColumnDefinitions.add(oldC.definition);
+                        newChange.newColumnDefinitions_Names.add(c.name);
                     }
                 }
             }
