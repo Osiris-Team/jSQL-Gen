@@ -6,8 +6,9 @@ it possible to use SQL databases without writing one line of SQL (compile-safe S
 
 ## Usage
 1. Install the latest [release](https://github.com/Osiris-Team/jSQL-Gen/releases/tag/latest). 
-    - Windows: Download the .exe installer file (anti-virus might flag it since its not signed, upload to [virustotal.com](https://www.virustotal.com/) if you want certainty).
-    - Other platforms: Make sure you have [latest Java](https://www.oracle.com/java/technologies/downloads/)
+    - <img width="20" src="https://img.icons8.com/?size=48&id=M9BRw0RJZXKi&format=png"></img> Windows: Download the .exe installer file (anti-virus might flag it since its not signed, upload to [virustotal.com](https://www.virustotal.com/) if you want certainty).
+    - <img width="20" src="https://img.icons8.com/?size=48&id=17842&format=png"></img>
+    <img width="20" src="https://img.icons8.com/?size=48&id=uoRwwh0lz3Jp&format=png"></img> Other platforms: Make sure you have [latest Java](https://www.oracle.com/java/technologies/downloads/)
       installed, then download the large .jar file and double-click it (if that doesn't work, open a terminal and run `java -jar NAME.jar`).
 2. Create a database, tables and their columns via the GUI. 
 3. Press `Generate Code` and add the code to your project.
@@ -60,14 +61,10 @@ Person.whereName().is("John").remove(); // Removes all rows where the name equal
 
 ## Overview
 
-### ⚡️ Low code
-#### Fast development and prototyping due to 0% boilerplate and developer friendly API
-
-### ⚡️ Bug and SQL safety
-#### Compile-/Typesafe SQL queries via WHERE class
-
-### ⚡️ Powerful API
-#### Extensive utility methods, like fetching results lazily and DB reflection
+### ⚡️ Low code ⚡️ Bug and SQL safety ⚡️ Powerful API
+Fast development and prototyping due to 0% boilerplate and developer friendly API.
+Compile-/Typesafe SQL queries via WHERE class.
+Extensive utility methods, like fetching results lazily, DB reflection and much more (see "Features" for a complete list).
 
 #### How does it work?
 Generates one class for each table.
@@ -143,3 +140,6 @@ or use the lazy loading methods.
 - Make sure that all NOT NULL fields are on the upper half of the fields and the rest below. The generated functions will make more sense and will
 be generally less error prone.
 - If you want a list of items as a field or mappings between tables, create a new table named something like `PersonAndOrder` add fields for personId and orderId, and optionally any additional fields that are relevant for that relation.
+
+
+Logos provided by [icons8.com](https://icons8.com/icons/).
