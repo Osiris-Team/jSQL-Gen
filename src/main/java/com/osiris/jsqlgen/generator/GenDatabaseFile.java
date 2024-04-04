@@ -176,7 +176,9 @@ public class GenDatabaseFile {
                 "                    String insertQuery = \"INSERT INTO `jsqlgen_metadata` (`tableId`, `tableVersion`, `steps`) VALUES (?, ?, ?)\";\n" +
                 "                    try (PreparedStatement ps = c.prepareStatement(insertQuery)) {\n" +
                 "                        ps.setInt(1, t.id);\n" +
+                "                        t.version = 0;\n" +
                 "                        ps.setInt(2, t.version);\n" +
+                "                        t.steps = 0;\n" +
                 "                        ps.setInt(3, t.steps);\n" +
                 "                        ps.executeUpdate();\n" +
                 "                    }\n" +
