@@ -114,7 +114,7 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "*/\n" +
-                        "public class " + t.name + "{\n"); // Open class
+                        "public class " + t.name + " implements Database.Row<"+t.name+">{\n"); // Open class
 
         classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
 
@@ -406,6 +406,16 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(";\n}\n");
+
+        classContentBuilder.append("public String toMinimalPrintString(){\n");
+        String valAsString = "\"\"+";
+        for (Column refCol : t.columns) {
+            if (refCol.type.isBlob() || refCol.type.isDateOrTime()) continue;
+            valAsString += "this." + refCol.name;
+            valAsString += "+\"; \"+";
+        }
+        valAsString += "\"\"";
+        classContentBuilder.append("return "+valAsString+";\n}\n");
 
         // CREATE OBJ TOVAADINCOMPONENT METHOD
         if (t.isVaadinFlowUI)

@@ -103,18 +103,10 @@ public class GenVaadinFlow {
                     s.append("        {"+fieldName+".setItems("+refTable.name+".get());\n" +
                             "            "+fieldName+".setRenderer(new ComponentRenderer<>(obj -> {\n" +
                             "                Div div = new Div();\n"+
-                            "                div.setText(");
-                    String valAsString = "\"\"+";
-                    for (Column refCol : refTable.columns) {
-                        if (refCol.type.isBlob() || refCol.type.isDateOrTime()) continue;
-                        valAsString += "obj." + refCol.name;
-                        valAsString += "+\"; \"+";
-                    }
-                    valAsString += "\"\"";
-                    s.append(valAsString + ");\n" +
+                            "                div.setText(obj.toMinimalPrintString());\n" +
                             "            return div;}));\n" +
                             "            "+fieldName+".setItemLabelGenerator(obj -> {\n" +
-                            "                return "+valAsString+";\n" +
+                            "                return obj.toMinimalPrintString();\n" +
                             "            });\n" +
                             "        }\n");
                 } else{

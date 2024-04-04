@@ -60,9 +60,14 @@ Person.whereName().is("John").remove(); // Removes all rows where the name equal
 
 ## Overview
 
-### ⚡️ 0% boilerplate, minimal code, fast development and prototyping via GUI
-### ⚡️ Compile-/Typesafe SQL queries via WHERE class
-### ⚡️ Various utility methods, like fetching results lazily
+### ⚡️ Low code
+#### Fast development and prototyping due to 0% boilerplate and developer friendly API
+
+### ⚡️ Bug and SQL safety
+#### Compile-/Typesafe SQL queries via WHERE class
+
+### ⚡️ Powerful API
+#### Extensive utility methods, like fetching results lazily and DB reflection
 
 #### How does it work?
 Generates one class for each table.
@@ -115,6 +120,8 @@ to the database directly could result in issues.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 - The Vaadin Flow form also supports references to other tables (your field must be named `<table>Id` for example `personId`), meaning it will create a ComboBox that displays the object/row as string instead of only the id
 which also contains all the rows of that table and allows the user to change it.
+- DB "Reflection", meaning you can access table names, their columns, definitions and
+even execute get/add/update/delete in the generated database class.
 
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).

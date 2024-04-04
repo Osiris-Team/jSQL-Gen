@@ -43,7 +43,28 @@ public class GenDatabaseFile {
             int latestTableVersion = t.changes.size(); // TODO t.changes has not latest change included at this point yet
             // TODO since this gets generated before the tables get generated.
             // id, tableVersion, steps
-            s.append("new TableMetaData("+t.id+", "+latestTableVersion+", 0)");
+            s.append("new TableMetaData("+t.id+", "+latestTableVersion+", 0, \""+t.name+"\", ");
+            s.append("new String[]{");
+            for (int j = 0; j < t.columns.size(); j++) {
+                s.append("\""+t.columns.get(j).name+"\"");
+                if(j != t.columns.size() - 1) s.append(", ");
+            }
+            s.append("}, new String[]{");
+            for (int j = 0; j < t.columns.size(); j++) {
+                s.append("\""+t.columns.get(j).definition+"\"");
+                if(j != t.columns.size() - 1) s.append(", ");
+            }
+            s.append("})");
+
+            // Create overriding methods
+            s.append("{");
+            s.append("public Class<?> getTableClass(){return "+t.name+".class;}");
+            s.append("public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for("+t.name+" obj : "+t.name+".get()) l.add(obj); return l;}");
+            s.append("public Database.Row get(int i){return "+t.name+".get(i);}");
+            s.append("public void update(Database.Row obj){"+t.name+".update(("+ t.name +")obj);}");
+            s.append("public void add(Database.Row obj){"+t.name+".add(("+ t.name +")obj);}");
+            s.append("public void remove(Database.Row obj){"+t.name+".remove(("+ t.name +")obj);}");
+            s.append("}");
 
             if(i != tables.size() - 1) s.append(", ");
         }
@@ -148,7 +169,14 @@ public class GenDatabaseFile {
                 "    }\n" +
                 "" +
                 "    public static TableMetaData getTableMetaData(int tableId) {\n" +
-                "        TableMetaData t = new TableMetaData(tableId, 0, 0);\n" + // tableId, tableVersion, steps
+                "        TableMetaData t = null;\n" +
+                "        for (TableMetaData t_ : tables) {\n" +
+                "            if(t_.id == tableId){\n" +
+                "                t = t_;\n" +
+                "                break;\n" +
+                "            }\n" +
+                "        }\n" +
+                "        Objects.requireNonNull(t);\n" +
                 "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
                 "             Statement s = c.createStatement()) {\n" +
                 "            try (ResultSet rs = s.executeQuery(\"SELECT `tableId`,`tableVersion`,`steps`\" +\n" +
@@ -204,17 +232,39 @@ public class GenDatabaseFile {
                 "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
                 "            System.exit(1);\n" +
                 "        }\n" +
+                "\n" +
+                "        // Implementations for the following methods are provided in the array initialisation of 'tables'\n" +
+                "\n" +
+                "        public Class<?> getTableClass(){throw new RuntimeException(\"Not implemented!\");}\n" + // Class is not provided as field to prevent static constructor execution
+                "        public List<Database.Row> get(){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public Database.Row get(int i){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public void update(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public void add(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public void remove(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "    }\n" +
+                "    public interface Row<T extends Row>{\n" +
+                "        T update();\n" +
+                "        T add();\n" +
+                "        T remove();\n" +
+                "        String toPrintString();\n" +
+                "        String toMinimalPrintString();\n" +
                 "    }\n" +
                 "\n" +
                 "    public static class TableMetaData {\n" +
                 "        public int id;\n" +
                 "        public int version;\n" +
                 "        public int steps;\n" +
+                "        public String name;\n" +
+                "        public String[] columns;\n" +
+                "        public String[] definitions;\n" +
                 "\n" +
-                "        public TableMetaData(int id, int version, int steps) {\n" +
+                "        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions) {\n" +
                 "            this.id = id;\n" +
                 "            this.version = version;\n" +
                 "            this.steps = steps;\n" +
+                "            this.name = name;\n" +
+                "            this.columns = columns;\n" +
+                "            this.definitions = definitions;\n" +
                 "        }\n" +
                 "    }\n");
         for (Table t : tables) {
