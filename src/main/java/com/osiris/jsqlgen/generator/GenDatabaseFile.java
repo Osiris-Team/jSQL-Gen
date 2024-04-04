@@ -15,16 +15,8 @@ public class GenDatabaseFile {
         databaseFile.createNewFile();
 
         StringBuilder s = new StringBuilder((db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                "import java.sql.Connection;\n" +
-                "import java.sql.DriverManager;\n" +
-                "import java.sql.SQLException;\n" +
-                "import java.sql.Statement;\n" +
-                "import java.sql.PreparedStatement;\n" +
-                "import java.sql.ResultSet;\n" +
-                "import java.util.Arrays;\n" +
-                "import java.util.Objects;\n" +
-                "import java.util.ArrayList;\n" +
-                "import java.util.List;\n\n" +
+                "import java.sql.*;\n" +
+                "import java.util.*;\n\n" +
                 "/*\n" +
                 "Auto-generated class that is used by all table classes to create connections. <br>\n" +
                 "It holds the database credentials (set by you at first run of jSQL-Gen).<br>\n" +
@@ -224,8 +216,15 @@ public class GenDatabaseFile {
                 "            this.version = version;\n" +
                 "            this.steps = steps;\n" +
                 "        }\n" +
-                "    }\n" +
-                "}\n");
+                "    }\n");
+        for (Table t : tables) {
+            if(t.isDebug){
+                s.append(GenDBPrinterClass.s());
+                break;
+            }
+        }
+
+        s.append("}\n");
 
 
         Files.writeString(databaseFile.toPath(), s.toString());

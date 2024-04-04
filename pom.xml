@@ -8,6 +8,8 @@
     <artifactId>jSQL-Gen</artifactId>
     <version>1.48</version>
     <name>jSQL-Gen</name>
+    <!-- TODO add id reference deletion for delete() function -->
+    <!-- TODO add id reference deletion UI for vaadin -->
 
     <properties>
         <vaadin.version>14.10.10</vaadin.version>
