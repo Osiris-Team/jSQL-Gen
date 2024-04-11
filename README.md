@@ -83,7 +83,7 @@ Just reading the "Safety" section below will already give you an idea.
 - Protection against timed out connections.
 - 0% boilerplate and simple code decreasing the risk for bugs.
 - (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
-- Safe removal of rows where references will be unset (set to -1) by default. Also provides removeRefs(...) to safely remove referenced rows.
+- Safe removal of rows where references will be unset (set to -1) by default. Also provides removeRefs(...) to safely remove referenced rows. References are created by naming your column like so: tableNameId.
 
 ### ⚡️ Performance
 - No runtime overhead for class generation (unlike other ORMs).
