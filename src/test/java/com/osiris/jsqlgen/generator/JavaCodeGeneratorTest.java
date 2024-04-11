@@ -20,10 +20,6 @@ class JavaCodeGeneratorTest {
         db.name = "testDB";
         File dir = new File(System.getProperty("user.dir")+"/src/test/java/com/osiris/jsqlgen/testDB");
         db.javaProjectDir = dir;
-        GenDatabaseFile.s(db, new File(dir+"/Database.java"),
-                "getRawDbUrlFrom(url)",
-                "\"jdbc:mysql://localhost:3307/testDB\"",
-                "\"testDB\"", "\"root\"", "\"\"");
 
         Table t = new Table().addIdColumn();
         db.tables.add(t);
@@ -51,6 +47,11 @@ class JavaCodeGeneratorTest {
         t2.isDebug = true;
         t2.isVaadinFlowUI = true;
         t2.isNoExceptions = true;
+
+        GenDatabaseFile.s(db, new File(dir+"/Database.java"),
+                "getRawDbUrlFrom(url)",
+                "\"jdbc:mysql://localhost:3307/testDB\"",
+                "\"testDB\"", "\"root\"", "\"\"");
 
         JavaCodeGenerator.prepareTables(db);
 

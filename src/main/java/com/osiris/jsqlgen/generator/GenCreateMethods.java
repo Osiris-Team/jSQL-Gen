@@ -161,26 +161,26 @@ public class GenCreateMethods {
         sb.append("    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
-                "        getLazy(onResultReceived, null, 500, null);\n" +
+                "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "        return getLazy(onResultReceived, null, 500, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
-                "        getLazy(onResultReceived, null, limit, null);\n" +
+                "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "        return getLazy(onResultReceived, null, limit, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
-                "        getLazy(onResultReceived, onFinish, 500, null);\n" +
+                "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "        return getLazy(onResultReceived, onFinish, 500, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
-                "        getLazy(onResultReceived, onFinish, limit, null);\n" +
+                "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "        return getLazy(onResultReceived, onFinish, limit, null);\n" +
                 "    }\n" +
                 "    /**\n" +
                 "     * Loads results lazily in a new thread. <br>\n" +
@@ -190,8 +190,8 @@ public class GenCreateMethods {
                 "     * @param limit the maximum amount of elements for each fetch.\n" +
                 "     * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.\n" +
                 "     */\n" +
-                "    public static void getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) " + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
-                "        new Thread(() -> {\n" +
+                "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) " + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "        Thread thread = new Thread(() -> {\n" +
                 "            WHERE finalWhere;\n" +
                 "            if(where == null) finalWhere = new WHERE(\"\");\n" +
                 "            else finalWhere = where;\n" +
@@ -206,7 +206,44 @@ public class GenCreateMethods {
                 "                onResultReceived.accept(results);\n" +
                 "            }\n" +
                 "            if(onFinish!=null) onFinish.accept(count);\n" +
-                "        }).start();\n" +
+                "        });\n" +
+                "        thread.start();\n" +
+                "        return thread;\n" +
+                "    }\n\n");
+
+        sb.append(
+                "    /**\n" +
+                        "     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.\n" +
+                        "     */\n" +
+                        "    public static Thread getLazySync(Consumer<List<" + t.name + ">> onResultReceived)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                        "        return getLazySync(onResultReceived, null, 500, null);\n" +
+                        "    }\n" +
+                        "    /**\n" +
+                        "     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.\n" +
+                        "     */\n" +
+                        "    public static Thread getLazySync(Consumer<List<" + t.name + ">> onResultReceived, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                        "        return getLazySync(onResultReceived, null, limit, null);\n" +
+                        "    }\n" +
+                        "    /**\n" +
+                        "     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.\n" +
+                        "     */\n" +
+                        "    public static Thread getLazySync(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                        "        return getLazySync(onResultReceived, onFinish, 500, null);\n" +
+                        "    }\n" +
+                        "    /**\n" +
+                        "     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.\n" +
+                        "     */\n" +
+                        "    public static Thread getLazySync(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                        "        return getLazySync(onResultReceived, onFinish, limit, null);\n" +
+                        "    }\n" +
+                        "    /**\n" +
+                        "     * Waits until finished, then returns. <br>" +
+                        "     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.\n" +
+                        "     */\n" +
+                        "    public static Thread getLazySync(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) " + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "        Thread thread = getLazy(onResultReceived, onFinish, limit, where);\n" +
+                "        while(thread.isAlive()) Thread.yield();\n" +
+                "        return thread;\n" +
                 "    }\n\n");
         return sb.toString();
     }

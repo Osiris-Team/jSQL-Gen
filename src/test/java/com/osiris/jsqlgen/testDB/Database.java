@@ -1,14 +1,6 @@
 package com.osiris.jsqlgen.testDB;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 /*
 Auto-generated class that is used by all table classes to create connections. <br>
@@ -27,7 +19,7 @@ public static String password = "";
 * Use synchronized on this before doing changes to it. 
 */
 public static final List<Connection> availableConnections = new ArrayList<>();
-public static final TableMetaData[] tables = new TableMetaData[]{};
+public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(1, 0, 0, "Person", new String[]{"id", "name", "age", "flair", "lastName", "parentAge", "myblob", "timestamp"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT NOT NULL", "INT NOT NULL", "ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'", "TEXT DEFAULT ''", "INT DEFAULT 10", "BLOB DEFAULT ''", "TIMESTAMP DEFAULT NOW()"}){public Class<?> getTableClass(){return Person.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Person obj : Person.get()) l.add(obj); return l;}public Database.Row get(int i){return Person.get(i);}public void update(Database.Row obj){Person.update((Person)obj);}public void add(Database.Row obj){Person.add((Person)obj);}public void remove(Database.Row obj){Person.remove((Person)obj);}}, new TableMetaData(2, 0, 0, "PersonOrder", new String[]{"id", "personId", "name"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return PersonOrder.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(PersonOrder obj : PersonOrder.get()) l.add(obj); return l;}public Database.Row get(int i){return PersonOrder.get(i);}public void update(Database.Row obj){PersonOrder.update((PersonOrder)obj);}public void add(Database.Row obj){PersonOrder.add((PersonOrder)obj);}public void remove(Database.Row obj){PersonOrder.remove((PersonOrder)obj);}}};
 
     static{create();} // Create database if not exists
 
@@ -70,6 +62,7 @@ public static void create() {
              Statement s = c.createStatement()) {
             s.executeUpdate("CREATE TABLE IF NOT EXISTS `jsqlgen_metadata` (`tableId` INT NOT NULL PRIMARY KEY)");
             try {s.executeUpdate("ALTER TABLE `jsqlgen_metadata` ADD COLUMN `tableVersion` INT NOT NULL");} catch (Exception ignored) {}
+            try {s.executeUpdate("ALTER TABLE `jsqlgen_metadata` ADD COLUMN `steps` INT NOT NULL");} catch (Exception ignored) {}
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -125,25 +118,37 @@ public static void create() {
         return databaseUrl.substring(0, index);
     }
     public static TableMetaData getTableMetaData(int tableId) {
-        TableMetaData t = new TableMetaData(tableId, 0);
+        TableMetaData t = null;
+        for (TableMetaData t_ : tables) {
+            if(t_.id == tableId){
+                t = t_;
+                break;
+            }
+        }
+        Objects.requireNonNull(t);
         try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);
              Statement s = c.createStatement()) {
-            try (ResultSet rs = s.executeQuery("SELECT `tableId`,`tableVersion`" +
+            try (ResultSet rs = s.executeQuery("SELECT `tableId`,`tableVersion`,`steps`" +
                     " FROM `jsqlgen_metadata` WHERE tableId="+tableId)) {
                 boolean exists = false;
                 while (rs.next()) {
                     exists = true;
                     tableId = rs.getInt(1);
                     int tableVersion = rs.getInt(2);
+                    int steps = rs.getInt(3);
                     t.id = tableId;
                     t.version = tableVersion;
+                    t.steps = steps;
                 }
                 if(!exists){
                     // Insert new row
-                    String insertQuery = "INSERT INTO `jsqlgen_metadata` (`tableId`, `tableVersion`) VALUES (?, ?)";
+                    String insertQuery = "INSERT INTO `jsqlgen_metadata` (`tableId`, `tableVersion`, `steps`) VALUES (?, ?, ?)";
                     try (PreparedStatement ps = c.prepareStatement(insertQuery)) {
-                        ps.setLong(1, t.id);
-                        ps.setLong(2, t.version);
+                        ps.setInt(1, t.id);
+                        t.version = 0;
+                        ps.setInt(2, t.version);
+                        t.steps = 0;
+                        ps.setInt(3, t.steps);
                         ps.executeUpdate();
                     }
                 }
@@ -163,11 +168,12 @@ public static void create() {
         // Create metadata table if not exists
         try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password)) {
             // Update existing row
-            String updateQuery = "UPDATE `jsqlgen_metadata` SET `tableId`=?, `tableVersion`=? WHERE `tableId`=?";
+            String updateQuery = "UPDATE `jsqlgen_metadata` SET `tableId`=?, `tableVersion`=?, `steps`=? WHERE `tableId`=?";
             try (PreparedStatement ps = c.prepareStatement(updateQuery)) {
                 ps.setLong(1, t.id);
                 ps.setLong(2, t.version);
-                ps.setLong(3, t.id);
+                ps.setLong(3, t.steps);
+                ps.setLong(4, t.id);
                 ps.executeUpdate();
             } 
         } catch (SQLException e) {
@@ -176,14 +182,44 @@ public static void create() {
             System.exit(1);
         }
     }
+    public interface Row<T extends Row>{
+        T update();
+        T add();
+        T remove();
+        String toPrintString();
+        String toMinimalPrintString();
+    }
 
     public static class TableMetaData {
         public int id;
         public int version;
+        public int steps;
+        public String name;
+        public String[] columns;
+        public String[] definitions;
 
-        public TableMetaData(int id, int version) {
+        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions) {
             this.id = id;
             this.version = version;
+            this.steps = steps;
+            this.name = name;
+            this.columns = columns;
+            this.definitions = definitions;
         }
+
+        // Implementations for the following methods are provided in the array initialisation of 'tables'
+
+        public Class<?> getTableClass(){throw new RuntimeException("Not implemented!");}
+        public List<Database.Row> get(){throw new RuntimeException("Not implemented!");}
+        public Database.Row get(int i){throw new RuntimeException("Not implemented!");}
+        public void update(Database.Row obj){throw new RuntimeException("Not implemented!");}
+        public void add(Database.Row obj){throw new RuntimeException("Not implemented!");}
+        public void remove(Database.Row obj){throw new RuntimeException("Not implemented!");}
     }
-}
+public static synchronized void printTable(TableMetaData table) {
+    List<Row> rows = table.get();
+    System.err.println("Printing table " + table.name+" with size = "+rows.size());
+    for (Database.Row row : rows) {
+        System.err.println(row.toPrintString());
+    }
+}}

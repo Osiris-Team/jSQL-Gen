@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
+import static com.osiris.jsqlgen.generator.GenReferences.getRefTable;
 import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
 import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
 
@@ -88,14 +89,8 @@ public class GenVaadinFlow {
                 s.append("        public BooleanSelect " + fieldName + " = new BooleanSelect(\"" + colName + "\", false);\n");
             } else {
                 // This might be an id / reference to another table
-                if(colName.toLowerCase().endsWith("id"))
-                    for (Table t2 : db.tables) {
-                        if(containsIgnoreCase(colName, t2.name)) {
-                            refTable = t2;
-                            break;
-                        }
-                    }
-                if(colName.toLowerCase().endsWith("id") && refTable != null){
+                refTable = getRefTable(db, colName);
+                if(refTable != null){
                     isColumnRef = true;
                     colName = colName.substring(0, colName.toLowerCase().lastIndexOf("id"));
                     fieldName = "cb" + colName;
@@ -244,7 +239,6 @@ public class GenVaadinFlow {
 
         return s.toString();
     }
-
 
     public static String genBooleanSelectClass(LinkedHashSet<String> importsList){
         importsList.add("import com.vaadin.flow.component.html.Span;");

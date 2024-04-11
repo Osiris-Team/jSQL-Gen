@@ -33,6 +33,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.Span;
 
 /**
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
@@ -64,7 +65,7 @@ Structure (8 fields/columns): <br>
 - Blob myblob = BLOB DEFAULT '' <br>
 - Timestamp timestamp = TIMESTAMP DEFAULT NOW() <br>
 */
-public class Person{
+public class Person implements Database.Row<Person>{
 // The code below will not be removed when re-generating this class.
 // Additional code start -> 
 private Person(){}
@@ -153,26 +154,54 @@ public static CopyOnWriteArrayList<Consumer<Person>> onRemove = new CopyOnWriteA
         return s +"..."+ stack[1].toString(); //stack[0] == current method, gets ignored
     }
 public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);
+public static volatile boolean hasChanges = false;
 static {
 try{
 Connection con = Database.getCon();
 try{
 try (Statement s = con.createStatement()) {
-Database.TableMetaData t = Database.getTableMetaData(0);
+Database.TableMetaData t = Database.getTableMetaData(1);
 for (int i = t.version; i < 1; i++) {
 if(i == 0){
-s.executeUpdate("CREATE TABLE IF NOT EXISTS `person` (`id` INT NOT NULL PRIMARY KEY)");
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `name` TEXT NOT NULL");}catch(Exception ignored){}
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `age` INT NOT NULL");}catch(Exception ignored){}
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'");}catch(Exception ignored){}
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `lastName` TEXT DEFAULT ''");}catch(Exception ignored){}
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `parentAge` INT DEFAULT 10");}catch(Exception ignored){}
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `myblob` BLOB DEFAULT ''");}catch(Exception ignored){}
-try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `timestamp` TIMESTAMP DEFAULT NOW()");}catch(Exception ignored){}
-t.version++;
+if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `person` (`id` INT NOT NULL PRIMARY KEY)");
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `name` TEXT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `age` INT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 4){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 5){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `lastName` TEXT DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 6){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `parentAge` INT DEFAULT 10");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 7){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `myblob` BLOB DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 8){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `timestamp` TIMESTAMP DEFAULT NOW()");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
 }
 }
+
+    new Thread(() -> {
+        try{
+            onAdd.add(obj -> {hasChanges = true;});
+            onRemove.add(obj -> {hasChanges = true;});
+            onUpdate.add(obj -> {hasChanges = true;});
+            while(true){
+                Thread.sleep(10000);
+                if(hasChanges){
+                    hasChanges = false;
+                    System.err.println("Changes for Person detected within the last 10 seconds, printing...");
+                    Database.printTable(t);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }).start();
+
 }
 try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `person` ORDER BY id DESC LIMIT 1")) {
 ResultSet rs = ps.executeQuery();
@@ -407,26 +436,26 @@ return list;}
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static void getLazy(Consumer<List<Person>> onResultReceived){
-        getLazy(onResultReceived, null, 500, null);
+    public static Thread getLazy(Consumer<List<Person>> onResultReceived){
+        return getLazy(onResultReceived, null, 500, null);
     }
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static void getLazy(Consumer<List<Person>> onResultReceived, int limit){
-        getLazy(onResultReceived, null, limit, null);
+    public static Thread getLazy(Consumer<List<Person>> onResultReceived, int limit){
+        return getLazy(onResultReceived, null, limit, null);
     }
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static void getLazy(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish){
-        getLazy(onResultReceived, onFinish, 500, null);
+    public static Thread getLazy(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish){
+        return getLazy(onResultReceived, onFinish, 500, null);
     }
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static void getLazy(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish, int limit){
-        getLazy(onResultReceived, onFinish, limit, null);
+    public static Thread getLazy(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish, int limit){
+        return getLazy(onResultReceived, onFinish, limit, null);
     }
     /**
      * Loads results lazily in a new thread. <br>
@@ -436,8 +465,8 @@ return list;}
      * @param limit the maximum amount of elements for each fetch.
      * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.
      */
-    public static void getLazy(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
-        new Thread(() -> {
+    public static Thread getLazy(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
+        Thread thread = new Thread(() -> {
             WHERE finalWhere;
             if(where == null) finalWhere = new WHERE("");
             else finalWhere = where;
@@ -452,7 +481,42 @@ return list;}
                 onResultReceived.accept(results);
             }
             if(onFinish!=null) onFinish.accept(count);
-        }).start();
+        });
+        thread.start();
+        return thread;
+    }
+
+    /**
+     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
+     */
+    public static Thread getLazySync(Consumer<List<Person>> onResultReceived){
+        return getLazySync(onResultReceived, null, 500, null);
+    }
+    /**
+     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
+     */
+    public static Thread getLazySync(Consumer<List<Person>> onResultReceived, int limit){
+        return getLazySync(onResultReceived, null, limit, null);
+    }
+    /**
+     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
+     */
+    public static Thread getLazySync(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish){
+        return getLazySync(onResultReceived, onFinish, 500, null);
+    }
+    /**
+     * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
+     */
+    public static Thread getLazySync(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish, int limit){
+        return getLazySync(onResultReceived, onFinish, limit, null);
+    }
+    /**
+     * Waits until finished, then returns. <br>     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
+     */
+    public static Thread getLazySync(Consumer<List<Person>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
+        Thread thread = getLazy(onResultReceived, onFinish, limit, where);
+        while(thread.isAlive()) Thread.yield();
+        return thread;
     }
 
 public static int count(){ return count(null, null); }
@@ -539,9 +603,20 @@ onAdd.forEach(code -> code.accept(obj));
 }
 
 /**
-Deletes the provided object from the database.
+Unsets its references (sets them to -1) and deletes the provided object from the database.
 */
 public static void remove(Person obj)  {
+remove(obj, true, false);
+}
+/**
+ * Deletes the provided object from the database.
+ * @param unsetRefs If true, sets ids in other tables to -1.
+ * @param removeRefs !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!! If true removes the complete obj/row(s) in all tables that reference/contain this id.
+ *                   This is recursive. It's highly recommended to call removeRefs() before instead, which allows to explicitly exclude some tables.
+*/
+public static void remove(Person obj, boolean unsetRefs, boolean removeRefs)  {
+if(unsetRefs) unsetRefs(obj, PersonOrder.class);
+if(removeRefs) removeRefs(obj, PersonOrder.class);
 remove("WHERE id = "+obj.id);
 onRemove.forEach(code -> code.accept(obj));
 }
@@ -590,6 +665,24 @@ clearCache();
 }
     }
 
+/**
+ * @see #remove(Person, boolean, boolean)
+ */
+public static void unsetRefs(Person obj, Class<PersonOrder> personId_in_PersonOrder)  {
+if (personId_in_PersonOrder != null) {PersonOrder.getLazySync(results -> { 
+  for(PersonOrder obj1 : results) {obj1.personId = -1; obj1.update();};
+}, totalCount -> {}, 100, PersonOrder.wherePersonId().is(obj.id));}
+    }
+
+/** !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!!
+     * @see #remove(Person, boolean, boolean) 
+     */
+public static void removeRefs(Person obj, Class<PersonOrder> personId_in_PersonOrder)  {
+if (personId_in_PersonOrder != null) {PersonOrder.getLazySync(results -> { 
+  for(PersonOrder obj1 : results) {obj1.remove(false, true);};
+}, totalCount -> {}, 100, PersonOrder.wherePersonId().is(obj.id));}
+    }
+
 public Person clone(){
 return new Person(this.id,this.name,this.age,this.flair,this.lastName,this.parentAge,this.myblob,this.timestamp);
 }
@@ -605,10 +698,57 @@ public Person remove(){
 Person.remove(this);
 return this;
 }
+public Person remove(boolean unsetRefs, boolean removeRefs){
+Person.remove(this, unsetRefs, removeRefs);
+return this;
+}
 public String toPrintString(){
 return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" "+"lastName="+this.lastName+" "+"parentAge="+this.parentAge+" "+"myblob="+this.myblob+" "+"timestamp="+this.timestamp+" ";
 }
-    public static class PersonComp extends VerticalLayout{
+public String toMinimalPrintString(){
+return ""+this.id+"; "+this.name+"; "+this.age+"; "+this.flair+"; "+this.lastName+"; "+this.parentAge+"; "+"";
+}
+    public static class Comp extends VerticalLayout{
+
+public static class BooleanSelect extends Select<Boolean> {
+    public Span yes = genYesLabel();
+    public Span no = genNoLabel();
+
+    public BooleanSelect(String label, boolean b) {
+        super();
+        setLabel(label);
+        setItems(true, false);
+        setRenderer(new ComponentRenderer<>(b_ -> {
+            if(b_) return yes;
+            else return no;
+        }));
+        setValue(b);
+    }
+
+    public Span genLabel(){
+        Span txt = new Span("");
+        txt.getStyle().set("color", "var(--lumo-base-color)");
+        txt.getStyle().set("text-align", "center");
+        txt.getStyle().set("padding-left", "10px");
+        txt.getStyle().set("padding-right", "10px");
+        txt.getStyle().set("border-radius", "10px");
+        return txt;
+    }
+
+    public Span genYesLabel(){
+        Span txt = genLabel();
+        txt.setText("Yes");
+        txt.getStyle().set("background-color", "var(--lumo-success-color)");
+        return txt;
+    }
+
+    public Span genNoLabel(){
+        Span txt = genLabel();
+        txt.setText("No");
+        txt.getStyle().set("background-color", "var(--lumo-error-color)");
+        return txt;
+    }
+}
         public Person data;
 
         // Form and fields
@@ -651,7 +791,7 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
                 updateButtons();
 };
 
-        public PersonComp(Person data) {
+        public Comp(Person data) {
             this.data = data;
             setWidthFull();
             setPadding(false);
@@ -714,8 +854,8 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
         }
     }
 
-    public PersonComp toComp(){
-        return new PersonComp(this);
+    public Person.Comp toComp(){
+        return new Person.Comp(this);
     }
 
 public boolean isOnlyInMemory(){

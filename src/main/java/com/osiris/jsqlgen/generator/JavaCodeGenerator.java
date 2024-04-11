@@ -7,8 +7,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.*;
 
-import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
-import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
+import static com.osiris.jsqlgen.utils.UString.*;
 
 public class JavaCodeGenerator {
 
@@ -368,7 +367,7 @@ public class JavaCodeGenerator {
 
 
         // CREATE DELETE/REMOVE METHOD:
-        classContentBuilder.append(GenRemoveMethods.s(t, tNameQuoted));
+        classContentBuilder.append(GenRemoveMethods.s(db, t, tNameQuoted));
 
         // CREATE OBJ CLONE METHOD
         classContentBuilder.append("public " + t.name + " clone(){\n" +
@@ -395,6 +394,9 @@ public class JavaCodeGenerator {
         // CREATE OBJ REMOVE METHOD
         classContentBuilder.append("public " + t.name + " remove(){\n" +
                 t.name + ".remove(this);\n" +
+                "return this;\n}\n");
+        classContentBuilder.append("public " + t.name + " remove(boolean unsetRefs, boolean removeRefs){\n" +
+                t.name + ".remove(this, unsetRefs, removeRefs);\n" +
                 "return this;\n}\n");
 
         // CREATE OBJ TOPRINTSTRING METHOD

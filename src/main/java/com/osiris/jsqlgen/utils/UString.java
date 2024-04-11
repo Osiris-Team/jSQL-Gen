@@ -6,6 +6,10 @@ public class UString {
         return ("" + s.charAt(0)).toUpperCase() + s.substring(1);
     }
 
+    public static String firstToLowerCase(String s) {
+        return ("" + s.charAt(0)).toLowerCase() + s.substring(1);
+    }
+
     public static boolean startsWithWordIgnoreCase(String s, String query) {
         String firstWord = s.split(" ")[0];
         firstWord = firstWord.trim();
