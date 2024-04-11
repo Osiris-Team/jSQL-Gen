@@ -123,7 +123,7 @@ public class GenRemoveMethods {
         allDirectRefs.forEach((t1, columns) -> {
             for (Column col : columns) {
                 String param = getParamName(t1, col);
-                sb.append("if ("+ param + " != null) {"+t1.name+".getLazySync(results -> { \n" +
+                sb.append("if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
                         "  for("+t1.name+" obj1 : results) {obj1."+col.name+" = -1; obj1.update();};\n" +
                         "}, totalCount -> {}, 100, "+t1.name+".where"+firstToUpperCase(col.name)+"().is(obj.id));}\n");
             }
