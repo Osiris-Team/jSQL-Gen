@@ -88,7 +88,7 @@ public class JavaCodeGenerator {
                 "A single object/instance of this class represents a single row in the table\n" +
                 "and data can be accessed via its public fields. <br>\n" +
                 "<br>\n" +
-                "You can add your own code to the top of this class. <br>\n" +
+                "You can add your own code to the bottom of this class. <br>\n" +
                 "Do not modify the rest of this class since those changes will be removed at regeneration.\n" +
                 "If modifications are really needed create a pull request directly to jSQL-Gen instead. <br>\n" +
                 "<br>\n" +
@@ -114,44 +114,6 @@ public class JavaCodeGenerator {
         classContentBuilder.append(
                 "*/\n" +
                         "public class " + t.name + " implements Database.Row<"+t.name+">{\n"); // Open class
-
-        classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
-
-        // Handle additional code from existing/old generated class
-        if (oldGeneratedClass.exists()) {
-            List<String> additionalLines = new ArrayList<>();
-            List<String> lines = Files.readAllLines(oldGeneratedClass.toPath());
-            LinkedHashSet<String> oldImportsList = new LinkedHashSet<>();
-            boolean isAdditionalLine = false;
-            for (String line : lines) {
-                if (line.startsWith("import"))
-                    oldImportsList.add(line);
-                else if (line.contains("// Additional code start ->")) {
-                    isAdditionalLine = true;
-                    continue;
-                } else if (line.contains("// Additional code end <-"))
-                    isAdditionalLine = false;
-
-                if (isAdditionalLine)
-                    additionalLines.add(line);
-            }
-            importsList = mergeListContents(importsList, oldImportsList);
-            if (!additionalLines.isEmpty()) {
-                classContentBuilder.append("// Additional code start -> \n");
-                for (String additionalLine : additionalLines) {
-                    classContentBuilder.append(additionalLine).append("\n");
-                }
-                classContentBuilder.append("// Additional code end <- \n");
-            } else {
-                classContentBuilder.append("// Additional code start -> \n");
-                classContentBuilder.append("    private " + t.name + "(){}\n");
-                classContentBuilder.append("// Additional code end <- \n");
-            }
-        } else {
-            classContentBuilder.append("// Additional code start -> \n");
-            classContentBuilder.append("    private " + t.name + "(){}\n");
-            classContentBuilder.append("// Additional code end <- \n");
-        }
 
         // Append public inner enum classes
         for (String generatedEnumClass : generatedEnumClasses) {
@@ -438,6 +400,44 @@ public class JavaCodeGenerator {
                             "}\n");
         }
         classContentBuilder.append(GenWhereClass.s(t));
+
+        // Handle additional code from existing/old generated class
+        classContentBuilder.append("// The code below will not be removed when re-generating this class.\n");
+        if (oldGeneratedClass.exists()) {
+            List<String> additionalLines = new ArrayList<>();
+            List<String> lines = Files.readAllLines(oldGeneratedClass.toPath());
+            LinkedHashSet<String> oldImportsList = new LinkedHashSet<>();
+            boolean isAdditionalLine = false;
+            for (String line : lines) {
+                if (line.startsWith("import"))
+                    oldImportsList.add(line);
+                else if (line.contains("// Additional code start ->")) {
+                    isAdditionalLine = true;
+                    continue;
+                } else if (line.contains("// Additional code end <-"))
+                    isAdditionalLine = false;
+
+                if (isAdditionalLine)
+                    additionalLines.add(line);
+            }
+            importsList = mergeListContents(importsList, oldImportsList);
+            if (!additionalLines.isEmpty()) {
+                classContentBuilder.append("// Additional code start -> \n");
+                for (String additionalLine : additionalLines) {
+                    classContentBuilder.append(additionalLine).append("\n");
+                }
+                classContentBuilder.append("// Additional code end <- \n");
+            } else {
+                classContentBuilder.append("// Additional code start -> \n");
+                classContentBuilder.append("    private " + t.name + "(){}\n");
+                classContentBuilder.append("// Additional code end <- \n");
+            }
+        } else {
+            classContentBuilder.append("// Additional code start -> \n");
+            classContentBuilder.append("    private " + t.name + "(){}\n");
+            classContentBuilder.append("// Additional code end <- \n");
+        }
+
 
         classContentBuilder.append("}\n"); // Close class
 

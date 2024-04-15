@@ -95,7 +95,7 @@ public class GenStaticTableConstructor {
                 s.append("if(t.steps < "+stepsToComplete+"){");
                 String colName = change.addedColumnNames.get(j);
                 String colDef = change.addedColumnDefinitions.get(j);
-                s.append("try{s.executeUpdate(\"ALTER TABLE " + tNameNewQuoted + " ADD COLUMN `" + colName + "` " + colDef + "\");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith(\"Duplicate\")) throw exAdd;}\n");
+                s.append("try{s.executeUpdate(\"ALTER TABLE " + tNameNewQuoted + " ADD COLUMN `" + colName + "` " + colDef + "\");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains(\"duplicate column\")) throw exAdd;}\n");
                 s.append("t.steps++; Database.updateTableMetaData(t);}\n"); // steps++ and update metadata and close if
             }
 
