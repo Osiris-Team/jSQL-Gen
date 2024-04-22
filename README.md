@@ -35,7 +35,7 @@ the generated code into my project. Then I can do the following:</b></p>
 // and its columns (and missing columns) will be created if needed.
 
 // Inserting rows:
-Person john = Person.create("John", 34); // id gets automatically set and incremented
+Person john = Person.create("John", 34); // id, name, age (id gets automatically set and incremented inside create())
 Person.add(john); // Or: john.add();
 Person.createAndAdd("John", 34); // The shorter variant
 
@@ -118,8 +118,8 @@ to the database directly could result in issues.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 - The Vaadin Flow form also supports references to other tables (your field must be named `<table>Id` for example `personId`), meaning it will create a ComboBox that displays the object/row as string instead of only the id
 which also contains all the rows of that table and allows the user to change it.
-- DB "Reflection", meaning you can access table names, their columns, definitions and
-even execute get/add/update/delete in the generated database class.
+- DB "Reflection", meaning you can loop through table names, their columns, definitions and
+even execute get/add/update/delete. Provided in the generated Database class.
 
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
