@@ -35,7 +35,7 @@ the generated code into my project. Then I can do the following:</b></p>
 // and its columns (and missing columns) will be created if needed.
 
 // Inserting rows:
-Person john = Person.create("John", 34); // id gets automatically set and incremented
+Person john = Person.create("John", 34); // id, name, age (id gets automatically set and incremented inside create())
 Person.add(john); // Or: john.add();
 Person.createAndAdd("John", 34); // The shorter variant
 
@@ -99,14 +99,14 @@ Just reading the "Safety" section below will already give you an idea.
 - You can add/rename/delete tables and columns (also change types/definitions) whenever you want,
 since each time you press "Generate Files", change details between the current and last version are generated
 (if there were any) and via an additional table with
-table metadata jSQL-Gen keeps track of the actual tables state/version. Keep in mind that manual changes
+table metadata, jSQL-Gen keeps track of the actual tables' state/version. Keep in mind that manual changes
 to the database directly could result in issues.
 
 ### 🗄 SQL & JDBC
-- The generated SQL code should be compatible with all types of SQL databases.
+- The generated SQL code should be compatible with all types of SQL databases. However no promises are made except for MariaDB/MySQL. Open an issue if there are problems with your database software.
 - The generated Java (and JDBC) code does not require any third party libraries and should work with Java 8 or higher.
 - Supports all JDBC data types + some extras like enum. ![img.png](img.png)
-- `NULL` is not allowed, instead use the `DEFAULT ''` keyword.
+- `NULL` is not allowed, instead use the `DEFAULT ''` keyword or `-1` for null id references.
 - Supports DEFAULT for blobs. Example: `file BLOB DEFAULT ''`.
 - Supports SQL DEFAULT for `NOW(), CURDATE(), CURTIME()`.
 
@@ -118,8 +118,8 @@ to the database directly could result in issues.
 - (Optional) Supports generating Vaadin Flow Form to create/update/delete each object/row.
 - The Vaadin Flow form also supports references to other tables (your field must be named `<table>Id` for example `personId`), meaning it will create a ComboBox that displays the object/row as string instead of only the id
 which also contains all the rows of that table and allows the user to change it.
-- DB "Reflection", meaning you can access table names, their columns, definitions and
-even execute get/add/update/delete in the generated database class.
+- DB "Reflection", meaning you can loop through table names, their columns, definitions and
+even execute get/add/update/delete. Provided in the generated Database class.
 
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
