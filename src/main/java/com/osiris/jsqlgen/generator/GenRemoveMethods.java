@@ -52,7 +52,7 @@ public class GenRemoveMethods {
                         "Unsets its references (sets them to -1) and deletes the provided object from the database.\n" +
                         "*/\n" +
                         "public static void remove(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                        "remove(obj, true, false);\n" +
+                        "remove(obj, true, Database.isRemoveRefs);\n" +
                         "}\n" +
                 "/**\n" +
                         " * Deletes the provided object from the database.\n" +
@@ -99,20 +99,7 @@ public class GenRemoveMethods {
         sb.append("}\n\n"); // Close delete method
 
         sb.append("public static void removeAll() " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                "String sql = \"DELETE FROM " + tNameQuoted + "\";\n" +
-                (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
-                "Connection con = Database.getCon();\n" +
-                (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
-                (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
-                "        try (PreparedStatement ps = con.prepareStatement(sql)) {\n" +
-                "            ps.executeUpdate();\n" +
-                (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
-                (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
-                "        finally{" +
-                (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
-                "Database.freeCon(con);\n" +
-                (t.isCache ? "clearCache();\n" : "") +
-                "}\n" +
+                "getLazySync(objs -> {for("+t.name+" obj : objs) {obj.remove();}});\n" +
                 "    }\n\n");
 
         sb.append("" +

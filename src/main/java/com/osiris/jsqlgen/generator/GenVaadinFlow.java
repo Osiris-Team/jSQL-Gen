@@ -4,13 +4,11 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
+import java.util.*;
 
+import static com.osiris.jsqlgen.generator.GenReferences.getAllRefs;
 import static com.osiris.jsqlgen.generator.GenReferences.getRefTable;
-import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
-import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
+import static com.osiris.jsqlgen.utils.UString.*;
 
 public class GenVaadinFlow {
     public static class ExtraInfo{
@@ -47,6 +45,9 @@ public class GenVaadinFlow {
         importsList.add("import com.vaadin.flow.component.html.Div;");
         importsList.add("import com.vaadin.flow.data.renderer.ComponentRenderer;");
         importsList.add("import com.vaadin.flow.component.button.ButtonVariant;");
+        importsList.add("import com.vaadin.flow.component.dialog.Dialog;");
+        importsList.add("import java.util.function.Function;");
+        importsList.add("import java.util.function.Consumer;");
 
 
         // Create the class first
@@ -54,6 +55,7 @@ public class GenVaadinFlow {
                 "\n" +
                 genBooleanSelectClass(importsList) +
                 "\n" +
+                "        public " + t.name + " "+firstToLowerCase(t.name)+";\n" +
                 "        public " + t.name + " data;\n" +
                 "\n" +
                 "        // Form and fields\n" +
@@ -121,7 +123,7 @@ public class GenVaadinFlow {
                 "                updateData();\n" +
                 "                data.id = idCounter.getAndIncrement();\n" +
                 "                " + t.name + ".add(data);\n" +
-                "                e.unregisterListener(); // Make sure it gets only added once to the database\n" +
+                "                e.unregisterListener(); // Make sure it gets only executed once\n" +
                 "                updateButtons();\n" +
                 "};\n" +
                 "        public Button btnSave = new Button(\"Save\");\n" +
@@ -138,12 +140,13 @@ public class GenVaadinFlow {
                 "        public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {\n" +
                 "                btnDelete.setEnabled(false);\n" +
                 "                " + t.name + ".remove(data);\n" +
-                "                e.unregisterListener(); // Make sure it gets only added once to the database\n" +
+                "                e.unregisterListener(); // Make sure it gets only executed once\n" +
                 "                updateButtons();\n" +
                 "};\n" +
                 "\n" +
                 "        public Comp(" + t.name + " data) {\n" +
                 "            this.data = data;\n" +
+                "            this."+firstToLowerCase(t.name)+" = this.data;\n" +
                 "            setWidthFull();\n" +
                 "            setPadding(false);\n" +
                 "\n" +
@@ -229,15 +232,43 @@ public class GenVaadinFlow {
                 "            // Already exists\n" +
                 "            hlButtons.add(btnDelete);\n" +
                 "            hlButtons.addAndExpand(btnSave);\n" +
+                "        }\n\n" +
+                /* TODO
+                "        public boolean isRemoveRefs = false;\n" +
+                "        public class RemoveDialog extends Dialog{\n" +
+                "            public Class<?>[] allRefs = {");
+        s.append(genRefsClassList(getAllRefs(db, t)));
+        s.append("}\n"+
+                "            public RemoveDialog(boolean isRemoveRefs){\n" +
+                "                add(\"Are you sure that you want to delete this? There are \"+allRefs.length+\" direct/indirect references to other tables.\");\n" +
+                "                add(\"These reference in those rows will be either unset (set to -1) or the complete row deleted.\");\n" +
+                "                add(\"You can choose below how to proceed with each reference.\");\n" +
+                "            }\n" +
+                "        }\n\n" +
+                "        public RemoveDialog getRemoveDialog(){\n" +
+                "            return new RemoveDialog(isRemoveRefs);" +
                 "        }\n" +
+                */
                 "    }\n" + // CLOSE CLASS
                 "\n" +
+                "    public Function<Void, " + t.name + ".Comp> fn_toComp = (_null) -> {return new " + t.name + ".Comp(this);};\n" +
                 "    public " + t.name + ".Comp toComp(){\n" +
-                "        return new " + t.name + ".Comp(this);\n" +
+                "        return fn_toComp.apply(null);\n" +
                 "    }\n" +
                 "\n");
 
         return s.toString();
+    }
+
+    public static String genRefsClassList(Map<Table, List<Column>> map) {
+        StringBuilder paramsBuilder = new StringBuilder();
+        map.forEach((t1, columns) -> {
+            paramsBuilder.append(t1.name + ".class, ");
+        });
+        String params = paramsBuilder.toString();
+        if (params.endsWith(", "))
+            params = params.substring(0, params.length() - 2);
+        return params;
     }
 
     public static String genBooleanSelectClass(LinkedHashSet<String> importsList){

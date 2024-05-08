@@ -32,6 +32,11 @@ public class GenDatabaseFile {
                 "public static String username = " + username + ";\n" +
                 "public static String password = " + password + ";\n" +
                 "/** \n" +
+                "* False by default to ensure minimal data loss when using default remove() function.\n" +
+                "* If true rows containing a reference/id of the deleted row, will be deleted too.\n" +
+                "*/\n" +
+                "public static boolean isRemoveRefs = false;\n" +
+                "/** \n" +
                 "* Use synchronized on this before doing changes to it. \n" +
                 "*/\n" +
                 "public static final List<Connection> availableConnections = new ArrayList<>();\n" +

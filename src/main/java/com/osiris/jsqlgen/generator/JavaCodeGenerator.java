@@ -128,7 +128,6 @@ public class JavaCodeGenerator {
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onCreate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onAdd = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
-                "/** Limitation: Only executed in remove(obj) method. */\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n");
 
         if (t.isDebug)
