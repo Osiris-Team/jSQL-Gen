@@ -83,7 +83,8 @@ Just reading the "Safety" section below will already give you an idea.
 - Protection against timed out connections.
 - 0% boilerplate and simple code decreasing the risk for bugs.
 - (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
-- Safe removal of rows where references will be unset (set to -1) by default. Also provides removeRefs(...) to safely remove referenced rows. References are created by naming your column like so: tableNameId.
+- Safe removal of rows where references will be unset (set to -1) by default. Also provides removeRefs(...) to safely remove referenced rows.
+For conveniece if removing all rows with refs should be the default you can set `Database.isRemoveRefs = true;`. References are created by naming your column like so: tableNameId.
 
 ### ⚡️ Performance
 - No runtime overhead for class generation (unlike other ORMs).
@@ -125,7 +126,7 @@ even execute get/add/update/delete. Provided in the generated Database class.
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
 - Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
-- Java Code Generator: No support for `FOREIGN KEY` / references between tables.
+- Java Code Generator: No support for `FOREIGN KEY` / references between tables. However note that the idea of references is supported (columns named tableNameId are refs).
 - Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
 
 ## Tipps
