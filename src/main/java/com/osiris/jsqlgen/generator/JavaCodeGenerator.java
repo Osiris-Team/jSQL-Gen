@@ -128,7 +128,29 @@ public class JavaCodeGenerator {
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onCreate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onAdd = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
-                "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n");
+                "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+                "\n" +
+                "private static boolean isEqual("+t.name+" obj1, "+t.name+" obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }\n");
+        if(t.isVaadinFlowUI){
+            importsList.add("import com.vaadin.flow.component.UI;");
+            classContentBuilder.append("" +
+                            "public Consumer<"+t.name+"> onCreateV(Consumer<"+t.name+"> code){\n" +
+                    "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                    " ui.addDetachListener(e -> {"+t.name+".onCreate.remove(code2);}); "+t.name+".onCreate.add(code2); return code2;\n}\n"+
+
+                            "public Consumer<"+t.name+"> onAddV(Consumer<"+t.name+"> code){\n"+
+                    "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                    " ui.addDetachListener(e -> {"+t.name+".onAdd.remove(code2);}); "+t.name+".onAdd.add(code2); return code2;\n}\n"+
+
+                            "public Consumer<"+t.name+"> onUpdateV(Consumer<"+t.name+"> code){\n"+
+                    "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                    " ui.addDetachListener(e -> {"+t.name+".onUpdate.remove(code2);}); "+t.name+".onUpdate.add(code2); return code2;\n}\n"+
+
+                            "public Consumer<"+t.name+"> onRemoveV(Consumer<"+t.name+"> code){\n"+
+                    "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                    " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
+                    "\n\n");
+        }
 
         if (t.isDebug)
             classContentBuilder.append("    /**\n" +

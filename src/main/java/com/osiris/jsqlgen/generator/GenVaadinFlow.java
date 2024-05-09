@@ -55,7 +55,7 @@ public class GenVaadinFlow {
                 "\n" +
                 genBooleanSelectClass(importsList) +
                 "\n" +
-                "        public " + t.name + " "+firstToLowerCase(t.name)+";\n" +
+                "        public " + t.name + " data"+t.name+";\n" +
                 "        public " + t.name + " data;\n" +
                 "\n" +
                 "        // Form and fields\n" +
@@ -146,7 +146,7 @@ public class GenVaadinFlow {
                 "\n" +
                 "        public Comp(" + t.name + " data) {\n" +
                 "            this.data = data;\n" +
-                "            this."+firstToLowerCase(t.name)+" = this.data;\n" +
+                "            this.data"+t.name+" = this.data;\n" +
                 "            setWidthFull();\n" +
                 "            setPadding(false);\n" +
                 "\n" +
