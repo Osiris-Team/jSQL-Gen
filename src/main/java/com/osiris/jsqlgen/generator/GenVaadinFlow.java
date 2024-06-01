@@ -48,6 +48,49 @@ public class GenVaadinFlow {
         importsList.add("import com.vaadin.flow.component.dialog.Dialog;");
         importsList.add("import java.util.function.Function;");
         importsList.add("import java.util.function.Consumer;");
+        importsList.add("import com.vaadin.flow.component.UI;");
+        s.append("" +
+                "// Executed for all objects\n" +
+                "public static Consumer<"+t.name+"> onCreateV(Consumer<"+t.name+"> code){\n" +
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onCreate.remove(code2);}); "+t.name+".onCreate.add(code2); return code2;\n}\n"+
+
+                "// Executed for all objects\n" +
+                "public static Consumer<"+t.name+"> onAddV(Consumer<"+t.name+"> code){\n"+
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onAdd.remove(code2);}); "+t.name+".onAdd.add(code2); return code2;\n}\n"+
+
+                "// Executed for all objects\n" +
+                "public static Consumer<"+t.name+"> onUpdateV(Consumer<"+t.name+"> code){\n"+
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onUpdate.remove(code2);}); "+t.name+".onUpdate.add(code2); return code2;\n}\n"+
+
+                "// Executed for all objects\n" +
+                "public static Consumer<"+t.name+"> onRemoveV(Consumer<"+t.name+"> code){\n"+
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
+                "\n\n");
+        s.append("" +
+                "// Executed only for this object\n" +
+                "public Consumer<"+t.name+"> onCreateThisV(Consumer<"+t.name+"> code){\n" +
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onCreate.remove(code2);}); "+t.name+".onCreate.add(code2); return code2;\n}\n"+
+
+                "// Executed only for this object\n" +
+                "public Consumer<"+t.name+"> onAddThisV(Consumer<"+t.name+"> code){\n"+
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onAdd.remove(code2);}); "+t.name+".onAdd.add(code2); return code2;\n}\n"+
+
+                "// Executed only for this object\n" +
+                "public Consumer<"+t.name+"> onUpdateThisV(Consumer<"+t.name+"> code){\n"+
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onUpdate.remove(code2);}); "+t.name+".onUpdate.add(code2); return code2;\n}\n"+
+
+                "// Executed only for this object\n" +
+                "public Consumer<"+t.name+"> onRemoveThisV(Consumer<"+t.name+"> code){\n"+
+                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
+                " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
+                "\n\n");
 
 
         // Create the class first
@@ -251,7 +294,8 @@ public class GenVaadinFlow {
                 */
                 "    }\n" + // CLOSE CLASS
                 "\n" +
-                "    public Function<Void, " + t.name + ".Comp> fn_toComp = (_null) -> {return new " + t.name + ".Comp(this);};\n" +
+                "    public static volatile Function<"+t.name+", "+t.name+".Comp> global_fn_toComp = (obj) -> {return new "+t.name+".Comp(obj);};\n" +
+                "    public volatile Function<Void, " + t.name + ".Comp> fn_toComp = (_null) -> {return global_fn_toComp.apply(this);};\n" +
                 "    public " + t.name + ".Comp toComp(){\n" +
                 "        return fn_toComp.apply(null);\n" +
                 "    }\n" +

@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.osiris.dyml.utils.UtilsFile;
 import com.osiris.jsqlgen.generator.GenDatabaseFile;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
@@ -26,13 +27,21 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.codehaus.plexus.util.FileUtils;
 import org.controlsfx.control.Notifications;
 
 import java.io.*;
-import java.nio.file.Files;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+
+import static com.osiris.jsqlgen.Data.*;
 
 public class MainApplication extends javafx.application.Application {
     public static MyTeeOutputStream outErr;
@@ -70,6 +79,7 @@ public class MainApplication extends javafx.application.Application {
     private final Button btnCreateDatabase = new Button("Create");
     private final Button btnDeleteDatabase = new Button("Delete");
     private final Button btnImportDatabase = new Button("Import");
+    private final Button btnMergeDatabasesFromDir = new Button("Merge from Projects");
     private final Button btnExportDatabase = new Button("Export");
     private final Button btnShowData = new Button("Show data");
     private final TextArea txtLogs = new TextArea();
@@ -106,6 +116,8 @@ public class MainApplication extends javafx.application.Application {
         }
         lyRoot.getTabs().add(new MyTab("Home", lyHome).closable(false));
         lyRoot.getTabs().add(new MyTab("Database", lyDatabase).closable(false));
+        FX.sizeFull(lyHome);
+        FX.sizeFull(lyDatabase);
 
         Platform.runLater(() -> {
             List<String> newLines = new ArrayList<>();
@@ -115,6 +127,7 @@ public class MainApplication extends javafx.application.Application {
                 }
                 Platform.runLater(() -> {
                     txtLogs.setText(txtLogs.getText() + line + "\n");
+                    txtLogs.setScrollTop(Double.MAX_VALUE);
                 });
             });
             List<String> newErrLines = new ArrayList<>();
@@ -124,6 +137,7 @@ public class MainApplication extends javafx.application.Application {
                 }
                 Platform.runLater(() -> {
                     txtLogs.setText(txtLogs.getText() + "[!] " + line + "\n");
+                    txtLogs.setScrollTop(Double.MAX_VALUE);
                 });
             });
             System.out.println("Registered log listener.");
@@ -246,7 +260,6 @@ public class MainApplication extends javafx.application.Application {
         btnImportDatabase.setTooltip(new MyTooltip("Imports a json file or text and either overrides the existing database or creates a new one."));
         btnImportDatabase.setOnMouseClicked(click -> {
             Popup popup = new Popup();
-
             MyScroll ly = new MyScroll(new VBox());
             FX.heightPercentScreen(ly, 10);
             FX.widthPercentScreen(ly, 20);
@@ -254,9 +267,89 @@ public class MainApplication extends javafx.application.Application {
             ly.addRow().add(btnClose);
             btnClose.setOnMouseClicked(click2 -> popup.hide());
             ly.addRow().add(new Label("Currently in todo, will be available soon..."));
-
-            popup.getContent().add(ly);
-            popup.show(this.stage);
+        });
+        btnMergeDatabasesFromDir.setTooltip(new MyTooltip("Searches the provided directory and \nsub-directories for databases and imports them.\n" +
+                "If a database with the same name exists its replaced by the imported one, thus proceed with caution.\n" +
+                "A backup of the current structure will be created though."));
+        btnMergeDatabasesFromDir.setOnMouseClicked(click -> {
+            Platform.runLater(() -> {
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = getFormatter();
+                File backup = new File(backupDir+"/backup-all-databases-"+now.format(formatter)+".json");
+                try {
+                    Files.writeString(backup.toPath(), parser.toJson(instance, DataJson.class));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.err.println("Failed to proceed, due to failed backup!");
+                    return;
+                }
+                DirectoryChooser chooser = new DirectoryChooser();
+                File selectedFile = chooser.showDialog(stage);
+                System.out.println("Importing, please stand by... Dir: " + selectedFile);
+                if(!selectedFile.isDirectory()){
+                    selectedFile = selectedFile.getParentFile();
+                }
+                if (selectedFile != null) {
+                    File finalSelectedFile = selectedFile;
+                    AtomicInteger counter = new AtomicInteger();
+                    AtomicLong checkedFilesCounter = new AtomicLong();
+                    Thread t1 = new Thread(() -> {
+                        walkRecursive(finalSelectedFile, file -> {
+                            checkedFilesCounter.incrementAndGet();
+                            if (file.getName().endsWith("_structure.json")) {
+                                System.out.println(file);
+                                Database db;
+                                try {
+                                    db = parser.fromJson(new BufferedReader(new FileReader(file)), Database.class);
+                                } catch (Exception e) {
+                                    return;
+                                }
+                                CopyOnWriteArrayList<Database> list = new CopyOnWriteArrayList<>();
+                                list.add(db);
+                                Map<Database, Database> oldAndNewDBsMap;
+                                oldAndNewDBsMap = getOldAndNewDBsMap(instance.databases, list);
+                                if(oldAndNewDBsMap.isEmpty()){
+                                    boolean exists = false;
+                                    for (Database db_ : instance.databases) {
+                                        if(db.name.equals(db_.name)) exists = true;
+                                    }
+                                    if(exists){
+                                        System.out.println("Db " + db.name + " already exists and seems to be up-to-date.");
+                                    } else{
+                                        // New database, thus add/import
+                                        instance.databases.add(db);
+                                        Data.save();
+                                        counter.incrementAndGet();
+                                        System.out.println("Added new db " + db.name + " from: " + file.getAbsolutePath());
+                                        Platform.runLater(() -> updateChoiceDatabase());
+                                    }
+                                } else // There is a newer version of the db, thus replace
+                                    instance.databases.replaceAll(dbOld -> {
+                                        Database dbNew = oldAndNewDBsMap.get(dbOld);
+                                        if (dbNew != null) {
+                                            counter.incrementAndGet();
+                                            System.out.println("Replaced " + dbOld.name + " with newer db (has table with more changes) from: " + file.getAbsolutePath());
+                                            return dbNew;
+                                        } else return dbOld;
+                                    });
+                            }
+                        });
+                        System.out.println("Success! Added or replaced " + counter.get() + " databases.");
+                    });
+                    t1.start();
+                    new Thread(() -> {
+                        try{
+                            while (t1.isAlive()){
+                                Thread.sleep(3000);
+                                System.out.println("Scanned "+checkedFilesCounter.get()+" files.");
+                            }
+                            System.out.println("Details printer thread stopped.");
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).start();
+                }
+            });
         });
         btnExportDatabase.setTooltip(new Tooltip("Exports the selected database in json format, which later can be imported again."));
         btnExportDatabase.setOnMouseClicked(click -> {
@@ -282,10 +375,23 @@ public class MainApplication extends javafx.application.Application {
         });
 
         lyHome.addRow().add(dbName, btnCreateDatabase, btnDeleteDatabase);
-        lyHome.addRow().add(btnImportDatabase, btnExportDatabase, btnShowData);
+        lyHome.addRow().add(btnImportDatabase, btnMergeDatabasesFromDir, btnExportDatabase, btnShowData);
         FX.widthFull(txtLogs);
         FX.heightPercent(txtLogs, 70);
         lyHome.addRow().add(txtLogs);
+    }
+
+    private void walkRecursive(File file, Consumer<File> code) {
+        if(file.isFile()) {
+            code.accept(file);
+            return;
+        } else {
+            File[] files = file.listFiles();
+            if(files != null)
+                for (File f : files) {
+                    walkRecursive(f, code);
+                }
+        }
     }
 
     private void layoutDatabase() {
@@ -355,7 +461,7 @@ public class MainApplication extends javafx.application.Application {
         updateTablesList(dbName);
     }
 
-    public void updateChoiceDatabase() throws IOException {
+    public void updateChoiceDatabase() {
         ObservableList<String> list = null;
         String lastValue = choiceDatabase.getValue();
         if (choiceDatabase.getItems() != null) list = choiceDatabase.getItems();
@@ -403,7 +509,7 @@ public class MainApplication extends javafx.application.Application {
         System.out.println("Generating code...");
         try {
             List<File> files = generateCode(Collections.singletonList(Data.getDatabase(choiceDatabase.getValue())),
-                    new File(Main.dir + "/generated"), true);
+                    Main.generatedDir, true);
             System.out.println("Generated code/files: ");
             for (File f : files) {
                 System.out.println(f);
@@ -435,12 +541,12 @@ public class MainApplication extends javafx.application.Application {
 
         List<File> files = new ArrayList<>();
         for (Database db : databases) {
-            File dir = new File(outputDir + "/" + db.name);
+            Data.JavaProjectGenDir dir = new Data.JavaProjectGenDir(outputDir + "/" + db.name);
             if (db.javaProjectDir != null)
-                dir = new File(db.javaProjectDir + "/src/main/java/com/osiris/jsqlgen/" + db.name);
+                dir = getJavaProjectGenDir(db);
             dir.mkdirs();
             if (db.javaProjectDir != null) {
-                File jsonData = new File(dir.getParentFile() + "/"+db.name+"_structure.json");
+                File jsonData = getDatabaseStructureFile(db, dir);
                 jsonData.createNewFile();
                 StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
                 Data.parser.toJson(db, sw);
@@ -448,7 +554,7 @@ public class MainApplication extends javafx.application.Application {
                 //System.out.println(out);
                 Files.writeString(jsonData.toPath(), out);
             }
-            File databaseFile = new File(dir + "/Database.java");
+            File databaseFile = getDatabaseFile(dir);
             String url = "\"jdbc:mysql://localhost:3306/" + db.name+"\"";
             String rawUrl = "getRawDbUrlFrom(url)";
             String name = "\""+db.name+"\"";

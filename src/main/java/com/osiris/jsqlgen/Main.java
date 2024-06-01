@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class Main {
     public static File dir = new File(System.getProperty("user.home") + "/jSQL-Gen");
+    public static File generatedDir = new File(Main.dir + "/generated");
     public static AtomicInteger idCounter = new AtomicInteger(new Config().idCounter.asInt());
 
     public static void main(String[] args) {

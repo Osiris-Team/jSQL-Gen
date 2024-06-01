@@ -6,7 +6,7 @@
 
     <groupId>com.osiris.jsqlgen</groupId>
     <artifactId>jSQL-Gen</artifactId>
-    <version>1.56</version>
+    <version>1.57</version>
     <name>jSQL-Gen</name>
     <!-- TODO add id reference deletion UI for vaadin -->
 
@@ -72,6 +72,11 @@
             <version>11.1.0</version>
         </dependency>
         <!-- OTHER -->
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>4.9</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>

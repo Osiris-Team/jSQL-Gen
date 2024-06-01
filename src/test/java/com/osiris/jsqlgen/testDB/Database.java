@@ -16,6 +16,11 @@ public static String name = "testDB";
 public static String username = "root";
 public static String password = "";
 /** 
+* False by default to ensure minimal data loss when using default remove() function.
+* If true rows containing a reference/id of the deleted row, will be deleted too.
+*/
+public static boolean isRemoveRefs = false;
+/** 
 * Use synchronized on this before doing changes to it. 
 */
 public static final List<Connection> availableConnections = new ArrayList<>();

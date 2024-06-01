@@ -11,6 +11,7 @@ import java.io.File;
 import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class JavaCodeGeneratorTest {
 
@@ -53,6 +54,20 @@ class JavaCodeGeneratorTest {
                 "\"jdbc:mysql://localhost:3307/testDB\"",
                 "\"testDB\"", "\"root\"", "\"\"");
 
+
+        // Expect error
+        Exception e = null;
+        Column errorCol = new Column("timestamp").definition("TIMESTAMP DEFAULTAAAA NOW()");
+        try{
+            t.columns.add(errorCol);
+            JavaCodeGenerator.prepareTables(db);
+        } catch (Exception e_) {
+            e = e_;
+            t.columns.remove(errorCol);
+        }
+        assertNotNull(e); // Expect error
+
+        // No error
         JavaCodeGenerator.prepareTables(db);
 
         File javaFile = new File(dir + "/" + t.name + ".java");

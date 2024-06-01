@@ -121,6 +121,8 @@ to the database directly could result in issues.
 which also contains all the rows of that table and allows the user to change it.
 - DB "Reflection", meaning you can loop through table names, their columns, definitions and
 even execute get/add/update/delete. Provided in the generated Database class.
+- If a project contains a table with more/newer changes, that database is replaced/updated in jSQL-Gen.
+- UI: "Merge from projects" button, which allows to import one or multiple databases from existing database_structure.json files, via recursive file search.
 
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
@@ -128,6 +130,7 @@ PRs for these issues are greatly appreciated (sorted from most important, to lea
 - Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
 - Java Code Generator: No support for `FOREIGN KEY` / references between tables. However note that the idea of references is supported (columns named tableNameId are refs).
 - Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
+- Since there is a global id counter for all tables and columns, in each application, collaboration and syncing changes might be difficult. 
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).
