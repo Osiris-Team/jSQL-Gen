@@ -64,7 +64,8 @@ public class FX {
                     e.printStackTrace();
                 }
                 if(n.getScene() == null){
-                    ex.printStackTrace();
+                    //System.err.println("Scene is null!");
+                    //ex.printStackTrace();
                     return;
                 }
                 _widthPercent(n, widthPercent);
@@ -81,22 +82,26 @@ public class FX {
         }
     }
 
+    private static Object lock = new Object();
+
     private static void _widthPercent(Node n, int widthPercent) {
         Objects.requireNonNull(n.getParent());
         Platform.runLater(() -> {
-            Region parent = (Region) n.getParent();
-            double parentWidth, parentHeight;
-            parentWidth = parent.getWidth();
-            parentHeight = parent.getHeight();
+            synchronized (lock){
+                Region parent = (Region) n.getParent();
+                double parentWidth, parentHeight;
+                parentWidth = parent.getWidth();
+                parentHeight = parent.getHeight();
 
-            Region target = (Region) n;
-            double width = (parentWidth / 100 * widthPercent)
-                    - target.paddingProperty().get().getRight();
+                Region target = (Region) n;
+                double width = (parentWidth / 100 * widthPercent)
+                        - target.paddingProperty().get().getRight();
 
-            target.setMaxWidth(width);
-            //target.setMinWidth(width);
-            target.setPrefWidth(width);
-            target.resize(width, target.getHeight());
+                target.setMaxWidth(width);
+                //target.setMinWidth(width);
+                target.setPrefWidth(width);
+                target.resize(width, target.getHeight());
+            }
         });
     }
 
@@ -137,20 +142,22 @@ public class FX {
 
     private static void _heightPercent(Node n, int heightPercent) {
         Platform.runLater(() -> {
-            Objects.requireNonNull(n.getParent());
-            Region parent = (Region) n.getParent();
-            double parentWidth, parentHeight;
-            parentWidth = parent.getWidth();
-            parentHeight = parent.getHeight();
+            synchronized (lock){
+                Objects.requireNonNull(n.getParent());
+                Region parent = (Region) n.getParent();
+                double parentWidth, parentHeight;
+                parentWidth = parent.getWidth();
+                parentHeight = parent.getHeight();
 
-            Region target = (Region) n;
-            double height = parentHeight / 100 * heightPercent
-                    - target.paddingProperty().get().getBottom();
+                Region target = (Region) n;
+                double height = parentHeight / 100 * heightPercent
+                        - target.paddingProperty().get().getBottom();
 
-            target.setMaxHeight(height);
-            //target.setMinHeight(height);
-            target.setPrefHeight(height);
-            target.resize(target.getWidth(), height);
+                target.setMaxHeight(height);
+                //target.setMinHeight(height);
+                target.setPrefHeight(height);
+                target.resize(target.getWidth(), height);
+            }
         });
     }
 

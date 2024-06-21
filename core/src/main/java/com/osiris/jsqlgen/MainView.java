@@ -15,6 +15,8 @@ import com.osiris.desku.ui.layout.Horizontal;
 import com.osiris.desku.ui.layout.SmartLayout;
 import com.osiris.desku.ui.layout.TabLayout;
 import com.osiris.desku.ui.layout.Vertical;
+import com.osiris.dyml.utils.UtilsFile;
+import com.osiris.jsqlgen.generator.GenDatabaseFile;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
@@ -24,9 +26,17 @@ import com.osiris.jsqlgen.utils.*;
 
 import javax.swing.*;
 import java.io.*;
-import java.nio.file.Files;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+
+import static com.osiris.jsqlgen.Data.*;
 
 import static com.osiris.desku.Statics.*;
 
@@ -66,6 +76,7 @@ public class MainView extends Route {
     private final Button btnDeleteDatabase = button("Delete");
     private final Button btnImportDatabase = button("Import");
     private final Button btnExportDatabase = button("Export");
+    private final Button btnMergeDatabasesFromDir = button("Merge from Projects");
     private final Button btnShowData = button("Show data");
     private final TextField txtLogs = textfield();
     // Database panel
@@ -250,6 +261,91 @@ public class MainView extends Route {
             popup.getContent().add(ly);
             popup.show(this.frame);
         });
+
+        btnMergeDatabasesFromDir.setTooltip(new MyTooltip("Searches the provided directory and \nsub-directories for databases and imports them.\n" +
+            "If a database with the same name exists its replaced by the imported one, thus proceed with caution.\n" +
+            "A backup of the current structure will be created though."));
+        btnMergeDatabasesFromDir.setOnMouseClicked(click -> {
+            Platform.runLater(() -> {
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = getFormatter();
+                File backup = new File(backupDir+"/backup-all-databases-"+now.format(formatter)+".json");
+                try {
+                    Files.writeString(backup.toPath(), parser.toJson(instance, DataJson.class));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.err.println("Failed to proceed, due to failed backup!");
+                    return;
+                }
+                DirectoryChooser chooser = new DirectoryChooser();
+                File selectedFile = chooser.showDialog(stage);
+                System.out.println("Importing, please stand by... Dir: " + selectedFile);
+                if(!selectedFile.isDirectory()){
+                    selectedFile = selectedFile.getParentFile();
+                }
+                if (selectedFile != null) {
+                    File finalSelectedFile = selectedFile;
+                    AtomicInteger counter = new AtomicInteger();
+                    AtomicLong checkedFilesCounter = new AtomicLong();
+                    Thread t1 = new Thread(() -> {
+                        walkRecursive(finalSelectedFile, file -> {
+                            checkedFilesCounter.incrementAndGet();
+                            if (file.getName().endsWith("_structure.json")) {
+                                System.out.println(file);
+                                Database db;
+                                try {
+                                    db = parser.fromJson(new BufferedReader(new FileReader(file)), Database.class);
+                                } catch (Exception e) {
+                                    return;
+                                }
+                                CopyOnWriteArrayList<Database> list = new CopyOnWriteArrayList<>();
+                                list.add(db);
+                                Map<Database, Database> oldAndNewDBsMap;
+                                oldAndNewDBsMap = getOldAndNewDBsMap(instance.databases, list);
+                                if(oldAndNewDBsMap.isEmpty()){
+                                    boolean exists = false;
+                                    for (Database db_ : instance.databases) {
+                                        if(db.name.equals(db_.name)) exists = true;
+                                    }
+                                    if(exists){
+                                        System.out.println("Db " + db.name + " already exists and seems to be up-to-date.");
+                                    } else{
+                                        // New database, thus add/import
+                                        instance.databases.add(db);
+                                        Data.save();
+                                        counter.incrementAndGet();
+                                        System.out.println("Added new db " + db.name + " from: " + file.getAbsolutePath());
+                                        Platform.runLater(() -> updateChoiceDatabase());
+                                    }
+                                } else // There is a newer version of the db, thus replace
+                                    instance.databases.replaceAll(dbOld -> {
+                                        Database dbNew = oldAndNewDBsMap.get(dbOld);
+                                        if (dbNew != null) {
+                                            counter.incrementAndGet();
+                                            System.out.println("Replaced " + dbOld.name + " with newer db (has table with more changes) from: " + file.getAbsolutePath());
+                                            return dbNew;
+                                        } else return dbOld;
+                                    });
+                            }
+                        });
+                        System.out.println("Success! Added or replaced " + counter.get() + " databases.");
+                    });
+                    t1.start();
+                    new Thread(() -> {
+                        try{
+                            while (t1.isAlive()){
+                                Thread.sleep(3000);
+                                System.out.println("Scanned "+checkedFilesCounter.get()+" files.");
+                            }
+                            System.out.println("Details printer thread stopped.");
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).start();
+                }
+            });
+        });
+
         btnExportDatabase.setTooltip(new Tooltip("Exports the selected database in json format, which later can be imported again."));
         btnExportDatabase.onClick(click -> {
             Popup popup = new Popup();
@@ -274,10 +370,23 @@ public class MainView extends Route {
         });
 
         lyHome.addRow().add(dbName, btnCreateDatabase, btnDeleteDatabase);
-        lyHome.addRow().add(btnImportDatabase, btnExportDatabase, btnShowData);
+        lyHome.addRow().add(btnImportDatabase, btnMergeDatabasesFromDir, btnExportDatabase, btnShowData);
         FX.widthFull(txtLogs);
         FX.heightPercent(txtLogs, 70);
         lyHome.addRow().add(txtLogs);
+    }
+
+    private void walkRecursive(File file, Consumer<File> code) {
+        if(file.isFile()) {
+            code.accept(file);
+            return;
+        } else {
+            File[] files = file.listFiles();
+            if(files != null)
+                for (File f : files) {
+                    walkRecursive(f, code);
+                }
+        }
     }
 
     private void layoutDatabase() {
@@ -347,7 +456,7 @@ public class MainView extends Route {
         updateTablesList(dbName);
     }
 
-    public void updateChoiceDatabase() throws IOException {
+    public void updateChoiceDatabase() {
         ObservableList<String> list = null;
         String lastValue = choiceDatabase.getValue();
         if (choiceDatabase.getItems() != null) list = choiceDatabase.getItems();
@@ -395,11 +504,15 @@ public class MainView extends Route {
         System.out.println("Generating code...");
         try {
             List<File> files = generateCode(Collections.singletonList(Data.getDatabase(choiceDatabase.getValue())),
-                    new File(Data.dir + "/generated"), true);
+                    Main.generatedDir, true);
             System.out.println("Generated code/files: ");
             for (File f : files) {
                 System.out.println(f);
             }
+            // Refresh table view
+            updateTablesList(choiceDatabase.getValue());
+
+            // Refresh tabs
             tabsCode.getTabs().clear();
             for (File f : files) {
                 Tab tab = new Tab();
@@ -427,12 +540,12 @@ public class MainView extends Route {
 
         List<File> files = new ArrayList<>();
         for (Database db : databases) {
-            File dir = new File(outputDir + "/" + db.name);
+            Data.JavaProjectGenDir dir = new Data.JavaProjectGenDir(outputDir + "/" + db.name);
             if (db.javaProjectDir != null)
-                dir = new File(db.javaProjectDir + "/src/main/java/com/osiris/jsqlgen/" + db.name);
+                dir = getJavaProjectGenDir(db);
             dir.mkdirs();
             if (db.javaProjectDir != null) {
-                File jsonData = new File(dir.getParentFile() + "/"+db.name+"_structure.json");
+                File jsonData = getDatabaseStructureFile(db, dir);
                 jsonData.createNewFile();
                 StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
                 Data.parser.toJson(db, sw);
@@ -440,9 +553,10 @@ public class MainView extends Route {
                 //System.out.println(out);
                 Files.writeString(jsonData.toPath(), out);
             }
-            File databaseFile = new File(dir + "/Database.java");
-            String rawUrl = "\"jdbc:mysql://localhost/\"";
-            String url = "\"jdbc:mysql://localhost/" + db.name+"\"";
+            File databaseFile = getDatabaseFile(dir);
+            String url = "\"jdbc:mysql://localhost:3306/" + db.name+"\"";
+            String rawUrl = "getRawDbUrlFrom(url)";
+            String name = "\""+db.name+"\"";
             String username = "\"\"";
             String password = "\"\"";
             if (databaseFile.exists()) {
@@ -457,6 +571,9 @@ public class MainView extends Route {
                         else if (Objects.equals(var.getName().asString(), "url"))
                             if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
                             else url = varInit.toString();
+                        else if (Objects.equals(var.getName().asString(), "name"))
+                            if(varInit.isStringLiteralExpr()) name = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                            else name = varInit.toString();
                         else if (Objects.equals(var.getName().asString(), "username"))
                             if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
                             else username = varInit.toString();
@@ -467,14 +584,15 @@ public class MainView extends Route {
                 }
             }
             databaseFile.createNewFile();
-            JavaCodeGenerator.generateDatabaseFile(db, databaseFile, rawUrl, url, username, password);
+            GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
             files.add(databaseFile);
+            JavaCodeGenerator.prepareTables(db);
             for (Table t : db.tables) {
                 File javaFile = new File(dir + "/" + t.name + ".java");
                 javaFile.createNewFile();
                 files.add(javaFile);
                 Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                        JavaCodeGenerator.generateTableFile(javaFile, t));
+                        JavaCodeGenerator.generateTableFile(javaFile, t, db));
             }
         }
         return files;
@@ -483,7 +601,7 @@ public class MainView extends Route {
     private void updateTablesList(String dbName) throws IOException {
         listTables.getItems().clear();
         Database db = Data.getDatabase(dbName);
-        ArrayList<Table> tables = db.tables;
+        CopyOnWriteArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
             Table t = tables.get(i);
             Vertical wrapperTable = new Vertical();
@@ -508,7 +626,9 @@ public class MainView extends Route {
                     if (command.equals("Delete"))
                         deleteTable(dbName, t.name);
                     else if (command.equals("Duplicate")) {
-                        db.tables.add(finalI, t.duplicate());
+                        Table newT = t.duplicate();
+                        newT.name = "COPY_"+t.name;
+                        db.tables.add(finalI, newT);
                         updateTablesList(dbName);
                         Data.save();
                     } else
@@ -551,6 +671,14 @@ public class MainView extends Route {
             isCache.setSelected(t.isCache);
             isCache.setOnAction(event -> {
                 t.isCache = isCache.isSelected();
+                Data.save();
+            });
+
+            final CheckBox isVaadinFlow = new CheckBox("Vaadin-Flow");
+            paneTable.getChildren().add(isVaadinFlow);
+            isVaadinFlow.setSelected(t.isVaadinFlowUI);
+            isVaadinFlow.setOnAction(event -> {
+                t.isVaadinFlowUI = isVaadinFlow.isSelected();
                 Data.save();
             });
 
@@ -597,6 +725,8 @@ public class MainView extends Route {
                 throw new IOException("Table '"+tableName.toLowerCase()+"' already exists for this database!");
         }
         Table t = new Table();
+        t.id = Main.idCounter.getAndIncrement();
+        t.addIdColumn();
         db.tables.add(t);
         t.name = tableName;
         Data.save();
@@ -669,6 +799,7 @@ public class MainView extends Route {
             });
             TextField colName = new TextField(col.name);
             SuggestionTextField colDefinition = new SuggestionTextField(col.definition);
+            FX.widthFull(colDefinition);
             for (ColumnType colType : ColumnType.allTypes) {
                 colDefinition.getEntries().addAll(List.of(colType.inSQL));
             }
@@ -745,6 +876,7 @@ public class MainView extends Route {
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = new Column(columnName);
+        col.id = Main.idCounter.getAndIncrement();
         t.columns.add(col);
         col.definition = columnDefinition;
         Data.save();

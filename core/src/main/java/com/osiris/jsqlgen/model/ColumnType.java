@@ -4,6 +4,8 @@ import com.osiris.jsqlgen.utils.UString;
 
 public class ColumnType {
     // INTEGER TYPES:
+    public static ColumnType BIT = new ColumnType(new String[]{"BIT", "BOOLEAN"},
+            "boolean", "setBoolean", "getBoolean");
     public static ColumnType BYTE = new ColumnType(new String[]{"TINYINT", "BYTE"},
             "byte", "setByte", "getByte");
     public static ColumnType SHORT = new ColumnType(new String[]{"SMALLINT"},
@@ -22,29 +24,37 @@ public class ColumnType {
             "double", "setDouble", "getDouble");
     // TIME/DATE TYPES:
     public static ColumnType DATE = new ColumnType(new String[]{"DATE", "DATETIME"},
-            "java.sql.Date", "setDate", "getDate");
+            "Date","java.sql.Date", "setDate", "getDate");
     public static ColumnType TIMESTAMP = new ColumnType(new String[]{"TIMESTAMP"},
-            "java.sql.Timestamp", "setTimestamp", "getTimestamp");
+            "Timestamp", "java.sql.Timestamp", "setTimestamp", "getTimestamp");
     public static ColumnType TIME = new ColumnType(new String[]{"TIME"},
-            "java.sql.Time", "setTime", "getTime");
+            "Time", "java.sql.Time","setTime", "getTime");
     public static ColumnType YEAR = new ColumnType(new String[]{"YEAR"},
             "int", "setInt", "getInt");
     // STRING/TEXT TYPES:
     public static ColumnType STRING = new ColumnType(new String[]
-            {"CHAR", "VARCHAR", "BINARY", "VARBINARY", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET"},
+            {"CHAR", "VARCHAR", "BINARY", "VARBINARY", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT"},
             "String", "setString", "getString");
     public static ColumnType BLOB = new ColumnType(new String[]{"TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"},
-            "java.sql.Blob", "setBlob", "getBlob");
+            "Blob", "java.sql.Blob", "setBlob", "getBlob");
+    // ENUM
+    public static ColumnType ENUM = new ColumnType(new String[]
+            {"ENUM"},
+            null, // Must be set later by the generator
+            "setString", "getString");
+    // TODO support SET (aka list with only a SET of allowed values) and lists
 
 
     public static ColumnType[] allTypes = new ColumnType[]{
+            BIT,
             BYTE, SHORT, INT, LONG, DECIMAL, FLOAT, DOUBLE,
             DATE, TIMESTAMP, TIME, YEAR,
-            STRING, BLOB
+            STRING, BLOB, ENUM
             // TODO add new datatype here
     };
     public String[] inSQL;
     public String inJava;
+    public String inJavaWithPackage;
     public String inJBDCSet;
     public String inJBDCGet;
 
@@ -53,6 +63,54 @@ public class ColumnType {
         this.inJava = inJava;
         this.inJBDCSet = inJBDCSet;
         this.inJBDCGet = inJBDCGet;
+    }
+
+    public ColumnType(String[] inSQL, String inJava, String inJavaWithPackage, String inJBDCSet, String inJBDCGet) {
+        this.inSQL = inSQL;
+        this.inJava = inJava;
+        this.inJavaWithPackage = inJavaWithPackage;
+        this.inJBDCSet = inJBDCSet;
+        this.inJBDCGet = inJBDCGet;
+    }
+
+    public boolean isEnum(){
+        return inSQL[0].equals("ENUM");
+    }
+
+    public boolean isNumber(){
+        return this == LONG || this == INT || this == SHORT || this == BYTE || this == BIT || this == YEAR;
+    }
+
+    public boolean isDecimalNumber(){
+        return this == DECIMAL || this == DOUBLE || this == FLOAT;
+    }
+
+    public boolean isDate(){
+        return this == DATE;
+    }
+
+    public boolean isTime(){
+        return this == TIME;
+    }
+
+    public boolean isTimestamp(){
+        return this == TIMESTAMP;
+    }
+
+    public boolean isDateOrTime(){
+        return this == DATE || this == TIMESTAMP || this == TIME || this == YEAR;
+    }
+
+    public boolean isText(){
+        return this == STRING;
+    }
+
+    public boolean isBlob(){
+        return this == BLOB;
+    }
+
+    public boolean isBitOrBoolean() {
+        return this == BIT;
     }
 
     /**
@@ -64,12 +122,14 @@ public class ColumnType {
     public static ColumnType findBySQLDefinition(String s) {
         for (ColumnType t : allTypes) {
             for (String sqlTypeName : t.inSQL) {
-                if (UString.startsWithIgnoreCase(s, sqlTypeName))
+                if (UString.startsWithWordIgnoreCase(s, sqlTypeName))
                     return t;
             }
         }
         return null;
     }
+
+
 
     // TODO SPATIAL DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
     // TODO JSON DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html

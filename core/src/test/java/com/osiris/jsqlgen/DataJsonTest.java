@@ -23,7 +23,7 @@ class DataJsonTest {
         Database db = new Database();
         databases.add(db);
         db.name = "mydatabase";
-        db.tables.add(new Table());
+        db.tables.add(new Table().addIdColumn());
 
         // Java -> Json
         DataJson dataJson = new DataJson();

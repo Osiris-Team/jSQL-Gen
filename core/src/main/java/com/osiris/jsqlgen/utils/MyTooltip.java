@@ -6,6 +6,5 @@ import javafx.util.Duration;
 public class MyTooltip extends Tooltip {
     public MyTooltip(String text) {
         super(text);
-        setHideDelay(Duration.seconds(300));
     }
 }
