@@ -514,6 +514,10 @@ public class MainApplication extends javafx.application.Application {
             for (File f : files) {
                 System.out.println(f);
             }
+            // Refresh table view
+            updateTablesList(choiceDatabase.getValue());
+
+            // Refresh tabs
             tabsCode.getTabs().clear();
             for (File f : files) {
                 Tab tab = new Tab();
