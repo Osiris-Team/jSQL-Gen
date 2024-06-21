@@ -156,6 +156,51 @@ public class GenWhereClass {
                 "            whereObjects.add(obj);\n" +
                 "            return this;\n" +
                 "        }\n" +
+                "        /**\n" +
+                "         * columnName LIKE ? <br>\n" +
+                "         * Example: WHERE CustomerName LIKE 'a%' <br>\n" +
+                "         * Explanation: Finds any values that start with \"a\" <br>\n" +
+                "         * Note: Your provided obj gets turned to a string and if it already contains '_' or '%' these get escaped with '/' to ensure a correct query. <br>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE<T> startsWith(T obj) {\n" +
+                "            String s = obj.toString().replace(\"_\", \"/_\").replace(\"%\", \"/%\");\n" +
+                "            s = s + \"%\";\n" +
+                "            sqlBuilder.append(columnName).append(\" LIKE ? ESCAPE '/' \");\n" +
+                "            whereObjects.add(s);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "        /**\n" +
+                "         * columnName LIKE ? <br>\n" +
+                "         * Example: WHERE CustomerName LIKE '%a' <br>\n" +
+                "         * Explanation: Finds any values that end with \"a\" <br>\n" +
+                "         * Note: Your provided obj gets turned to a string and if it already contains '_' or '%' these get escaped with '/' to ensure a correct query. <br>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE<T> endsWith(T obj) {\n" +
+                "            String s = obj.toString().replace(\"_\", \"/_\").replace(\"%\", \"/%\");\n" +
+                "            s = \"%\" + s;\n" +
+                "            sqlBuilder.append(columnName).append(\" LIKE ? ESCAPE '/' \");\n" +
+                "            whereObjects.add(s);\n" +
+                "            return this;\n" +
+                "        }\n" +
+                "        /**\n" +
+                "         * columnName LIKE ? <br>\n" +
+                "         * Example: WHERE CustomerName LIKE '%or%' <br>\n" +
+                "         * Explanation: Finds any values that have \"or\" in any position <br>\n" +
+                "         * Note: Your provided obj gets turned to a string and if it already contains '_' or '%' these get escaped with '/' to ensure a correct query. <br>\n" +
+                "         *\n" +
+                "         * @see <a href=\"https://www.w3schools.com/mysql/mysql_like.asp\">https://www.w3schools.com/mysql/mysql_like.asp</a>\n" +
+                "         */\n" +
+                "        public WHERE<T> contains(T obj) {\n" +
+                "            String s = obj.toString().replace(\"_\", \"/_\").replace(\"%\", \"/%\");\n" +
+                "            s = \"%\" + s + \"%\";\n" +
+                "            sqlBuilder.append(columnName).append(\" LIKE ? ESCAPE '/' \");\n" +
+                "            whereObjects.add(s);\n" +
+                "            return this;\n" +
+                "        }\n" +
                 "\n" +
                 "        /**\n" +
                 "         * columnName NOT LIKE ? <br>\n" +

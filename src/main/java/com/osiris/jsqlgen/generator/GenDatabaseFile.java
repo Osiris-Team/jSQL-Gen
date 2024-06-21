@@ -238,10 +238,12 @@ public class GenDatabaseFile {
                 "            System.exit(1);\n" +
                 "        }\n" +
                 "    }\n" +
-                "    public interface Row<T extends Row>{\n" +
-                "        T update();\n" +
-                "        T add();\n" +
-                "        T remove();\n" +
+                "    public interface Row{\n" +
+                "        int getId();\n" +
+                "        void setId(int id);\n" +
+                "        void update();\n" +
+                "        void add();\n" +
+                "        void remove();\n" +
                 "        String toPrintString();\n" +
                 "        String toMinimalPrintString();\n" +
                 "    }\n" +

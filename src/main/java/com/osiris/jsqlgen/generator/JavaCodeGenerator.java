@@ -34,6 +34,24 @@ public class JavaCodeGenerator {
             }
         }
 
+        /*
+        // TODO maybe another time we change int id to long, since this needs also further changes, since you cannot use
+        // direct int values for example this: Folder.whereId().is(0).remove(); wouldnt work, instead you must write
+        // 0L instead of 0, or provide another method that accepts integers too.
+        // This directly could be expanded to all datatypes and generate methods of that accept smaller datatypes.
+        for (Table t : db.tables) {
+            for (Column col : t.columns) {
+                // MAKE SURE TYPE OF ID IS ALWAYS BIGINT
+                if(!col.name.equals("id")) continue;
+                if (!containsIgnoreCase(col.definition, "BIGINT")) {
+                    System.out.println("Found suspicious id definition (at "+t.name+"."+col.name+") that is not BIGINT, fixed it.");
+                    col.definition = col.definition.replace(col.definition.split(" ")[0], "BIGINT");
+                }
+            }
+        }
+
+         */
+
         for (Table t : db.tables) {
             for (Column col : t.columns) {
                 // GENERATE TYPES
@@ -142,7 +160,7 @@ public class JavaCodeGenerator {
         }
         classContentBuilder.append(
                 "*/\n" +
-                        "public class " + t.name + " implements Database.Row<"+t.name+">{\n"); // Open class
+                        "public class " + t.name + " implements Database.Row{\n"); // Open class
 
         // Append public inner enum classes
         for (String generatedEnumClass : generatedEnumClasses) {
@@ -177,7 +195,9 @@ public class JavaCodeGenerator {
                     "        }\n" +
                     "        return s +\"...\"+ stack[1].toString(); //stack[0] == current method, gets ignored\n" +
                     "    }\n");
-        classContentBuilder.append("public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n");
+        classContentBuilder.append("public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n" +
+                "public int getId(){return id;}\n" +
+                "public void setId(int id){this.id = id;}\n");
 
         // STATIC TABLE INIT METHOD
         TableChange currentTableChange = GetTableChange.get(t, oldDatabases);
@@ -374,22 +394,22 @@ public class JavaCodeGenerator {
         classContentBuilder.append(");\n}\n");
 
         // CREATE OBJ ADD METHOD
-        classContentBuilder.append("public " + t.name + " add(){\n" +
+        classContentBuilder.append("public void add(){\n" +
                 t.name + ".add(this);\n" +
-                "return this;\n}\n");
+                "}\n");
 
         // CREATE OBJ UPDATE METHOD
-        classContentBuilder.append("public " + t.name + " update(){\n" +
+        classContentBuilder.append("public void update(){\n" +
                 t.name + ".update(this);\n" +
-                "return this;\n}\n");
+                "}\n");
 
         // CREATE OBJ REMOVE METHOD
-        classContentBuilder.append("public " + t.name + " remove(){\n" +
+        classContentBuilder.append("public void remove(){\n" +
                 t.name + ".remove(this);\n" +
-                "return this;\n}\n");
-        classContentBuilder.append("public " + t.name + " remove(boolean unsetRefs, boolean removeRefs){\n" +
+                "}\n");
+        classContentBuilder.append("public void remove(boolean unsetRefs, boolean removeRefs){\n" +
                 t.name + ".remove(this, unsetRefs, removeRefs);\n" +
-                "return this;\n}\n");
+                "}\n");
 
         // CREATE OBJ TOPRINTSTRING METHOD
         classContentBuilder.append("public String toPrintString(){\n" +
