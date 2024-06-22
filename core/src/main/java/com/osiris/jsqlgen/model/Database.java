@@ -2,12 +2,16 @@ package com.osiris.jsqlgen.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Database {
     public String name;
     public CopyOnWriteArrayList<Table> tables = new CopyOnWriteArrayList<>();
-    public File javaProjectDir;
+    /**
+     * Can be multiple paths seperated by ;
+     */
+    public String javaProjectDir;
 
     public Database duplicate() {
         Database db = new Database();
@@ -18,5 +22,23 @@ public class Database {
         }
         db.javaProjectDir = javaProjectDir;
         return db;
+    }
+
+    public CopyOnWriteArrayList<File> getJavaProjectDirs(){
+        CopyOnWriteArrayList<File> files = new CopyOnWriteArrayList<>();
+        if(javaProjectDir == null || javaProjectDir.isEmpty()) return files;
+        for (String s : javaProjectDir.split(";")) {
+            files.add(new File(s));
+        }
+        return files;
+    }
+
+    public String setJavaProjectDirs(List<File> dirs){
+        String s = "";
+        for (File dir : dirs) {
+            s += dir.getAbsolutePath() + " ;";
+        }
+        this.javaProjectDir = s;
+        return s;
     }
 }

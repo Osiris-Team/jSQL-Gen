@@ -10,10 +10,14 @@ dependencies {
   implementation "com.google.code.gson:gson:2.9.0"
   implementation "org.apache.commons:commons-collections4:4.4"
   implementation "org.apache.maven:maven-model:3.3.9"
+  implementation "com.github.Osiris-Team:Dyml:9.8.3"
+  implementation 'com.github.jsqlparser:jsqlparser:4.9'
+
   testImplementation "org.junit.jupiter:junit-jupiter-api:5.3.0"
   testImplementation "org.junit.jupiter:junit-jupiter-engine:5.3.0"
   testImplementation "mysql:mysql-connector-java:8.0.24"
   testImplementation "ch.vorburger.mariaDB4j:mariaDB4j:2.4.0"
+
 }
 
 // Ensure that everything other than classes/.java files are also included in the final jar

@@ -1,5 +1,6 @@
 package com.author.ios;
 
+import com.osiris.jsqlgen.Main;
 import com.osiris.desku.App;
 import org.robovm.apple.foundation.NSAutoreleasePool;
 import org.robovm.apple.uikit.*;
@@ -17,8 +18,9 @@ public class IOSLauncher extends UIApplicationDelegateAdapter {
         rootViewController.setView(webView);
         window.setRootViewController(rootViewController);
 
-        App.init(new IOSUIManager());
-        com.osiris.jsqlgen.Main.main(new String[]{});
+        App.LoggerParams loggerParams = new App.LoggerParams();
+        App.init(new IOSUIManager(), loggerParams);
+        Main.main(new String[]{});
 
         // Make the window visible
         window.makeKeyAndVisible();

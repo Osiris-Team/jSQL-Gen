@@ -6,7 +6,7 @@ buildscript {
   }
   dependencies {
     classpath 'com.github.johnrengelman:shadow:8.1.1'
-    classpath 'io.github.fvarrui:javapackager:1.7.3-20230525.235840-4'
+    classpath 'io.github.fvarrui:javapackager:1.7.3-20230525.235840-4' // Later versions like 1.7.5 have issues with generating msi installers
   }
 }
 
@@ -27,7 +27,6 @@ repositories {
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
 //mainClassName = 'com.author.desktop.Main'
 eclipse.project.name = appName + '-desktop'
-sourceCompatibility = 1.8
 
 dependencies {
   implementation project(':core')
@@ -39,13 +38,11 @@ import io.github.fvarrui.javapackager.model.*;
 group = 'com.author.desktop'
 version = '1.0.0'
 description = 'Desku example app.'
-sourceCompatibility = '1.17' // Desku is compatible with 1.8 or higher
 compileJava.options.encoding = 'UTF-8'
 
 javapackager {
   mainClass = 'com.author.desktop.Main'
-  additionalResources = [ file('src/main/resources/info.txt') ]
-  customizedJre = true
+  customizedJre = false // If true, this might cause issues like ssl handshake exception
   generateInstaller = true
   vmArgs = ["-Djava.library.path=."]
   administratorRequired = false

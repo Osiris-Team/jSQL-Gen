@@ -22,7 +22,7 @@ allprojects {
 
 configure(subprojects - project(':android')) {
   apply plugin: 'java-library'
-  sourceCompatibility = 1.11
+  sourceCompatibility = 17
   compileJava {
     options.incremental = true
   }

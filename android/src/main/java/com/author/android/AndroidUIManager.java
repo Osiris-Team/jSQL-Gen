@@ -3,8 +3,8 @@ package com.author.android;
 import android.app.Activity;
 
 import com.osiris.desku.Route;
-import com.osiris.desku.UI;
-import com.osiris.desku.UIManager;
+import com.osiris.desku.ui.UI;
+import com.osiris.desku.ui.UIManager;
 
 public class AndroidUIManager extends UIManager {
     public static Activity mainActivity;
@@ -15,7 +15,7 @@ public class AndroidUIManager extends UIManager {
     }
 
     @Override
-    public UI create(Route route, boolean isTransparent, int widthPercent, int heightPercent) throws Exception {
-        return new AndroidUI(route, isTransparent, widthPercent, heightPercent);
+    public UI create(Route route, boolean isTransparent, boolean isDecorated, int widthPercent, int heightPercent) throws Exception {
+        return new AndroidUI(route, isTransparent, isDecorated, widthPercent, heightPercent);
     }
 }

@@ -1,9 +1,7 @@
-## Other
-/db/
-**/target/
+logs/
+html/
+db/
 
-# MacOS
-.DS_Store
 
 ## Gradle:
 .gradle/
@@ -25,6 +23,7 @@ gradle-app.setting
 *.ear
 hs_err_pid*
 .attach_pid*
+target/
 
 ## Android:
 /android/libs/armeabi-v7a/

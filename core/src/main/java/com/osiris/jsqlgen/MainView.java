@@ -6,16 +6,18 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
-import com.osiris.desku.DesktopUI;
+import com.osiris.desku.ui.DesktopUI;
 import com.osiris.desku.Route;
-import com.osiris.desku.UI;
+import com.osiris.desku.ui.UI;
 import com.osiris.desku.ui.Component;
 import com.osiris.desku.ui.input.*;
+import com.osiris.desku.ui.input.filechooser.FileChooser;
 import com.osiris.desku.ui.layout.Horizontal;
 import com.osiris.desku.ui.layout.SmartLayout;
 import com.osiris.desku.ui.layout.TabLayout;
 import com.osiris.desku.ui.layout.Vertical;
 import com.osiris.dyml.utils.UtilsFile;
+import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.generator.GenDatabaseFile;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
@@ -23,11 +25,14 @@ import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.*;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -40,7 +45,7 @@ import static com.osiris.jsqlgen.Data.*;
 
 import static com.osiris.desku.Statics.*;
 
-public class MainView extends Route {
+public class MainView extends Vertical {
     public static MyTeeOutputStream outErr;
     public static MyTeeOutputStream out;
     public static AsyncReader asyncIn;
@@ -64,11 +69,10 @@ public class MainView extends Route {
             System.setErr(new PrintStream(outErr));
             asyncInErr = new AsyncReader(pipeInErr);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            AL.warn(e);
         }
     }
 
-    private final Vertical lyRoot = vertical();
     // Home panel
     private final Vertical lyHome = vertical();
     private final TextField dbName = textfield("Enter database name");
@@ -78,129 +82,90 @@ public class MainView extends Route {
     private final Button btnExportDatabase = button("Export");
     private final Button btnMergeDatabasesFromDir = button("Merge from Projects");
     private final Button btnShowData = button("Show data");
-    private final TextField txtLogs = textfield();
+    private final TextArea txtLogs = textarea().height("70%");
     // Database panel
     private final Vertical lyDatabase = vertical();
-    private final Select choiceDatabase = select();
-    private final Vertical listTables = vertical().scrollable(true, "100%", "50vh", "100%", "2vh");
+    private final OptionField dbSelector = optionfield().onValueChange(e -> {
+        try {
+            changeDatabase(e.value);
+            updateChooserJavaProjectDir();
+        } catch (Exception ex) {
+            AL.warn(ex);
+        }
+    });
+    private final Vertical listTables = vertical().scrollable(true, "100%", "70vh", "100%", "2vh");
     private final TabLayout tabsCode = tablayout();
     private final Button btnGenerate = button("Generate Code");
-    private final Button btnChooseJavaProjectDir = button("Project-Dir");
-    private final FileChooser chooserJavaProjectDir = filechooser();
-    private JFrame frame;
+    private final FileChooser chooserJavaProjectDir = filechooser("test",  "").onValueChange(e -> {
+        Database database = null;
+        try {
+            database = getDatabaseOrFail();
+            database.javaProjectDir = e.value;
+            Data.save();
+            AL.info("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
+        } catch (Exception ex) {
+            AL.warn("Failed to save data for java project dir.", ex);
+        }
+    });
+    private @Nullable JFrame frame;
 
     public MainView() {
-        super("/");
-    }
-
-    @Override
-    public Component<?> loadContent() {
-        this.frame = ((DesktopUI)UI.get()).frame; // TODO support mobile
-
-        if(Data.instance.window.isMaximized)
-            frame.setMaximized(true);
-        else{
-            frame.setX(Data.instance.window.x);
-            frame.setY(Data.instance.window.y);
-            frame.setWidth(Data.instance.window.width);
-            frame.setHeight(Data.instance.window.height);
+        UI ui = UI.get();
+        if(ui instanceof DesktopUI){
+            DesktopUI desktopUI = (DesktopUI) ui;
+            this.frame = desktopUI.frame;
+            if(Data.instance.window.isMaximized) {
+                frame.setExtendedState(frame.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+            }
+            else{
+                frame.setLocation((int) instance.window.x, (int) instance.window.y);
+                frame.setSize((int) instance.window.width, (int) instance.window.height);
+            }
         }
-        lyRoot.add(
-            tablayout().addTabAndPage("Home", lyHome)
-                .addTabAndPage("Database", lyDatabase)
+
+        this.add(
+            lyHome,
+            lyDatabase
         );
 
-        lyRoot.later(root -> {
-            List<String> newLines = new ArrayList<>();
-            MainView.asyncIn.listeners.add(line -> {
-                synchronized (newLines) {
-                    newLines.add(line);
-                }
-                lyRoot.later(root2 -> {
-                    txtLogs.setValue(txtLogs.getValue() + line + "\n");
-                });
-            });
-            List<String> newErrLines = new ArrayList<>();
-            MainView.asyncInErr.listeners.add(line -> {
-                synchronized (newErrLines) {
-                    newErrLines.add(line);
-                }
-                lyRoot.later(root2 -> {
-                    txtLogs.setValue(txtLogs.getValue() + "[!] " + line + "\n");
-                });
-            });
-            System.out.println("Registered log listener.");
-            System.out.println("Initialised jSQL-Gen successfully!");
-            lyRoot.later(root_ -> {
-                try {
-                    while (true) {
-                        Thread.sleep(1000);
-                        synchronized (newLines) {
-                            if (!newLines.isEmpty()) {
-                                StringBuilder builder = new StringBuilder();
-                                for (String l : newLines) {
-                                    builder.append(l + "\n");
-                                }
-                                newLines.clear();
-                                lyRoot.later(root__ -> {
-                                    Notifications.create()
-                                        .title("jSQL-Gen | Info")
-                                        .text(builder.toString())
-                                        .position(Pos.BOTTOM_RIGHT)
-                                        .hideAfter(Duration.millis(10000))
-                                        .show();
-                                });
-                            }
-                        }
-                        synchronized (newErrLines) {
-                            if (!newErrLines.isEmpty()) {
-                                StringBuilder builder = new StringBuilder();
-                                for (String l : newErrLines) {
-                                    builder.append(l + "\n");
-                                }
-                                newErrLines.clear();
-                                lyRoot.later(root__ -> {
-                                    Notifications.create()
-                                        .title("jSQL-Gen | Error")
-                                        .text(builder.toString())
-                                        .position(Pos.BOTTOM_RIGHT)
-                                        .hideAfter(Duration.millis(30000))
-                                        .show();
-                                });
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
-            try {
-                frame.setTitle("jSQL-Gen v"+Const.getVersion());
-            } catch (Exception e) {
-                e.printStackTrace();
-                frame.setTitle("jSQL-Gen");
+        List<String> newLines = new ArrayList<>();
+        MainView.asyncIn.listeners.add(line -> {
+            synchronized (newLines) {
+                newLines.add(line);
             }
-
-            try {
-                choiceDatabase.onSelectedChange(event -> { // value changed event
-                    try {
-                        changeDatabase(event.value);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-                updateChoiceDatabase();
-                if (!Data.instance.databases.isEmpty()) {
-                    choiceDatabase.setSelected(Data.instance.databases.get(0).name);
-                }
-                // Layout stuff
-                layoutHome();
-                layoutDatabase();
-            } catch (Exception e) {
-                e.printStackTrace();
+            ui.access(() -> txtLogs.setValue(txtLogs.getValue() + line + "\n"));
+        });
+        List<String> newErrLines = new ArrayList<>();
+        MainView.asyncInErr.listeners.add(line -> {
+            synchronized (newErrLines) {
+                newErrLines.add(line);
             }
+            ui.access(() -> txtLogs.setValue(txtLogs.getValue() + "[!] " + line + "\n"));
+        });
+        AL.info("Registered log listener.");
+        AL.info("Initialised jSQL-Gen successfully!");
 
+        try {
+            frame.setTitle("jSQL-Gen v"+Const.getVersion());
+        } catch (Exception e) {
+            e.printStackTrace();
+            frame.setTitle("jSQL-Gen");
+        }
+
+        try {
+            updateDatabaseSelector();
+            if (!Data.instance.databases.isEmpty()) {
+                dbSelector.setValue(Data.instance.databases.get(0).name);
+            }
+            // Layout stuff
+            layoutHome();
+            layoutDatabase();
+        } catch (Exception e) {
+            AL.warn(e);
+        }
+
+        if(frame != null){
+            // Define the runnable to update Data.instance.window
             Runnable runnable = () -> {
                 Data.instance.window.x = frame.getX();
                 Data.instance.window.y = frame.getY();
@@ -208,24 +173,30 @@ public class MainView extends Route {
                 Data.instance.window.height = frame.getHeight();
                 Data.save();
             };
-            frame.xProperty().addListener((observableValue, number, t1) -> {
+
+            // Add component listener to handle size and position changes
+            frame.addComponentListener(new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    runnable.run();
+                }
+
+                @Override
+                public void componentMoved(ComponentEvent e) {
+                    runnable.run();
+                }
+            });
+
+            // Add window state listener to handle maximize state changes
+            frame.addWindowStateListener(e -> {
+                if ((e.getNewState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH) {
+                    Data.instance.window.isMaximized = true;
+                } else {
+                    Data.instance.window.isMaximized = false;
+                }
                 runnable.run();
             });
-            frame.yProperty().addListener((observableValue, number, t1) -> {
-                runnable.run();
-            });
-            frame.widthProperty().addListener((obs, oldVal, newVal) -> {
-                runnable.run();
-            });
-            frame.heightProperty().addListener((obs, oldVal, newVal) -> {
-                runnable.run();
-            });
-            frame.maximizedProperty().addListener((observableValue, aBoolean, t1) -> {
-                Data.instance.window.isMaximized = observableValue.getValue();
-                runnable.run();
-            });
-        });
-        return lyRoot;
+        }
     }
 
     private void layoutHome() {
@@ -246,27 +217,18 @@ public class MainView extends Route {
             }
         });
 
-        btnImportDatabase.setTooltip(new MyTooltip("Imports a json file or text and either overrides the existing database or creates a new one."));
+        btnImportDatabase.setTooltip("Imports a json file or text and either overrides the existing database or creates a new one.");
         btnImportDatabase.onClick(click -> {
-            Popup popup = new Popup();
-
-            MyScroll ly = new MyScroll(new Vertical());
-            FX.heightPercentScreen(ly, 10);
-            FX.widthPercentScreen(ly, 20);
-            Button btnClose = button("Close");
-            ly.addRow().add(btnClose);
-            btnClose.onClick(click2 -> popup.hide());
-            ly.addRow().add(new Label("Currently in todo, will be available soon..."));
-
-            popup.getContent().add(ly);
-            popup.show(this.frame);
+            var popup = popup();
+            popup.add(text("Currently in todo, will be available soon..."));
+            lyHome.add(popup);
         });
 
-        btnMergeDatabasesFromDir.setTooltip(new MyTooltip("Searches the provided directory and \nsub-directories for databases and imports them.\n" +
+        btnMergeDatabasesFromDir.setTooltip("Searches the provided directory and \nsub-directories for databases and imports them.\n" +
             "If a database with the same name exists its replaced by the imported one, thus proceed with caution.\n" +
-            "A backup of the current structure will be created though."));
-        btnMergeDatabasesFromDir.setOnMouseClicked(click -> {
-            Platform.runLater(() -> {
+            "A backup of the current structure will be created though.");
+        btnMergeDatabasesFromDir.onClick(click -> {
+            btnMergeDatabasesFromDir.later((__) -> {
                 LocalDateTime now = LocalDateTime.now();
                 DateTimeFormatter formatter = getFormatter();
                 File backup = new File(backupDir+"/backup-all-databases-"+now.format(formatter)+".json");
@@ -277,9 +239,10 @@ public class MainView extends Route {
                     System.err.println("Failed to proceed, due to failed backup!");
                     return;
                 }
-                DirectoryChooser chooser = new DirectoryChooser();
-                File selectedFile = chooser.showDialog(stage);
-                System.out.println("Importing, please stand by... Dir: " + selectedFile);
+                FileChooser chooser = filechooser();
+
+                File selectedFile = chooser.getDir();
+                AL.info("Importing, please stand by... Dir: " + selectedFile);
                 if(!selectedFile.isDirectory()){
                     selectedFile = selectedFile.getParentFile();
                 }
@@ -291,7 +254,7 @@ public class MainView extends Route {
                         walkRecursive(finalSelectedFile, file -> {
                             checkedFilesCounter.incrementAndGet();
                             if (file.getName().endsWith("_structure.json")) {
-                                System.out.println(file);
+                                AL.info(file.getAbsolutePath());
                                 Database db;
                                 try {
                                     db = parser.fromJson(new BufferedReader(new FileReader(file)), Database.class);
@@ -308,36 +271,36 @@ public class MainView extends Route {
                                         if(db.name.equals(db_.name)) exists = true;
                                     }
                                     if(exists){
-                                        System.out.println("Db " + db.name + " already exists and seems to be up-to-date.");
+                                        AL.info("Db " + db.name + " already exists and seems to be up-to-date.");
                                     } else{
                                         // New database, thus add/import
                                         instance.databases.add(db);
                                         Data.save();
                                         counter.incrementAndGet();
-                                        System.out.println("Added new db " + db.name + " from: " + file.getAbsolutePath());
-                                        Platform.runLater(() -> updateChoiceDatabase());
+                                        AL.info("Added new db " + db.name + " from: " + file.getAbsolutePath());
+                                        lyHome.later((___) -> updateDatabaseSelector());
                                     }
                                 } else // There is a newer version of the db, thus replace
                                     instance.databases.replaceAll(dbOld -> {
                                         Database dbNew = oldAndNewDBsMap.get(dbOld);
                                         if (dbNew != null) {
                                             counter.incrementAndGet();
-                                            System.out.println("Replaced " + dbOld.name + " with newer db (has table with more changes) from: " + file.getAbsolutePath());
+                                            AL.info("Replaced " + dbOld.name + " with newer db (has table with more changes) from: " + file.getAbsolutePath());
                                             return dbNew;
                                         } else return dbOld;
                                     });
                             }
                         });
-                        System.out.println("Success! Added or replaced " + counter.get() + " databases.");
+                        AL.info("Success! Added or replaced " + counter.get() + " databases.");
                     });
                     t1.start();
                     new Thread(() -> {
                         try{
                             while (t1.isAlive()){
                                 Thread.sleep(3000);
-                                System.out.println("Scanned "+checkedFilesCounter.get()+" files.");
+                                AL.info("Scanned "+checkedFilesCounter.get()+" files.");
                             }
-                            System.out.println("Details printer thread stopped.");
+                            AL.info("Details printer thread stopped.");
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -346,20 +309,11 @@ public class MainView extends Route {
             });
         });
 
-        btnExportDatabase.setTooltip(new Tooltip("Exports the selected database in json format, which later can be imported again."));
+        btnExportDatabase.setTooltip(("Exports the selected database in json format, which later can be imported again."));
         btnExportDatabase.onClick(click -> {
-            Popup popup = new Popup();
-
-            MyScroll ly = new MyScroll(new Vertical());
-            FX.heightPercentScreen(ly, 10);
-            FX.widthPercentScreen(ly, 20);
-            Button btnClose = button("Close");
-            ly.addRow().add(btnClose);
-            btnClose.onClick(click2 -> popup.hide());
-            ly.addRow().add(new Label("Currently in todo, will be available soon..."));
-
-            popup.getContent().add(ly);
-            popup.show(this.frame);
+            var popup = popup();
+            popup.add(text("Currently in todo, will be available soon..."));
+            lyHome.add(popup);
         });
         btnShowData.onClick(click -> {
             try {
@@ -369,11 +323,9 @@ public class MainView extends Route {
             }
         });
 
-        lyHome.addRow().add(dbName, btnCreateDatabase, btnDeleteDatabase);
-        lyHome.addRow().add(btnImportDatabase, btnMergeDatabasesFromDir, btnExportDatabase, btnShowData);
-        FX.widthFull(txtLogs);
-        FX.heightPercent(txtLogs, 70);
-        lyHome.addRow().add(txtLogs);
+        lyHome.horizontalCL().add(dbName, btnCreateDatabase, btnDeleteDatabase);
+        lyHome.horizontalCL().add(btnImportDatabase, btnMergeDatabasesFromDir, btnExportDatabase, btnShowData);
+        lyHome.add(txtLogs);
     }
 
     private void walkRecursive(File file, Consumer<File> code) {
@@ -399,53 +351,54 @@ public class MainView extends Route {
                 e.printStackTrace();
             }
         });
-        chooserJavaProjectDir.setTitle("Select Java project directory");
-        btnChooseJavaProjectDir.setTooltip(new Tooltip("Select the directory of your Java project. Classes then will be generated there" +
+        chooserJavaProjectDir.tfSelectedFiles.label.setValue("Select Java project directory");
+        chooserJavaProjectDir.tfSelectedFiles.setTooltip(("Select the directory of your Java project. Classes then will be generated there" +
                 " together with a copy of the schema. Everything gets overwritten, except critical information in the database class."));
-        btnChooseJavaProjectDir.onClick(click -> {
-            try {
-                Database database = Data.getDatabase(choiceDatabase.getValue());
-                if (database == null)
-                    throw new Exception("Failed to find database '" + choiceDatabase.getValue() + "', make sure you created and selected one before.");
-                File projectDir = database.javaProjectDir;
-                while(projectDir != null){
-                    if(!projectDir.exists()){
-                        projectDir = projectDir.getParentFile();
+        updateChooserJavaProjectDir();
+
+        lyDatabase.add(dbSelector);
+        lyDatabase.add(listTables);
+        lyDatabase.add(btnGenerate);
+        lyDatabase.add(tabsCode);
+    }
+
+    private void updateChooserJavaProjectDir() {
+        try {
+            Database database = getDatabaseOrFail();
+            CopyOnWriteArrayList<File> javaProjectDirs = database.getJavaProjectDirs();
+            boolean isChanged = false;
+            for (int i = 0; i < javaProjectDirs.size(); i++) {
+                File projectDir = javaProjectDirs.get(i);
+                File p2 = projectDir;
+                while (p2 != null) {
+                    if (!p2.exists()) {
+                        p2 = p2.getParentFile();
                         continue;
                     }
-                    try{
-                        chooserJavaProjectDir.setInitialDirectory(projectDir);
-                        break;
-                    } catch (Exception ignored) {
-                    }
+                    break;
                 }
-                if(projectDir != database.javaProjectDir){
-                    database.javaProjectDir = projectDir;
-                    Data.save();
-                    System.out.println("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
+                if (p2 != projectDir) {
+                    AL.warn("Changed directory since original doesn't exist, new: "+p2+" old: "+projectDir);
+                    isChanged = true;
+                    javaProjectDirs.set(i, p2);
                 }
-
-                lyRoot.later(root -> {
-                    File selectedFile = chooserJavaProjectDir.showDialog(frame);
-                    if (selectedFile != null) {
-                        database.javaProjectDir = selectedFile;
-                        Data.save();
-                    }
-                    System.out.println("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        });
+            if(isChanged && !javaProjectDirs.isEmpty()){
+                database.setJavaProjectDirs(javaProjectDirs);
+                Data.save();
+                AL.info("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
+            }
+            chooserJavaProjectDir.setValue(database.javaProjectDir);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-        lyDatabase.addRow().add(choiceDatabase, btnChooseJavaProjectDir);
-        FX.widthPercent(listTables, 100);
-        FX.heightPercentWindow(listTables, 70);
-        lyDatabase.addRow().add(listTables);
-        lyDatabase.addRow().add(btnGenerate);
-        FX.widthPercentWindow(tabsCode, 70);
-        FX.widthFull(tabsCode);
-        lyDatabase.addRow().add(tabsCode);
+    private @NotNull Database getDatabaseOrFail() throws Exception {
+        Database database = Data.getDatabase(dbSelector.getValue());
+        if (database == null)
+            throw new Exception("Failed to find database '" + dbSelector.getValue() + "', make sure you created and selected one before.");
+        return database;
     }
 
     private void changeDatabase(String dbName) throws IOException {
@@ -456,18 +409,18 @@ public class MainView extends Route {
         updateTablesList(dbName);
     }
 
-    public void updateChoiceDatabase() {
-        ObservableList<String> list = null;
-        String lastValue = choiceDatabase.getValue();
-        if (choiceDatabase.getItems() != null) list = choiceDatabase.getItems();
-        else list = FXCollections.observableArrayList();
-        list.clear();
-        for (Database db : Data.instance.databases) {
-            list.add(db.name);
+    public void updateDatabaseSelector() {
+        dbSelector.items.removeAll();
+        String lastValue = dbSelector.getValue();
+        String[] dbNames = new String[instance.databases.size()];
+        CopyOnWriteArrayList<Database> databases = instance.databases;
+        for (int i = 0; i < databases.size(); i++) {
+            Database db = databases.get(i);
+            dbNames[i] = db.name;
         }
-        choiceDatabase.setItems(list);
+        dbSelector.add(dbNames);
         if (lastValue != null && !lastValue.strip().isEmpty())
-            choiceDatabase.setValue(lastValue);
+            dbSelector.setValue(lastValue);
     }
 
     protected void addDatabase() throws IOException {
@@ -479,8 +432,8 @@ public class MainView extends Route {
         db.name = dbName.getValue();
         Data.instance.databases.add(db);
         Data.save();
-        updateChoiceDatabase();
-        System.out.println("Successfully added new database named '" + db.name + "'.");
+        updateDatabaseSelector();
+        AL.info("Successfully added new database named '" + db.name + "'.");
     }
 
     private void deleteDatabase(String dbName) throws IOException {
@@ -491,36 +444,31 @@ public class MainView extends Route {
         Database db = Data.getDatabase(dbName);
         Data.instance.databases.remove(db);
         Data.save();
-        updateChoiceDatabase();
-        System.out.println("Successfully deleted database named '" + db.name + "'.");
+        updateDatabaseSelector();
+        AL.info("Successfully deleted database named '" + db.name + "'.");
     }
 
     public void showData() throws IOException {
         UFile.showInFileManager(Data.file);
-        System.out.println("Showing file: " + Data.file);
+        AL.info("Showing file: " + Data.file);
     }
 
     public void generateCode() throws IOException {
-        System.out.println("Generating code...");
+        AL.info("Generating code...");
         try {
-            List<File> files = generateCode(Collections.singletonList(Data.getDatabase(choiceDatabase.getValue())),
+            List<File> files = generateCode(Collections.singletonList(Data.getDatabase(dbSelector.getValue())),
                     Main.generatedDir, true);
-            System.out.println("Generated code/files: ");
+            AL.info("Generated code/files: ");
             for (File f : files) {
-                System.out.println(f);
+                AL.info(f.getAbsolutePath());
             }
             // Refresh table view
-            updateTablesList(choiceDatabase.getValue());
+            updateTablesList(dbSelector.getValue());
 
             // Refresh tabs
-            tabsCode.getTabs().clear();
+            tabsCode.removeAll();
             for (File f : files) {
-                Tab tab = new Tab();
-                tabsCode.getTabs().add(tab);
-                TextArea txtCode = new TextArea();
-                tab.setContent(txtCode);
-                tab.setValue(f.getName());
-                txtCode.setValue(Files.readString(f.toPath()));
+                tabsCode.addTabAndPage(f.getName(), textarea(Files.readString(f.toPath())));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -550,7 +498,7 @@ public class MainView extends Route {
                 StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
                 Data.parser.toJson(db, sw);
                 String out = sw.toString();
-                //System.out.println(out);
+                //AL.info(out);
                 Files.writeString(jsonData.toPath(), out);
             }
             File databaseFile = getDatabaseFile(dir);
@@ -599,29 +547,25 @@ public class MainView extends Route {
     }
 
     private void updateTablesList(String dbName) throws IOException {
-        listTables.getItems().clear();
+        listTables.removeAll();
         Database db = Data.getDatabase(dbName);
         CopyOnWriteArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
             Table t = tables.get(i);
             Vertical wrapperTable = new Vertical();
-            listTables.getItems().add(wrapperTable);
+            listTables.add(wrapperTable);
             SmartLayout paneTable = new SmartLayout();
-            paneTable.putStyle("background-color",
+            paneTable.sty("background-color",
                 "rgba("+new Random().nextFloat()+","+ new Random().nextFloat()+","+ new Random().nextFloat()+","+ 0.7+")"
             );
             wrapperTable.add(paneTable);
-            Select choiceAction = new Select();
+            var choiceAction = optionfield();
             paneTable.add(choiceAction);
-            FX.widthPercentScreen(choiceAction, 1);
-            ObservableList<String> list = FXCollections.observableArrayList();
-            list.add("Delete");
-            list.add("Duplicate");
-            choiceAction.setItems(list);
+            choiceAction.add("Delete", "Duplicate");
             int finalI = i;
-            choiceAction.setOnAction(event -> {
+            choiceAction.onValueChange(event -> {
                 try {
-                    String command = choiceAction.getValue();
+                    String command = event.value;
                     if(command == null || command.isEmpty()) return;
                     if (command.equals("Delete"))
                         deleteTable(dbName, t.name);
@@ -639,52 +583,52 @@ public class MainView extends Route {
             });
             TextField tableName = new TextField(t.name);
             paneTable.add(tableName);
-            tableName.setTooltip(new Tooltip("The table name. Changes are auto-saved."));
-            tableName.textProperty().addListener((o, oldVal, newVal) -> { // enter pressed event
+            tableName.setTooltip("The table name. Changes are auto-saved.");
+            tableName.onValueChange(e -> { // enter pressed event
                 try {
-                    renameTable(dbName, oldVal, newVal);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    renameTable(dbName, e.valueBefore, e.value);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
             });
             final CheckBox isDebug = new CheckBox("Debug");
             paneTable.add(isDebug);
-            isDebug.setTooltip(new MyTooltip("If selected generates additional debug logging to the error stream."));
-            isDebug.setSelected(t.isDebug);
-            isDebug.setOnAction(event -> {
-                t.isDebug = isDebug.isSelected();
+            isDebug.setTooltip("If selected generates additional debug logging to the error stream.");
+            isDebug.setValue(t.isDebug);
+            isDebug.onValueChange(event -> {
+                t.isDebug = event.value;
                 Data.save();
             });
 
             final CheckBox isNoExceptions = new CheckBox("No exceptions");
             paneTable.add(isNoExceptions);
-            isNoExceptions.setTooltip(new MyTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
-                    " which means that all methods of a generated class can be used outside of try/catch blocks."));
-            isNoExceptions.setSelected(t.isNoExceptions);
-            isNoExceptions.setOnAction(event -> {
-                t.isNoExceptions = isNoExceptions.isSelected();
+            isNoExceptions.setTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
+                    " which means that all methods of a generated class can be used outside of try/catch blocks.");
+            isNoExceptions.setValue(t.isNoExceptions);
+            isNoExceptions.onValueChange(event -> {
+                t.isNoExceptions = event.value;
                 Data.save();
             });
 
             final CheckBox isCache = new CheckBox("Cache");
             paneTable.add(isCache);
-            isCache.setSelected(t.isCache);
-            isCache.setOnAction(event -> {
-                t.isCache = isCache.isSelected();
+            isCache.setValue(t.isCache);
+            isCache.onValueChange(event -> {
+                t.isCache = event.value;
                 Data.save();
             });
 
             final CheckBox isVaadinFlow = new CheckBox("Vaadin-Flow");
-            paneTable.getChildren().add(isVaadinFlow);
-            isVaadinFlow.setSelected(t.isVaadinFlowUI);
-            isVaadinFlow.setOnAction(event -> {
-                t.isVaadinFlowUI = isVaadinFlow.isSelected();
+            paneTable.add(isVaadinFlow);
+            isVaadinFlow.setValue(t.isVaadinFlowUI);
+            isVaadinFlow.onValueChange(event -> {
+                t.isVaadinFlowUI = event.value;
                 Data.save();
             });
 
             Vertical listColumns = new Vertical();
-            listTables.getItems().add(listColumns);
-            listColumns.paddingProperty().setValue(new Insets(0, 0, 0, 50));
+            listTables.add(listColumns);
+            listColumns.paddingLeft("50px");
             try {
                 updateColumnsList(listColumns, dbName, t.name);
             } catch (Exception e) {
@@ -692,13 +636,13 @@ public class MainView extends Route {
             }
         }
         Vertical wrapper = new Vertical();
-        listTables.getItems().add(wrapper);
+        listTables.add(wrapper);
         SmartLayout lastItem = new SmartLayout();
         wrapper.add(lastItem);
         TextField tableName = new TextField();
         lastItem.add(tableName);
-        tableName.setPromptText("New table name");
-        tableName.setOnAction(event -> { // enter pressed event
+        tableName.label.setValue("New table name");
+        tableName.onValueChange(event -> { // enter pressed event
             try {
                 addNewTable(dbName, tableName.getValue());
             } catch (Exception e) {
@@ -708,14 +652,14 @@ public class MainView extends Route {
     }
 
     private void renameTable(String dbName, String oldName, String newName) throws IOException {
-        System.out.println("Renaming table from '" + oldName + "' to '" + newName + "'.");
+        AL.info("Renaming table from '" + oldName + "' to '" + newName + "'.");
         Database db = Data.getDatabase(dbName);
         Objects.requireNonNull(oldName);
         Table t = Data.findTable(db.tables, oldName);
         Objects.requireNonNull(t);
         t.name = newName;
         Data.save();
-        System.out.println("OK!");
+        AL.info("OK!");
     }
 
     private void addNewTable(String dbName, String tableName) throws IOException {
@@ -799,7 +743,6 @@ public class MainView extends Route {
             });
             TextField colName = new TextField(col.name);
             SuggestionTextField colDefinition = new SuggestionTextField(col.definition);
-            FX.widthFull(colDefinition);
             for (ColumnType colType : ColumnType.allTypes) {
                 colDefinition.getEntries().addAll(List.of(colType.inSQL));
             }
@@ -807,11 +750,11 @@ public class MainView extends Route {
 
             item.add(colName);
             if (Objects.equals(col.name, "id")) colName.enable(false);
-            colName.setPromptText("Column name");
-            colName.setTooltip(new Tooltip("Column name. Changes are auto-saved."));
-            colName.textProperty().addListener((o, oldVal, newVal) -> {
+            colName.label.setValue("Column name");
+            colName.setTooltip(("Column name. Changes are auto-saved."));
+            colName.onValueChange(event -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, oldVal, newVal, col.definition, colComment.getValue());
+                    updateColumn(listColumns, dbName, t.name, event.valueBefore, event.value, col.definition, colComment.getValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -819,11 +762,11 @@ public class MainView extends Route {
 
 
             item.add(colDefinition);
-            colDefinition.setPromptText("Column definition");
-            colDefinition.setTooltip(new Tooltip("Column definition. Changes are auto-saved."));
-            colDefinition.textProperty().addListener((o, oldVal, newVal) -> {
+            colDefinition.textField.label.setValue("Column definition");
+            colDefinition.setTooltip("Column definition. Changes are auto-saved.");
+            colDefinition.textField.onValueChange(event -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, colName.getValue(), colName.getValue(), newVal, colComment.getValue());
+                    updateColumn(listColumns, dbName, t.name, colName.getValue(), colName.getValue(), event.value, colComment.getValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -831,22 +774,20 @@ public class MainView extends Route {
 
 
             item.add(colComment);
-            colComment.setPromptText("Column comment");
-            colComment.setTooltip(new Tooltip("Column comment. Changes are auto-saved."));
-            colComment.textProperty().addListener((o, oldVal, newVal) -> {
+            colComment.label.setValue("Column comment");
+            colComment.setTooltip("Column comment. Changes are auto-saved.");
+            colComment.onValueChange(event -> {
                 try {
-                    updateColumn(listColumns, dbName, t.name, colName.getValue(), colName.getValue(), colDefinition.getValue(), newVal);
+                    updateColumn(listColumns, dbName, t.name, colName.getValue(), colName.getValue(), colDefinition.textField.getValue(), event.value);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
         }
-        FlowPane lastItem = new FlowPane();
-        listColumns.add(lastItem);
         TextField colName = new TextField();
-        lastItem.add(colName);
-        colName.setPromptText("New column name");
-        colName.setOnAction(event -> { // enter pressed event
+        listColumns.add(colName);
+        colName.label.setValue("New column name");
+        colName.onValueChange(event -> { // enter pressed event
             try {
                 addNewColumn(listColumns, dbName, t.name, colName.getValue(), null);
             } catch (Exception e) {
@@ -856,19 +797,19 @@ public class MainView extends Route {
     }
 
     private void updateColumn(Vertical listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws IOException {
-        System.out.println("Updating column...");
+        AL.info("Updating column...");
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, oldName);
         Objects.requireNonNull(col);
-        System.out.println("OLD: " + col.name + " " + col.definition + " " + col.comment);
+        AL.info("OLD: " + col.name + " " + col.definition + " " + col.comment);
         col.updateName(newName);
         col.definition = newDefinition;
         col.comment = newComment;
-        System.out.println("NEW: " + col.name + " " + col.definition + " " + col.comment);
+        AL.info("NEW: " + col.name + " " + col.definition + " " + col.comment);
         Data.save();
-        System.out.println("OK!");
+        AL.info("OK!");
     }
 
     private void addNewColumn(Vertical listColumns, String dbName, String tableName, String columnName, String columnDefinition) throws IOException {

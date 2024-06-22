@@ -10,10 +10,13 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import com.osiris.desku.Route;
-import com.osiris.desku.UI;
+import com.osiris.desku.ui.UI;
+import com.osiris.desku.ui.utils.Rectangle;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class AndroidUI extends UI {
 
@@ -36,13 +39,13 @@ public class AndroidUI extends UI {
         super(route);
     }
 
-    public AndroidUI(Route route, boolean isTransparent, int widthPercent, int heightPercent) throws Exception {
-        super(route, isTransparent, widthPercent, heightPercent);
+    public AndroidUI(Route route, boolean isTransparent, boolean isDecorated, int widthPercent, int heightPercent) throws Exception {
+        super(route, isTransparent, isDecorated, widthPercent, heightPercent);
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
-    public void init(String startURL, boolean isTransparent, int widthPercent, int heightPercent) throws Exception {
+    public void init(String startURL, boolean isTransparent, boolean isDecorated, int widthPercent, int heightPercent) throws Exception {
         // Remove first / to ensure file:///path and not file:////path is used as url.
 
         MyWebViewClient myWebViewClient = new MyWebViewClient();
@@ -110,5 +113,55 @@ public class AndroidUI extends UI {
         AndroidLauncher.mainHandler.post(() -> {
             webView.loadUrl("javascript:(function() { " + jsCode + " })()");
         });
+    }
+
+    @Override
+    public void maximize(boolean b) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public void minimize(boolean b) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public void fullscreen(boolean b) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public void onSizeChange(Consumer<Rectangle> code) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public Rectangle getScreenSize() throws InterruptedException, InvocationTargetException {
+        return null;
+    }
+
+    @Override
+    public Rectangle getScreenSizeWithoutTaskBar() throws InterruptedException, InvocationTargetException {
+        return null;
+    }
+
+    @Override
+    public void decorate(boolean b) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public void allwaysOnTop(boolean b) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public void focus(boolean b) throws InterruptedException, InvocationTargetException {
+
+    }
+
+    @Override
+    public void background(String hexColor) throws InterruptedException, InvocationTargetException {
+
     }
 }

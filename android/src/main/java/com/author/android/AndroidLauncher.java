@@ -8,7 +8,7 @@ import android.os.StrictMode;
 import android.util.Log;
 
 import com.osiris.desku.App;
-import com.author.core.Main;
+import com.osiris.jsqlgen.Main;
 
 /** Launches the Android application. */
 public class AndroidLauncher extends Activity {
