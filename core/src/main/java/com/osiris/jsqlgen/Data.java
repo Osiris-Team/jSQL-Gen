@@ -14,10 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -45,18 +42,18 @@ public class Data {
                 instance = parser.fromJson(new BufferedReader(new FileReader(file)), DataJson.class);
                 // Check if there is a project that contains a newer version of the database (aka with more changes)
                 CopyOnWriteArrayList<Database> databases = instance.databases;
-                Map<Database, Database> oldAndNew = getOldAndNewDBsMap(databases, null);
+                Map<Database, DBWrapper> oldAndNew = getOldAndNewDBsMap(databases, null);
                 // Backup before replacing, then replace
                 databases.replaceAll(dbOld -> {
-                    Database dbNew = oldAndNew.get(dbOld);
+                    DBWrapper dbNew = oldAndNew.get(dbOld);
                     if(dbNew != null) {
                         LocalDateTime now = LocalDateTime.now();
                         DateTimeFormatter formatter = getFormatter();
                         File backup = new File(backupDir+"/backup-db-"+dbOld.name+"-pre-import-"+now.format(formatter)+".json");
                         try {
                             Files.writeString(backup.toPath(), parser.toJson(dbOld, Database.class));
-                            System.out.println("LOADED NEWER DATABASE STRUCTURE FROM: "+dbNew.javaProjectDir);
-                            return dbNew;
+                            System.out.println("LOADED NEWER DATABASE STRUCTURE FROM: "+dbNew.structureFile);
+                            return dbNew.db;
                         } catch (IOException e) {
                             e.printStackTrace();
                             System.err.println("FAILED TO LOAD NEWER DATABASE STRUCTURE, DUE TO FAILING TO BACKUP OLDER DATABASE STRUCTURE!");
@@ -121,48 +118,60 @@ public class Data {
         return DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     }
 
+    public static class DBWrapper{
+        public Database db;
+        public File structureFile;
+
+        public DBWrapper(Database db, File structureFile) {
+            this.db = db;
+            this.structureFile = structureFile;
+        }
+    }
+
     @NotNull
-    public static Map<Database, Database> getOldAndNewDBsMap(@NotNull CopyOnWriteArrayList<Database> oldDBs,
+    public static Map<Database, DBWrapper> getOldAndNewDBsMap(@NotNull CopyOnWriteArrayList<Database> oldDBs,
                                                              @Nullable CopyOnWriteArrayList<Database> newDBs) {
-        Map<Database, Database> oldAndNew = new HashMap<>();
+        Map<Database, DBWrapper> oldAndNew = new HashMap<>();
         for (int k = 0; k < oldDBs.size(); k++) {
             Database db = oldDBs.get(k);
-            JavaProjectGenDir javaProjectGenDir = getJavaProjectGenDir(db);
-            File databaseStructureFile = getDatabaseStructureFile(db, javaProjectGenDir);
-            Database dbNew = null;
-            try{
-                dbNew = parser.fromJson(new BufferedReader(new FileReader(databaseStructureFile)), Database.class);
-            } catch (Exception e) {}
-            if(dbNew == null && newDBs != null){
-                for (Database dbNew1 : newDBs) {
-                    if(dbNew1.name.equals(db.name)) {
-                        dbNew = dbNew1;
-                        break;
-                    }
-                }
-            }
-            if(dbNew == null) continue;
-            CopyOnWriteArrayList<Table> tablesNew = dbNew.tables;
-            CopyOnWriteArrayList<Table> tablesOld = db.tables;
-            boolean isNewer = false;
-            if((!tablesNew.isEmpty() && !tablesOld.isEmpty()) &&
-                    (tablesNew.get(0).changes != null && tablesOld.get(0).changes == null)){
-                // Support older jsqlgen data json formats
-                isNewer = true;
-            }
-            if(!isNewer)
-                for (Table tNew : tablesNew) {
-                    CopyOnWriteArrayList<Table> oldTables = db.tables;
-                    for (Table tOld : oldTables) {
-                        if (tOld.id == tNew.id) {
-                            if (tOld.changes.size() > tNew.changes.size()) isNewer = true;
+            List<JavaProjectGenDir> javaProjectGenDirs = getJavaProjectGenDir(db);
+            List<File> databaseStructureFiles = getDatabaseStructureFile(db, javaProjectGenDirs);
+            for (File databaseStructureFile : databaseStructureFiles) {
+                Database dbNew = null;
+                try{
+                    dbNew = parser.fromJson(new BufferedReader(new FileReader(databaseStructureFile)), Database.class);
+                } catch (Exception e) {}
+                if(dbNew == null && newDBs != null){
+                    for (Database dbNew1 : newDBs) {
+                        if(dbNew1.name.equals(db.name)) {
+                            dbNew = dbNew1;
                             break;
                         }
                     }
-                    if (isNewer) break;
                 }
-            if (isNewer) {
-                oldAndNew.put(db, dbNew);
+                if(dbNew == null) continue;
+                CopyOnWriteArrayList<Table> tablesNew = dbNew.tables;
+                CopyOnWriteArrayList<Table> tablesOld = db.tables;
+                boolean isNewer = false;
+                if((!tablesNew.isEmpty() && !tablesOld.isEmpty()) &&
+                    (tablesNew.get(0).changes != null && tablesOld.get(0).changes == null)){
+                    // Support older jsqlgen data json formats
+                    isNewer = true;
+                }
+                if(!isNewer)
+                    for (Table tNew : tablesNew) {
+                        CopyOnWriteArrayList<Table> oldTables = db.tables;
+                        for (Table tOld : oldTables) {
+                            if (tOld.id == tNew.id) {
+                                if (tOld.changes.size() > tNew.changes.size()) isNewer = true;
+                                break;
+                            }
+                        }
+                        if (isNewer) break;
+                    }
+                if (isNewer) {
+                    oldAndNew.put(db, new DBWrapper(dbNew, databaseStructureFile));
+                }
             }
         }
         return oldAndNew;
@@ -214,8 +223,12 @@ public class Data {
     }
 
     @NotNull
-    public static JavaProjectGenDir getJavaProjectGenDir(Database db) {
-        return new JavaProjectGenDir(db.javaProjectDir + "/src/main/java/com/osiris/jsqlgen/" + db.name);
+    public static List<JavaProjectGenDir> getJavaProjectGenDir(Database db) {
+        List<JavaProjectGenDir> dirs = new ArrayList<>();
+        for (File javaProjectDir : db.getJavaProjectDirs()) {
+            dirs.add(new JavaProjectGenDir(javaProjectDir + "/src/main/java/com/osiris/jsqlgen/" + db.name));
+        }
+        return dirs;
     }
 
     public static class JavaProjectGenDir extends File{
@@ -225,8 +238,12 @@ public class Data {
     }
 
     @NotNull
-    public static File getDatabaseStructureFile(Database db, JavaProjectGenDir javaProjectDir) {
-        return new File(javaProjectDir.getParentFile() + "/" + db.name + "_structure.json");
+    public static List<File> getDatabaseStructureFile(Database db, List<JavaProjectGenDir> javaProjectGenDirs) {
+        List<File> files = new ArrayList<>();
+        for (JavaProjectGenDir dir : javaProjectGenDirs) {
+            files.add(new File(dir.getParentFile() + "/" + db.name + "_structure.json"));
+        }
+        return files;
     }
 
     @NotNull

@@ -34,6 +34,7 @@ public class Main {
         }
 
         App.name = "jSQL-Gen";
+        App.theme = new MyTheme();
         // Create and show windows
         try{
             App.uis.create(mainRoute);

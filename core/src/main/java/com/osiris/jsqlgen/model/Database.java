@@ -11,7 +11,7 @@ public class Database {
     /**
      * Can be multiple paths seperated by ;
      */
-    public String javaProjectDir;
+    protected String javaProjectDir;
 
     public Database duplicate() {
         Database db = new Database();
@@ -31,6 +31,13 @@ public class Database {
             files.add(new File(s));
         }
         return files;
+    }
+
+    /**
+     * @param dirs semicolon ";" separated list of directories
+     */
+    public void setJavaProjectDirs(String dirs){
+        this.javaProjectDir = dirs;
     }
 
     public String setJavaProjectDirs(List<File> dirs){

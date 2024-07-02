@@ -24,18 +24,15 @@ public class SuggestionTextField extends Component<SuggestionTextField, NoValue>
     public final TextField textField;
     public int maxEntries = 0;
 
-    public SuggestionTextField() {
-        super(NoValue.GET);
+    public SuggestionTextField(String label, String defaultValue) {
+        super(NoValue.GET, NoValue.class);
+        grow(1);
+        width("100%");
         this.entries = new TreeSet<>();
         this.entriesPopup = new Overlay(null);
-        this.textField = textfield();
+        this.textField = textfield(label, defaultValue);
         this.add(textField);
         setListener();
-    }
-
-    public SuggestionTextField(String txt) {
-        this();
-        this.textField.setValue(txt);
     }
 
     private void setListener() {

@@ -13,7 +13,7 @@ import com.osiris.desku.ui.Component;
 import com.osiris.desku.ui.input.*;
 import com.osiris.desku.ui.input.filechooser.FileChooser;
 import com.osiris.desku.ui.layout.Horizontal;
-import com.osiris.desku.ui.layout.SmartLayout;
+import com.osiris.desku.ui.layout.Popup;
 import com.osiris.desku.ui.layout.TabLayout;
 import com.osiris.desku.ui.layout.Vertical;
 import com.osiris.dyml.utils.UtilsFile;
@@ -25,6 +25,7 @@ import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.utils.*;
+import org.fusesource.jansi.utils.UtilsAnsiHtml;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,31 +47,25 @@ import static com.osiris.jsqlgen.Data.*;
 import static com.osiris.desku.Statics.*;
 
 public class MainView extends Vertical {
-    public static MyTeeOutputStream outErr;
-    public static MyTeeOutputStream out;
     public static AsyncReader asyncIn;
     public static AsyncReader asyncInErr;
 
     static {
         try {
             // DUPLICATE SYSTEM.OUT AND ASYNC-READ FROM PIPE
-            PipedOutputStream pipeOut = new PipedOutputStream();
-            PipedInputStream pipeIn = new PipedInputStream();
-            pipeOut.connect(pipeIn);
-            out = new MyTeeOutputStream(System.out, pipeOut);
-            System.setOut(new PrintStream(out));
-            asyncIn = new AsyncReader(pipeIn);
-
-            // DUPLICATE SYSTEM.ERR AND ASYNC-READ FROM PIPE
-            PipedOutputStream pipeOutErr = new PipedOutputStream();
-            PipedInputStream pipeInErr = new PipedInputStream();
-            pipeOutErr.connect(pipeInErr);
-            outErr = new MyTeeOutputStream(System.err, pipeOutErr);
-            System.setErr(new PrintStream(outErr));
-            asyncInErr = new AsyncReader(pipeInErr);
+            File mirrorOut = new File(System.getProperty("user.dir")+"/logs/mirror-out.log");
+            File mirrorErr = new File(System.getProperty("user.dir")+"/logs/mirror-err.log");
+            InputStream is = Files.newInputStream(mirrorOut.toPath(), StandardOpenOption.READ);
+            asyncIn = new AsyncReader(is, 1000);
+            InputStream isErr = Files.newInputStream(mirrorErr.toPath(), StandardOpenOption.READ);
+            asyncInErr = new AsyncReader(isErr, 1000);
         } catch (IOException e) {
             AL.warn(e);
         }
+    }
+
+    public static Vertical vertical(){
+        return com.osiris.desku.Statics.vertical().childGap(true).padding(true);
     }
 
     // Home panel
@@ -81,11 +76,12 @@ public class MainView extends Vertical {
     private final Button btnImportDatabase = button("Import");
     private final Button btnExportDatabase = button("Export");
     private final Button btnMergeDatabasesFromDir = button("Merge from Projects");
-    private final Button btnShowData = button("Show data");
-    private final TextArea txtLogs = textarea().height("70%");
+    private final Button btnShowData = button("Open data folder");
+    private final Vertical txtLogs = vertical().childGap(false)
+        .scrollable(true, "100%", "25vh", "", "");
     // Database panel
     private final Vertical lyDatabase = vertical();
-    private final OptionField dbSelector = optionfield().onValueChange(e -> {
+    private final OptionField dbSelector = optionfield("Select database to show").onValueChange(e -> {
         try {
             changeDatabase(e.value);
             updateChooserJavaProjectDir();
@@ -93,16 +89,16 @@ public class MainView extends Vertical {
             AL.warn(ex);
         }
     });
-    private final Vertical listTables = vertical().scrollable(true, "100%", "70vh", "100%", "2vh");
+    private final Vertical listTables = vertical().scrollable(true, "100%", "70vh", "", "");
     private final TabLayout tabsCode = tablayout();
     private final Button btnGenerate = button("Generate Code");
     private final FileChooser chooserJavaProjectDir = filechooser("test",  "").onValueChange(e -> {
         Database database = null;
         try {
             database = getDatabaseOrFail();
-            database.javaProjectDir = e.value;
+            database.setJavaProjectDirs(e.value);
             Data.save();
-            AL.info("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
+            AL.info("Set Java project directory for database '" + database.name + "' to: " + database.getJavaProjectDirs());
         } catch (Exception ex) {
             AL.warn("Failed to save data for java project dir.", ex);
         }
@@ -128,19 +124,32 @@ public class MainView extends Vertical {
             lyDatabase
         );
 
-        List<String> newLines = new ArrayList<>();
         MainView.asyncIn.listeners.add(line -> {
-            synchronized (newLines) {
-                newLines.add(line);
-            }
-            ui.access(() -> txtLogs.setValue(txtLogs.getValue() + line + "\n"));
+            ui.access(() -> {
+                var comp = horizontal().padding(false);
+                try {
+                    txtLogs.add(comp);
+                    comp.executeJS("comp.innerHTML = `" + new UtilsAnsiHtml().convertAnsiToHtml(line)
+                        .replace("\\", "\\\\") +"`");
+                    txtLogs.scrollToBottom();
+                } catch (IOException e) {
+                    AL.warn(e);
+                }
+            });
         });
-        List<String> newErrLines = new ArrayList<>();
+
         MainView.asyncInErr.listeners.add(line -> {
-            synchronized (newErrLines) {
-                newErrLines.add(line);
-            }
-            ui.access(() -> txtLogs.setValue(txtLogs.getValue() + "[!] " + line + "\n"));
+            ui.access(() -> {
+                var comp = horizontal().padding(false);
+                try {
+                    txtLogs.add(comp);
+                    comp.executeJS("comp.innerHTML = `[!] " + new UtilsAnsiHtml().convertAnsiToHtml(line)
+                        .replace("\\", "\\\\")+"`");
+                    txtLogs.scrollToBottom();
+                } catch (IOException e) {
+                    AL.warn(e);
+                }
+            });
         });
         AL.info("Registered log listener.");
         AL.info("Initialised jSQL-Gen successfully!");
@@ -228,24 +237,28 @@ public class MainView extends Vertical {
             "If a database with the same name exists its replaced by the imported one, thus proceed with caution.\n" +
             "A backup of the current structure will be created though.");
         btnMergeDatabasesFromDir.onClick(click -> {
-            btnMergeDatabasesFromDir.later((__) -> {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = getFormatter();
-                File backup = new File(backupDir+"/backup-all-databases-"+now.format(formatter)+".json");
-                try {
-                    Files.writeString(backup.toPath(), parser.toJson(instance, DataJson.class));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.err.println("Failed to proceed, due to failed backup!");
-                    return;
-                }
-                FileChooser chooser = filechooser();
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = getFormatter();
+            File backup = new File(backupDir+"/backup-all-databases-"+now.format(formatter)+".json");
+            try {
+                Files.writeString(backup.toPath(), parser.toJson(instance, DataJson.class));
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.err.println("Failed to proceed, due to failed backup!");
+                return;
+            }
 
-                File selectedFile = chooser.getDir();
-                AL.info("Importing, please stand by... Dir: " + selectedFile);
+            FileChooser chooser = filechooser();
+            Popup chooserPopup = popup();
+            chooserPopup.content.add(chooser);
+            lyHome.add(chooserPopup);
+
+            chooser.onFileSelected(fileAsRow -> {
+                File selectedFile = fileAsRow.file;
                 if(!selectedFile.isDirectory()){
                     selectedFile = selectedFile.getParentFile();
                 }
+                AL.info("Importing, please stand by... Dir: " + selectedFile);
                 if (selectedFile != null) {
                     File finalSelectedFile = selectedFile;
                     AtomicInteger counter = new AtomicInteger();
@@ -263,7 +276,7 @@ public class MainView extends Vertical {
                                 }
                                 CopyOnWriteArrayList<Database> list = new CopyOnWriteArrayList<>();
                                 list.add(db);
-                                Map<Database, Database> oldAndNewDBsMap;
+                                Map<Database, DBWrapper> oldAndNewDBsMap;
                                 oldAndNewDBsMap = getOldAndNewDBsMap(instance.databases, list);
                                 if(oldAndNewDBsMap.isEmpty()){
                                     boolean exists = false;
@@ -282,11 +295,11 @@ public class MainView extends Vertical {
                                     }
                                 } else // There is a newer version of the db, thus replace
                                     instance.databases.replaceAll(dbOld -> {
-                                        Database dbNew = oldAndNewDBsMap.get(dbOld);
+                                        DBWrapper dbNew = oldAndNewDBsMap.get(dbOld);
                                         if (dbNew != null) {
                                             counter.incrementAndGet();
                                             AL.info("Replaced " + dbOld.name + " with newer db (has table with more changes) from: " + file.getAbsolutePath());
-                                            return dbNew;
+                                            return dbNew.db;
                                         } else return dbOld;
                                     });
                             }
@@ -323,8 +336,9 @@ public class MainView extends Vertical {
             }
         });
 
-        lyHome.horizontalCL().add(dbName, btnCreateDatabase, btnDeleteDatabase);
-        lyHome.horizontalCL().add(btnImportDatabase, btnMergeDatabasesFromDir, btnExportDatabase, btnShowData);
+        lyHome.horizontalCL().childGap(true).add(btnImportDatabase, btnMergeDatabasesFromDir, btnExportDatabase, btnShowData);
+        lyHome.horizontalCL().childGap(true).add(dbName);
+        lyHome.horizontalCL().childGap(true).add(btnCreateDatabase, btnDeleteDatabase);
         lyHome.add(txtLogs);
     }
 
@@ -352,14 +366,20 @@ public class MainView extends Vertical {
             }
         });
         chooserJavaProjectDir.tfSelectedFiles.label.setValue("Select Java project directory");
-        chooserJavaProjectDir.tfSelectedFiles.setTooltip(("Select the directory of your Java project. Classes then will be generated there" +
-                " together with a copy of the schema. Everything gets overwritten, except critical information in the database class."));
+        chooserJavaProjectDir.tfSelectedFiles.setTooltip(("(Optional) Select the directory of your Java project. Classes then will be generated there" +
+                " together with a copy of the schema. Everything gets overwritten, except critical information in the database class." +
+            " If not selected, files will be only shown in the \"Code\" tab."));
         updateChooserJavaProjectDir();
 
         lyDatabase.add(dbSelector);
-        lyDatabase.add(listTables);
         lyDatabase.add(btnGenerate);
-        lyDatabase.add(tabsCode);
+        lyDatabase.add(chooserJavaProjectDir);
+        TabLayout tabs = new TabLayout();
+        tabs.addTabAndPage("Tables", listTables);
+        tabs.addTabAndPage("Code", tabsCode);
+        lyDatabase.add(tabs);
+        //lyDatabase.add(listTables);
+        //lyDatabase.add(tabsCode);
     }
 
     private void updateChooserJavaProjectDir() {
@@ -386,9 +406,16 @@ public class MainView extends Vertical {
             if(isChanged && !javaProjectDirs.isEmpty()){
                 database.setJavaProjectDirs(javaProjectDirs);
                 Data.save();
-                AL.info("Set Java project directory for database '" + database.name + "' to: " + database.javaProjectDir);
+                AL.info("Set Java project directory for database '" + database.name + "' to: " + javaProjectDirs);
             }
-            chooserJavaProjectDir.setValue(database.javaProjectDir);
+            if(!javaProjectDirs.isEmpty()){ // Update UI
+                String s = "";
+                for (File javaProjectDir : javaProjectDirs) {
+                    s += javaProjectDir+"; ";
+                }
+                chooserJavaProjectDir.tfSelectedFiles.setValue(s);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -410,7 +437,7 @@ public class MainView extends Vertical {
     }
 
     public void updateDatabaseSelector() {
-        dbSelector.items.removeAll();
+        dbSelector.items.body.removeAll();
         String lastValue = dbSelector.getValue();
         String[] dbNames = new String[instance.databases.size()];
         CopyOnWriteArrayList<Database> databases = instance.databases;
@@ -418,7 +445,7 @@ public class MainView extends Vertical {
             Database db = databases.get(i);
             dbNames[i] = db.name;
         }
-        dbSelector.add(dbNames);
+        dbSelector.addItems(dbNames);
         if (lastValue != null && !lastValue.strip().isEmpty())
             dbSelector.setValue(lastValue);
     }
@@ -488,59 +515,69 @@ public class MainView extends Vertical {
 
         List<File> files = new ArrayList<>();
         for (Database db : databases) {
-            Data.JavaProjectGenDir dir = new Data.JavaProjectGenDir(outputDir + "/" + db.name);
-            if (db.javaProjectDir != null)
-                dir = getJavaProjectGenDir(db);
-            dir.mkdirs();
-            if (db.javaProjectDir != null) {
-                File jsonData = getDatabaseStructureFile(db, dir);
-                jsonData.createNewFile();
-                StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
-                Data.parser.toJson(db, sw);
-                String out = sw.toString();
-                //AL.info(out);
-                Files.writeString(jsonData.toPath(), out);
+            List<Data.JavaProjectGenDir> dirs = new ArrayList<>();
+            dirs.add(new Data.JavaProjectGenDir(outputDir + "/" + db.name));
+            if (!db.getJavaProjectDirs().isEmpty()){
+                dirs = getJavaProjectGenDir(db);
             }
-            File databaseFile = getDatabaseFile(dir);
-            String url = "\"jdbc:mysql://localhost:3306/" + db.name+"\"";
-            String rawUrl = "getRawDbUrlFrom(url)";
-            String name = "\""+db.name+"\"";
-            String username = "\"\"";
-            String password = "\"\"";
-            if (databaseFile.exists()) {
-                CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
-                for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
-                    VariableDeclarator var = field.getVariable(0);
-                    if (var.getInitializer().isPresent()) {
-                        Expression varInit = var.getInitializer().get();
-                        if (Objects.equals(var.getName().asString(), "rawUrl"))
-                            if(varInit.isStringLiteralExpr()) rawUrl = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else rawUrl = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "url"))
-                            if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else url = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "name"))
-                            if(varInit.isStringLiteralExpr()) name = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else name = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "username"))
-                            if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else username = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "password"))
-                            if(varInit.isStringLiteralExpr()) password = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else password = varInit.toString();
-                    }
+            for (JavaProjectGenDir dir : dirs) {
+                dir.mkdirs();
+            }
+
+            if (!db.getJavaProjectDirs().isEmpty()) {
+                // Write json structure data
+                for (File jsonData : getDatabaseStructureFile(db, dirs)) {
+                    jsonData.createNewFile();
+                    StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
+                    Data.parser.toJson(db, sw);
+                    String out = sw.toString();
+                    //AL.info(out);
+                    Files.writeString(jsonData.toPath(), out);
                 }
             }
-            databaseFile.createNewFile();
-            GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
-            files.add(databaseFile);
-            JavaCodeGenerator.prepareTables(db);
-            for (Table t : db.tables) {
-                File javaFile = new File(dir + "/" + t.name + ".java");
-                javaFile.createNewFile();
-                files.add(javaFile);
-                Files.writeString(javaFile.toPath(), (db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+            // Write Database class files and Tables files
+            for (JavaProjectGenDir javaProjectGenDir : dirs) {
+                File databaseFile = getDatabaseFile(javaProjectGenDir);
+                String url = "\"jdbc:mysql://localhost:3306/" + db.name+"\"";
+                String rawUrl = "getRawDbUrlFrom(url)";
+                String name = "\""+db.name+"\"";
+                String username = "\"\"";
+                String password = "\"\"";
+                if (databaseFile.exists()) {
+                    CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
+                    for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
+                        VariableDeclarator var = field.getVariable(0);
+                        if (var.getInitializer().isPresent()) {
+                            Expression varInit = var.getInitializer().get();
+                            if (Objects.equals(var.getName().asString(), "rawUrl"))
+                                if(varInit.isStringLiteralExpr()) rawUrl = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else rawUrl = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "url"))
+                                if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else url = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "name"))
+                                if(varInit.isStringLiteralExpr()) name = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else name = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "username"))
+                                if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else username = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "password"))
+                                if(varInit.isStringLiteralExpr()) password = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else password = varInit.toString();
+                        }
+                    }
+                }
+                databaseFile.createNewFile();
+                GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
+                files.add(databaseFile);
+                JavaCodeGenerator.prepareTables(db);
+                for (Table t : db.tables) {
+                    File javaFile = new File(javaProjectGenDir + "/" + t.name + ".java");
+                    javaFile.createNewFile();
+                    files.add(javaFile);
+                    Files.writeString(javaFile.toPath(), (!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
                         JavaCodeGenerator.generateTableFile(javaFile, t, db));
+                }
             }
         }
         return files;
@@ -554,14 +591,14 @@ public class MainView extends Vertical {
             Table t = tables.get(i);
             Vertical wrapperTable = new Vertical();
             listTables.add(wrapperTable);
-            SmartLayout paneTable = new SmartLayout();
+            Horizontal paneTable = new Horizontal();
             paneTable.sty("background-color",
-                "rgba("+new Random().nextFloat()+","+ new Random().nextFloat()+","+ new Random().nextFloat()+","+ 0.7+")"
+                "rgba("+new Random().nextInt(250)+","+ new Random().nextInt(250)+","+ new Random().nextInt(250)+","+ 0.7+")"
             );
             wrapperTable.add(paneTable);
             var choiceAction = optionfield();
             paneTable.add(choiceAction);
-            choiceAction.add("Delete", "Duplicate");
+            choiceAction.addItems("Delete", "Duplicate");
             int finalI = i;
             choiceAction.onValueChange(event -> {
                 try {
@@ -581,7 +618,7 @@ public class MainView extends Vertical {
                     e.printStackTrace();
                 }
             });
-            TextField tableName = new TextField(t.name);
+            TextField tableName = new TextField().setValue(t.name);
             paneTable.add(tableName);
             tableName.setTooltip("The table name. Changes are auto-saved.");
             tableName.onValueChange(e -> { // enter pressed event
@@ -637,12 +674,13 @@ public class MainView extends Vertical {
         }
         Vertical wrapper = new Vertical();
         listTables.add(wrapper);
-        SmartLayout lastItem = new SmartLayout();
+        Horizontal lastItem = new Horizontal();
         wrapper.add(lastItem);
         TextField tableName = new TextField();
-        lastItem.add(tableName);
+        var btnAddNewTable = new Button("Add");
+        lastItem.add(new Horizontal().add(btnAddNewTable, tableName).childGap(true));
         tableName.label.setValue("New table name");
-        tableName.onValueChange(event -> { // enter pressed event
+        btnAddNewTable.onClick(event -> { // enter pressed event
             try {
                 addNewTable(dbName, tableName.getValue());
             } catch (Exception e) {
@@ -688,13 +726,13 @@ public class MainView extends Vertical {
 
 
     private void updateColumnsList(Vertical listColumns, String dbName, String tableName) throws IOException {
-        listColumns.children.clear();
+        listColumns.removeAll();
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         for (int i = 0; i < t.columns.size(); i++) {
             Column col = t.columns.get(i);
-            Horizontal item = new Horizontal();
+            Horizontal item = new Horizontal().childGap(true);
             listColumns.add(item);
             Button btnMoveUp = button("˄");
             item.add(btnMoveUp);
@@ -741,16 +779,15 @@ public class MainView extends Vertical {
                     e.printStackTrace();
                 }
             });
-            TextField colName = new TextField(col.name);
-            SuggestionTextField colDefinition = new SuggestionTextField(col.definition);
+            TextField colName = new TextField("Column name", col.name);
+            SuggestionTextField colDefinition = new SuggestionTextField("Column definition", col.definition);
             for (ColumnType colType : ColumnType.allTypes) {
                 colDefinition.getEntries().addAll(List.of(colType.inSQL));
             }
-            TextField colComment = new TextField(col.comment);
+            TextField colComment = new TextField("Column comment", col.comment);
 
             item.add(colName);
             if (Objects.equals(col.name, "id")) colName.enable(false);
-            colName.label.setValue("Column name");
             colName.setTooltip(("Column name. Changes are auto-saved."));
             colName.onValueChange(event -> {
                 try {
@@ -762,7 +799,6 @@ public class MainView extends Vertical {
 
 
             item.add(colDefinition);
-            colDefinition.textField.label.setValue("Column definition");
             colDefinition.setTooltip("Column definition. Changes are auto-saved.");
             colDefinition.textField.onValueChange(event -> {
                 try {
@@ -774,7 +810,6 @@ public class MainView extends Vertical {
 
 
             item.add(colComment);
-            colComment.label.setValue("Column comment");
             colComment.setTooltip("Column comment. Changes are auto-saved.");
             colComment.onValueChange(event -> {
                 try {
@@ -784,12 +819,14 @@ public class MainView extends Vertical {
                 }
             });
         }
-        TextField colName = new TextField();
-        listColumns.add(colName);
-        colName.label.setValue("New column name");
-        colName.onValueChange(event -> { // enter pressed event
+
+        var btnAddNewCol = button("Add").width("fit-content");
+        TextField colName = new TextField("New column name");
+        listColumns.add(horizontal().add(btnAddNewCol, colName));
+        btnAddNewCol.onClick(event -> { // enter pressed event
             try {
                 addNewColumn(listColumns, dbName, t.name, colName.getValue(), null);
+                colName.setValue("");
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -14,7 +14,7 @@ public class GenDatabaseFile {
         databaseFile.getParentFile().mkdirs();
         databaseFile.createNewFile();
 
-        StringBuilder s = new StringBuilder((db.javaProjectDir != null ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+        StringBuilder s = new StringBuilder((!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
                 "import java.sql.*;\n" +
                 "import java.util.*;\n\n" +
                 "/*\n" +
