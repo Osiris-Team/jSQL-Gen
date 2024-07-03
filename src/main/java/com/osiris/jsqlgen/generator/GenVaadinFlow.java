@@ -92,6 +92,12 @@ public class GenVaadinFlow {
                 " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
                 "\n\n");
 
+        // Create static, table related components
+        s.append("public static ComboBox<"+t.name+"> newTableComboBox(){\n");
+        s.append(getComboBoxWithTableContent(t, "comboBox", t.name).replaceFirst("public", ""));
+        s.append("return comboBox;\n" +
+                "}\n\n");
+
 
         // Create the class first
         s.append("    public static class Comp extends VerticalLayout{\n" +
@@ -139,16 +145,7 @@ public class GenVaadinFlow {
                     isColumnRef = true;
                     colName = colName.substring(0, colName.toLowerCase().lastIndexOf("id"));
                     fieldName = "cb" + colName;
-                    s.append("        public ComboBox<"+refTable.name+"> " + fieldName + " = new ComboBox<"+refTable.name+">(\"" + colName + "\");\n");
-                    s.append("        {"+fieldName+".setItems("+refTable.name+".get());\n" +
-                            "            "+fieldName+".setRenderer(new ComponentRenderer<>(obj -> {\n" +
-                            "                Div div = new Div();\n"+
-                            "                div.setText(obj.toMinimalPrintString());\n" +
-                            "            return div;}));\n" +
-                            "            "+fieldName+".setItemLabelGenerator(obj -> {\n" +
-                            "                return obj.toMinimalPrintString();\n" +
-                            "            });\n" +
-                            "        }\n");
+                    s.append(getComboBoxWithTableContent(refTable, fieldName, colName));
                 } else{
                     fieldName = "nf" + colName;
                     s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
@@ -301,6 +298,21 @@ public class GenVaadinFlow {
                 "    }\n" +
                 "\n");
 
+        return s.toString();
+    }
+
+    private static String getComboBoxWithTableContent(Table t, String fieldName, String colName) {
+        StringBuilder s = new StringBuilder();
+        s.append("        public ComboBox<"+ t.name+"> " + fieldName + " = new ComboBox<"+ t.name+">(\"" + colName + "\");\n");
+        s.append("        {"+ fieldName +".setItems("+ t.name+".get());\n" +
+                "            "+ fieldName +".setRenderer(new ComponentRenderer<>(obj -> {\n" +
+                "                Div div = new Div();\n"+
+                "                div.setText(obj.toMinimalPrintString());\n" +
+                "            return div;}));\n" +
+                "            "+ fieldName +".setItemLabelGenerator(obj -> {\n" +
+                "                return obj.toMinimalPrintString();\n" +
+                "            });\n" +
+                "        }\n");
         return s.toString();
     }
 

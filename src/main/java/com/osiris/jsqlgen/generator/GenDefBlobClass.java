@@ -10,7 +10,7 @@ public class GenDefBlobClass {
         imports.add("import java.sql.Blob;");
         imports.add("import java.sql.SQLException;");
 
-        return "class DefaultBlob implements Blob{\n" +
+        return "public static class DefaultBlob implements Blob{\n" +
                 "    private byte[] data;\n" +
                 "\n" +
                 "    // Constructor that accepts a byte array\n" +
