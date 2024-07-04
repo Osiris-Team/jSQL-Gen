@@ -110,6 +110,17 @@ public class GenVaadinFlow {
                     "}\n\n");
         }
 
+        // Create regular methods
+        s.append("" +
+                "    /**\n" +
+                "     * Gets executed later if {@link #isOnlyInMemory()}, otherwise provided\n" +
+                "     * code gets executed directly.\n" +
+                "     */" +
+                "    public void whenReady(Consumer<"+t.name+"> code) {\n" +
+                "        if(isOnlyInMemory()) onAddThisV(obj -> code.accept(obj));\n" +
+                "        else code.accept(this);\n" +
+                "    }\n\n");
+
 
         // Create the class first
         s.append("    public static class Comp extends VerticalLayout{\n" +
