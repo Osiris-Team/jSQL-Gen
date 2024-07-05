@@ -50,6 +50,11 @@ public class GenVaadinFlow {
         importsList.add("import java.util.function.Function;");
         importsList.add("import java.util.function.Consumer;");
         importsList.add("import com.vaadin.flow.component.UI;");
+
+        // Generate needed classes
+        s.append(genBooleanSelectClass(importsList));
+
+
         s.append("" +
                 "// Executed for all objects\n" +
                 "public static Consumer<"+t.name+"> onCreateV(Consumer<"+t.name+"> code){\n" +
@@ -116,16 +121,15 @@ public class GenVaadinFlow {
                 "     * Gets executed later if {@link #isOnlyInMemory()}, otherwise provided\n" +
                 "     * code gets executed directly.\n" +
                 "     */" +
-                "    public void whenReady(Consumer<"+t.name+"> code) {\n" +
+                "    public void whenReadyV(Consumer<"+t.name+"> code) {\n" +
                 "        if(isOnlyInMemory()) onAddThisV(obj -> code.accept(obj));\n" +
                 "        else code.accept(this);\n" +
                 "    }\n\n");
 
 
+
         // Create the class first
         s.append("    public static class Comp extends VerticalLayout{\n" +
-                "\n" +
-                genBooleanSelectClass(importsList) +
                 "\n" +
                 "        public " + t.name + " data"+t.name+";\n" +
                 "        public " + t.name + " data;\n" +

@@ -177,7 +177,7 @@ public class JavaCodeGenerator {
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "\n" +
-                "private static boolean isEqual("+t.name+" obj1, "+t.name+" obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }\n");
+                "private static boolean isEqual("+t.name+" obj1, "+t.name+" obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }\n");;
 
         if (t.isDebug)
             classContentBuilder.append("    /**\n" +
@@ -269,7 +269,7 @@ public class JavaCodeGenerator {
         classContentBuilder.append("}\n\n"); // Close create method
 
         // CREATE CREATE METHODS:
-        classContentBuilder.append(GenCreateMethods.s(t, tNameQuoted, minimalConstructor, hasMoreFields));
+        classContentBuilder.append(GenCreateMethods.s(t, tNameQuoted, constructor, minimalConstructor, hasMoreFields));
 
 
         // CREATE COUNT METHOD:
@@ -572,6 +572,7 @@ public class JavaCodeGenerator {
         StringBuilder paramsBuilder = new StringBuilder();
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
+        Column idCol = columns.get(0);
         for (Column col : columns) {
             paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
             paramsWithoutTypesBuilder.append(col.name + ", ");
@@ -579,8 +580,11 @@ public class JavaCodeGenerator {
         }
         Constructor constructor = new Constructor();
         constructor.params = paramsBuilder.toString();
+        constructor.paramsWithoutId = constructor.params.replace((idCol.type.inJava + " " + idCol.name + ", "), "");
         if (constructor.params.endsWith(", "))
             constructor.params = constructor.params.substring(0, constructor.params.length() - 2);
+        if (constructor.paramsWithoutId.endsWith(", "))
+            constructor.paramsWithoutId = constructor.paramsWithoutId.substring(0, constructor.paramsWithoutId.length() - 2);
 
         constructor.fieldAssignments = fieldsBuilder.toString();
 
@@ -605,6 +609,7 @@ public class JavaCodeGenerator {
         StringBuilder paramsBuilder = new StringBuilder();
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
+        Column idCol = columns.get(0);
         for (Column col : columns) {
             if (containsIgnoreCase(col.definition, "NOT NULL")) {
                 paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
@@ -614,8 +619,11 @@ public class JavaCodeGenerator {
         }
         Constructor constructor = new Constructor();
         constructor.params = paramsBuilder.toString();
+        constructor.paramsWithoutId = constructor.params.replace((idCol.type.inJava + " " + idCol.name + ", "), "");
         if (constructor.params.endsWith(", "))
             constructor.params = constructor.params.substring(0, constructor.params.length() - 2);
+        if (constructor.paramsWithoutId.endsWith(", "))
+            constructor.paramsWithoutId = constructor.paramsWithoutId.substring(0, constructor.paramsWithoutId.length() - 2);
 
         constructor.fieldAssignments = fieldsBuilder.toString();
 
@@ -705,6 +713,7 @@ public class JavaCodeGenerator {
     public static class Constructor {
         public String asString;
         public String params;
+        public String paramsWithoutId;
         public String paramsWithoutTypes;
         public String fieldAssignments;
     }
