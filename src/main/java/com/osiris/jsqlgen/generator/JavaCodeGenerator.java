@@ -76,7 +76,7 @@ public class JavaCodeGenerator {
                             }
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     throw new RuntimeException("Invalid SQL found in "+db.name+"."+t.name+"."+col.name+": "+e.getMessage(), e);
                 }
             }

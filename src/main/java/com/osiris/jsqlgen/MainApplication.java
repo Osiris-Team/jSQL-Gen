@@ -565,27 +565,31 @@ public class MainApplication extends javafx.application.Application {
             String username = "\"\"";
             String password = "\"\"";
             if (databaseFile.exists()) {
-                CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
-                for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
-                    VariableDeclarator var = field.getVariable(0);
-                    if (var.getInitializer().isPresent()) {
-                        Expression varInit = var.getInitializer().get();
-                        if (Objects.equals(var.getName().asString(), "rawUrl"))
-                            if(varInit.isStringLiteralExpr()) rawUrl = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else rawUrl = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "url"))
-                            if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else url = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "name"))
-                            if(varInit.isStringLiteralExpr()) name = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else name = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "username"))
-                            if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else username = varInit.toString();
-                        else if (Objects.equals(var.getName().asString(), "password"))
-                            if(varInit.isStringLiteralExpr()) password = "\""+varInit.asStringLiteralExpr().asString()+"\"";
-                            else password = varInit.toString();
+                try{
+                    CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
+                    for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
+                        VariableDeclarator var = field.getVariable(0);
+                        if (var.getInitializer().isPresent()) {
+                            Expression varInit = var.getInitializer().get();
+                            if (Objects.equals(var.getName().asString(), "rawUrl"))
+                                if(varInit.isStringLiteralExpr()) rawUrl = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else rawUrl = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "url"))
+                                if(varInit.isStringLiteralExpr()) url = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else url = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "name"))
+                                if(varInit.isStringLiteralExpr()) name = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else name = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "username"))
+                                if(varInit.isStringLiteralExpr()) username = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else username = varInit.toString();
+                            else if (Objects.equals(var.getName().asString(), "password"))
+                                if(varInit.isStringLiteralExpr()) password = "\""+varInit.asStringLiteralExpr().asString()+"\"";
+                                else password = varInit.toString();
+                        }
                     }
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed parsing file: "+databaseFile, e);
                 }
             }
             databaseFile.createNewFile();
