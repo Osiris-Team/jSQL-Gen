@@ -37,6 +37,8 @@ public class GenRemoveMethods {
 
     public static String s(Database db, Table t, String tNameQuoted) {
 
+        Column idCol = t.columns.get(0);
+
         LinkedHashMap<Table, List<Column>> allRefs = getAllRefs(db, t);
         LinkedHashMap<Table, List<Column>> allDirectRefs = getAllDirectRefs(db, t);
 
@@ -49,14 +51,14 @@ public class GenRemoveMethods {
         StringBuilder sb = new StringBuilder();
         sb.append(
                 "/**\n" +
-                        "Unsets its references (sets them to -1) and deletes the provided object from the database.\n" +
+                        "Unsets its references (sets them to -1/'') and deletes the provided object from the database.\n" +
                         "*/\n" +
                         "public static void remove(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                         "remove(obj, true, Database.isRemoveRefs);\n" +
                         "}\n" +
                 "/**\n" +
                         " * Deletes the provided object from the database.\n" +
-                        " * @param unsetRefs If true, sets ids in other tables to -1.\n" +
+                        " * @param unsetRefs If true, sets ids in other tables to -1/''.\n" +
                         " * @param removeRefs !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!! If true removes the complete obj/row(s) in all tables that reference/contain this id.\n" +
                         " *                   This is recursive. It's highly recommended to call removeRefs() before instead, which allows to explicitly exclude some tables.\n" +
                         "*/\n" +
@@ -108,11 +110,16 @@ public class GenRemoveMethods {
                 "     */\n" +
                 "public static void unsetRefs("+paramsDirect+") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n");
         allDirectRefs.forEach((t1, columns) -> {
-            for (Column col : columns) {
-                String param = getParamName(t1, col);
-                sb.append("if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
-                        "  for("+t1.name+" obj1 : results) {obj1."+col.name+" = -1; obj1.update();};\n" +
-                        "}, totalCount -> {}, 100, "+t1.name+".where"+firstToUpperCase(col.name)+"().is(obj.id));}\n");
+            for (Column refCol : columns) {
+                String param = getParamName(t1, refCol);
+                String s = "if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
+                        "  for("+t1.name+" refObj : results) {refObj."+refCol.name+" = " +
+                        (refCol.type.isText() ? "\"\"" : "-1") +
+                        "; refObj.update();};\n" +
+                        "}, totalCount -> {}, 100, "+t1.name+".where"+firstToUpperCase(refCol.name)+"().is(obj."+idCol.name+"));}";
+                if(!refCol.type.equals(idCol.type)) s = "/* Possibly not a primary id, since types do not match, thus ignored! " +
+                        t1.name+"."+refCol.name+" "+refCol.type.inJava +" != "+t.name+"."+idCol.name+" "+idCol.type.inJava+" \n" + s + "*/";
+                sb.append(s + "\n\n");
             }
         });
         sb.append("    }\n\n");
@@ -124,17 +131,20 @@ public class GenRemoveMethods {
                 "public static void removeRefs("+params+") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "// Take care of direct refs and indirect refs\n");
         allDirectRefs.forEach((t1, columns) -> {
-            for (Column col : columns) {
-                String param = getParamName(t1, col);
+            for (Column refCol : columns) {
+                String param = getParamName(t1, refCol);
                 LinkedHashMap<Table, List<Column>> allRefs1 = getAllRefs(db, t1);
                 String params1 = genRefParams(t1, allRefs1);
                 params1 = params1.substring(params1.indexOf("obj"))
-                        .replaceFirst("(obj)", "obj1")
+                        .replaceFirst("(obj)", "refObj")
                         .replaceAll("( boolean )", "");
                 //String paramsInvoke1 = genRefParamsInvoke(t1, allRefs1).replaceFirst("(obj)", "obj1");
-                sb.append("if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
-                        "  for("+t1.name+" obj1 : results) {"+t1.name+".removeRefs("+params1.replaceAll("Class<[^>]+>", "")+");obj1.remove();};\n" +
-                        "}, totalCount -> {}, 100, "+t1.name+".where"+firstToUpperCase(col.name)+"().is(obj.id));}\n\n");
+                String s = "if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
+                        "  for("+t1.name+" refObj : results) {"+t1.name+".removeRefs("+params1.replaceAll("Class<[^>]+>", "")+");refObj.remove();};\n" +
+                        "}, totalCount -> {}, 100, "+t1.name+".where"+firstToUpperCase(refCol.name)+"().is(obj."+idCol.name+"));}\n\n";
+                if(!refCol.type.equals(idCol.type)) s = "/* Possibly not a primary id, since types do not match, thus ignored! " +
+                        t1.name+"."+refCol.name+" "+refCol.type.inJava +" != "+t.name+"."+idCol.name+" "+idCol.type.inJava+" \n" + s + "*/";
+                sb.append(s + "\n\n");
                 //sb.append(t1.name+".remove(\"WHERE "+col.name+"=?\", obj.id);");
             }
         });

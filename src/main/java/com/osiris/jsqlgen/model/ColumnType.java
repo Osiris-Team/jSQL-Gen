@@ -2,6 +2,9 @@ package com.osiris.jsqlgen.model;
 
 import com.osiris.jsqlgen.utils.UString;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public class ColumnType {
     // INTEGER TYPES:
     public static ColumnType BIT = new ColumnType(new String[]{"BIT", "BOOLEAN"},
@@ -129,6 +132,29 @@ public class ColumnType {
         return null;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ColumnType that = (ColumnType) o;
+        return Arrays.equals(inSQL, that.inSQL) && Objects.equals(inJava, that.inJava) && Objects.equals(inJavaWithPackage, that.inJavaWithPackage) && Objects.equals(inJBDCSet, that.inJBDCSet) && Objects.equals(inJBDCGet, that.inJBDCGet);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(inSQL);
+        result = 31 * result + Objects.hashCode(inJava);
+        result = 31 * result + Objects.hashCode(inJavaWithPackage);
+        result = 31 * result + Objects.hashCode(inJBDCSet);
+        result = 31 * result + Objects.hashCode(inJBDCGet);
+        return result;
+    }
+
+    public boolean equalsInJava(ColumnType otherType){
+        if(this.inJava.equals(otherType.inJava)) return true;
+        return false;
+    }
 
 
     // TODO SPATIAL DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html

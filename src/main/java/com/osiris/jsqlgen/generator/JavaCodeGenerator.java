@@ -129,7 +129,14 @@ public class JavaCodeGenerator {
             importsList.add("import java.util.Arrays;");
 
         StringBuilder classContentBuilder = new StringBuilder();
-        classContentBuilder.append("/**\n" +
+        classContentBuilder.append("/**\n");
+        classContentBuilder.append("Table "+t.name+" with id "+t.id+" and "+t.changes.size()+" changes/version. <br>\n" +
+                "Structure (" + t.columns.size() + " fields/columns): <br>\n");
+        for (Column col : t.columns) {
+            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition + " <br>\n");
+        }
+        classContentBuilder.append("\n");
+        classContentBuilder.append(
                 "Generated class by <a href=\"https://github.com/Osiris-Team/jSQL-Gen\">jSQL-Gen</a>\n" +
                 "that contains static methods for fetching/updating data from the " + tNameQuoted + " table.\n" +
                 "A single object/instance of this class represents a single row in the table\n" +
@@ -153,11 +160,7 @@ public class JavaCodeGenerator {
                         - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
                         will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
                         """ : "") +
-                "<br>\n" +
-                "Structure (" + t.columns.size() + " fields/columns): <br>\n");
-        for (Column col : t.columns) {
-            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition + " <br>\n");
-        }
+                "<br>\n");
         classContentBuilder.append(
                 "*/\n" +
                         "public class " + t.name + " implements Database.Row{\n"); // Open class
@@ -694,7 +697,8 @@ public class JavaCodeGenerator {
                 } else if (col.type.isDateOrTime()) {
                     if(containsIgnoreCase(val, "NOW")
                             || containsIgnoreCase(val, "CURDATE")
-                            || containsIgnoreCase(val, "CURTIME")) val = "System.currentTimeMillis()";
+                            || containsIgnoreCase(val, "CURTIME")
+                            || containsIgnoreCase(val, "CURRENT_TIMESTAMP")) val = "System.currentTimeMillis()";
                     if (col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
                     else fieldsBuilder.append(objName + "." + col.name + "=new " + col.type.inJava + "(" + val + "); ");
                 } else if (col.type.isBlob()) {

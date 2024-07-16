@@ -128,6 +128,7 @@ even execute get/add/update/delete. Provided in the generated Database class.
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
 - Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
+- Direct modifications of the database by a third-party program breaks stuff.
 - Java Code Generator: No support for `FOREIGN KEY` / references between tables. However note that the idea of references is supported (columns named tableNameId are refs).
 - Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
 - Since there is a global id counter for all tables and columns, in each application, collaboration and syncing changes might be difficult. 
