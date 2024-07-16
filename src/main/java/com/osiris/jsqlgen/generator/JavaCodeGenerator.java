@@ -13,6 +13,8 @@ import net.sf.jsqlparser.statement.alter.AlterExpression;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.osiris.jsqlgen.utils.UString.*;
