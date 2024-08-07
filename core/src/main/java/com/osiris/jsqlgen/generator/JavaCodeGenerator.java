@@ -13,6 +13,8 @@ import net.sf.jsqlparser.statement.alter.AlterExpression;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.osiris.jsqlgen.utils.UString.*;
@@ -76,7 +78,7 @@ public class JavaCodeGenerator {
                             }
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     throw new RuntimeException("Invalid SQL found in "+db.name+"."+t.name+"."+col.name+": "+e.getMessage(), e);
                 }
             }
@@ -129,7 +131,14 @@ public class JavaCodeGenerator {
             importsList.add("import java.util.Arrays;");
 
         StringBuilder classContentBuilder = new StringBuilder();
-        classContentBuilder.append("/**\n" +
+        classContentBuilder.append("/**\n");
+        classContentBuilder.append("Table "+t.name+" with id "+t.id+" and "+t.changes.size()+" changes/version. <br>\n" +
+                "Structure (" + t.columns.size() + " fields/columns): <br>\n");
+        for (Column col : t.columns) {
+            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition + " <br>\n");
+        }
+        classContentBuilder.append("\n");
+        classContentBuilder.append(
                 "Generated class by <a href=\"https://github.com/Osiris-Team/jSQL-Gen\">jSQL-Gen</a>\n" +
                 "that contains static methods for fetching/updating data from the " + tNameQuoted + " table.\n" +
                 "A single object/instance of this class represents a single row in the table\n" +
@@ -153,11 +162,7 @@ public class JavaCodeGenerator {
                         - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
                         will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
                         """ : "") +
-                "<br>\n" +
-                "Structure (" + t.columns.size() + " fields/columns): <br>\n");
-        for (Column col : t.columns) {
-            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition + " <br>\n");
-        }
+                "<br>\n");
         classContentBuilder.append(
                 "*/\n" +
                         "public class " + t.name + " implements Database.Row{\n"); // Open class
@@ -177,7 +182,7 @@ public class JavaCodeGenerator {
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
                 "\n" +
-                "private static boolean isEqual("+t.name+" obj1, "+t.name+" obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }\n");
+                "private static boolean isEqual("+t.name+" obj1, "+t.name+" obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }\n");;
 
         if (t.isDebug)
             classContentBuilder.append("    /**\n" +
@@ -269,7 +274,7 @@ public class JavaCodeGenerator {
         classContentBuilder.append("}\n\n"); // Close create method
 
         // CREATE CREATE METHODS:
-        classContentBuilder.append(GenCreateMethods.s(t, tNameQuoted, minimalConstructor, hasMoreFields));
+        classContentBuilder.append(GenCreateMethods.s(t, tNameQuoted, constructor, minimalConstructor, hasMoreFields));
 
 
         // CREATE COUNT METHOD:
@@ -572,6 +577,7 @@ public class JavaCodeGenerator {
         StringBuilder paramsBuilder = new StringBuilder();
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
+        Column idCol = columns.get(0);
         for (Column col : columns) {
             paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
             paramsWithoutTypesBuilder.append(col.name + ", ");
@@ -579,8 +585,11 @@ public class JavaCodeGenerator {
         }
         Constructor constructor = new Constructor();
         constructor.params = paramsBuilder.toString();
+        constructor.paramsWithoutId = constructor.params.replace((idCol.type.inJava + " " + idCol.name + ", "), "");
         if (constructor.params.endsWith(", "))
             constructor.params = constructor.params.substring(0, constructor.params.length() - 2);
+        if (constructor.paramsWithoutId.endsWith(", "))
+            constructor.paramsWithoutId = constructor.paramsWithoutId.substring(0, constructor.paramsWithoutId.length() - 2);
 
         constructor.fieldAssignments = fieldsBuilder.toString();
 
@@ -605,6 +614,7 @@ public class JavaCodeGenerator {
         StringBuilder paramsBuilder = new StringBuilder();
         StringBuilder paramsWithoutTypesBuilder = new StringBuilder();
         StringBuilder fieldsBuilder = new StringBuilder();
+        Column idCol = columns.get(0);
         for (Column col : columns) {
             if (containsIgnoreCase(col.definition, "NOT NULL")) {
                 paramsBuilder.append(col.type.inJava + " " + col.name + ", ");
@@ -614,8 +624,11 @@ public class JavaCodeGenerator {
         }
         Constructor constructor = new Constructor();
         constructor.params = paramsBuilder.toString();
+        constructor.paramsWithoutId = constructor.params.replace((idCol.type.inJava + " " + idCol.name + ", "), "");
         if (constructor.params.endsWith(", "))
             constructor.params = constructor.params.substring(0, constructor.params.length() - 2);
+        if (constructor.paramsWithoutId.endsWith(", "))
+            constructor.paramsWithoutId = constructor.paramsWithoutId.substring(0, constructor.paramsWithoutId.length() - 2);
 
         constructor.fieldAssignments = fieldsBuilder.toString();
 
@@ -686,7 +699,8 @@ public class JavaCodeGenerator {
                 } else if (col.type.isDateOrTime()) {
                     if(containsIgnoreCase(val, "NOW")
                             || containsIgnoreCase(val, "CURDATE")
-                            || containsIgnoreCase(val, "CURTIME")) val = "System.currentTimeMillis()";
+                            || containsIgnoreCase(val, "CURTIME")
+                            || containsIgnoreCase(val, "CURRENT_TIMESTAMP")) val = "System.currentTimeMillis()";
                     if (col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
                     else fieldsBuilder.append(objName + "." + col.name + "=new " + col.type.inJava + "(" + val + "); ");
                 } else if (col.type.isBlob()) {
@@ -705,6 +719,7 @@ public class JavaCodeGenerator {
     public static class Constructor {
         public String asString;
         public String params;
+        public String paramsWithoutId;
         public String paramsWithoutTypes;
         public String fieldAssignments;
     }

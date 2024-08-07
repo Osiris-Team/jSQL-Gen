@@ -42,6 +42,16 @@ public class GenWhereClass {
                 "\n" +
                 "        /**\n" +
                 "         * Executes the generated SQL statement\n" +
+                "         * and returns the first object matching the query or null if none.\n" +
+                "         */\n" +
+                "        public " + table.name + " getFirstOrNull() " + (table.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "            List<"+table.name+"> results = get();\n" +
+                "            if(results.isEmpty()) return null;\n" +
+                "            else return results.get(0);\n" +
+                "        }\n" +
+                "\n" +
+                "        /**\n" +
+                "         * Executes the generated SQL statement\n" +
                 "         * and returns the size of the list of objects matching the query.\n" +
                 "         */\n" +
                 "        public int count() " + (table.isNoExceptions ? "" : "throws Exception") + " {\n" +

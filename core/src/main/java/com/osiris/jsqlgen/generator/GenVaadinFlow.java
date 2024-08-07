@@ -3,6 +3,7 @@ package com.osiris.jsqlgen.generator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -49,6 +50,11 @@ public class GenVaadinFlow {
         importsList.add("import java.util.function.Function;");
         importsList.add("import java.util.function.Consumer;");
         importsList.add("import com.vaadin.flow.component.UI;");
+
+        // Generate needed classes
+        s.append(genBooleanSelectClass(importsList));
+
+
         s.append("" +
                 "// Executed for all objects\n" +
                 "public static Consumer<"+t.name+"> onCreateV(Consumer<"+t.name+"> code){\n" +
@@ -92,11 +98,38 @@ public class GenVaadinFlow {
                 " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
                 "\n\n");
 
+        // Create static, table related components
+        s.append("public static ComboBox<"+t.name+"> newTableComboBox(){\n");
+        s.append(getComboBoxWithTableContent(t, "comboBox", t.name).replaceFirst("public", ""));
+        s.append("return comboBox;\n" +
+                "}\n\n");
+        // Static new methods for comp creation of each column / data field
+        for (Column col : t.columns) {
+            if (col.type.isBlob()) {
+                continue; // TODO currently not supported
+            }
+            Result result = colToVaadinComp(db, t, col);
+            s.append("public static "+result.compType+" new"+firstToUpperCase(result.fieldName)+"(){\n");
+            s.append(result.generatedCode.replaceFirst("public", ""));
+            s.append("return "+result.fieldName+";\n" +
+                    "}\n\n");
+        }
+
+        // Create regular methods
+        s.append("" +
+                "    /**\n" +
+                "     * Gets executed later if {@link #isOnlyInMemory()}, otherwise provided\n" +
+                "     * code gets executed directly.\n" +
+                "     */" +
+                "    public void whenReadyV(Consumer<"+t.name+"> code) {\n" +
+                "        if(isOnlyInMemory()) onAddThisV(obj -> code.accept(obj));\n" +
+                "        else code.accept(this);\n" +
+                "    }\n\n");
+
+
 
         // Create the class first
         s.append("    public static class Comp extends VerticalLayout{\n" +
-                "\n" +
-                genBooleanSelectClass(importsList) +
                 "\n" +
                 "        public " + t.name + " data"+t.name+";\n" +
                 "        public " + t.name + " data;\n" +
@@ -108,53 +141,9 @@ public class GenVaadinFlow {
             if (col.type.isBlob()) {
                 continue; // TODO currently not supported
             }
-            String colName = firstToUpperCase(col.name);
-            String fieldName = "";
-            boolean isColumnRef = false;
-            Table refTable = null;
-            if (col.type.isEnum()) {
-                fieldName = "sel" + colName;
-                s.append("        public Select<" + t.name + "." + col.type.inJava + "> " + fieldName +
-                        " = new Select<" + t.name + "." + col.type.inJava + ">();\n" +
-                        "        {" + fieldName + ".setLabel(\"" + colName + "\"); " + fieldName + ".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
-            } else if (col.type.inJava.equals("String")) {
-                fieldName = "tf" + colName;
-                s.append("        public TextField " + fieldName + " = new TextField(\"" + colName + "\");\n");
-            } else if (col.type.isDate()) {
-                fieldName = "df" + colName;
-                s.append("        public DatePicker " + fieldName + " = new DatePicker(\"" + colName + "\");\n");
-            } else if (col.type.isTime()) {
-                fieldName = "df" + colName;
-                s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
-            } else if (col.type.isTimestamp()) {
-                fieldName = "df" + colName;
-                s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
-            } else if (col.type.isBitOrBoolean()) {
-                fieldName = "bs" + colName;
-                s.append("        public BooleanSelect " + fieldName + " = new BooleanSelect(\"" + colName + "\", false);\n");
-            } else {
-                // This might be an id / reference to another table
-                refTable = getRefTable(db, colName);
-                if(refTable != null){
-                    isColumnRef = true;
-                    colName = colName.substring(0, colName.toLowerCase().lastIndexOf("id"));
-                    fieldName = "cb" + colName;
-                    s.append("        public ComboBox<"+refTable.name+"> " + fieldName + " = new ComboBox<"+refTable.name+">(\"" + colName + "\");\n");
-                    s.append("        {"+fieldName+".setItems("+refTable.name+".get());\n" +
-                            "            "+fieldName+".setRenderer(new ComponentRenderer<>(obj -> {\n" +
-                            "                Div div = new Div();\n"+
-                            "                div.setText(obj.toMinimalPrintString());\n" +
-                            "            return div;}));\n" +
-                            "            "+fieldName+".setItemLabelGenerator(obj -> {\n" +
-                            "                return obj.toMinimalPrintString();\n" +
-                            "            });\n" +
-                            "        }\n");
-                } else{
-                    fieldName = "nf" + colName;
-                    s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
-                }
-            }
-            mapExtraInfo.put(col, new ExtraInfo(fieldName, isColumnRef, refTable));
+            Result result = colToVaadinComp(db, t, col);
+            s.append(result.generatedCode);
+            mapExtraInfo.put(col, new ExtraInfo(result.fieldName(), result.isColumnRef(), result.refTable()));
         }
 
         s.append("        // Buttons\n" +
@@ -301,6 +290,76 @@ public class GenVaadinFlow {
                 "    }\n" +
                 "\n");
 
+        return s.toString();
+    }
+
+    private static @NotNull Result colToVaadinComp(Database db, Table t, Column col) {
+        StringBuilder s = new StringBuilder();
+        String colName = firstToUpperCase(col.name);
+        String compType = "";
+        String fieldName = "";
+        boolean isColumnRef = false;
+        Table refTable = null;
+        if (col.type.isEnum()) {
+            fieldName = "sel" + colName;
+            compType = "Select<" + t.name + "." + col.type.inJava + ">";
+            s.append("        public "+compType+" " + fieldName +
+                    " = new "+compType+"();\n" +
+                    "        {" + fieldName + ".setLabel(\"" + colName + "\"); " + fieldName + ".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
+        } else if (col.type.inJava.equals("String")) {
+            fieldName = "tf" + colName;
+            compType = "TextField";
+            s.append("        public TextField " + fieldName + " = new TextField(\"" + colName + "\");\n");
+        } else if (col.type.isDate()) {
+            fieldName = "df" + colName;
+            compType = "DatePicker";
+            s.append("        public DatePicker " + fieldName + " = new DatePicker(\"" + colName + "\");\n");
+        } else if (col.type.isTime()) {
+            fieldName = "df" + colName;
+            compType = "DateTimePicker";
+            s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+        } else if (col.type.isTimestamp()) {
+            fieldName = "df" + colName;
+            compType = "DateTimePicker";
+            s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+        } else if (col.type.isBitOrBoolean()) {
+            fieldName = "bs" + colName;
+            compType = "BooleanSelect";
+            s.append("        public BooleanSelect " + fieldName + " = new BooleanSelect(\"" + colName + "\", false);\n");
+        } else {
+            // This might be an id / reference to another table
+            refTable = getRefTable(db, colName);
+            if(refTable != null){
+                isColumnRef = true;
+                colName = colName.substring(0, colName.toLowerCase().lastIndexOf("id"));
+                fieldName = "cb" + colName;
+                compType = "ComboBox<" + refTable.name + ">";
+                s.append(getComboBoxWithTableContent(refTable, fieldName, colName));
+            } else{
+                fieldName = "nf" + colName;
+                compType = "NumberField";
+                s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
+            }
+        }
+        Result result = new Result(s.toString(), compType, fieldName, isColumnRef, refTable);
+        return result;
+    }
+
+    private record Result(String generatedCode, String compType, String fieldName, boolean isColumnRef, Table refTable) {
+    }
+
+    private static String getComboBoxWithTableContent(Table t, String fieldName, String colName) {
+        StringBuilder s = new StringBuilder();
+        s.append("        public ComboBox<"+ t.name+"> " + fieldName + " = new ComboBox<"+ t.name+">(\"" + colName + "\");\n");
+        s.append("        {"+ fieldName +".setItems("+ t.name+".get());\n" +
+                "            "+ fieldName +".setRenderer(new ComponentRenderer<>(obj -> {\n" +
+                "                Div div = new Div();\n"+
+                "                div.setText(obj.toMinimalPrintString());\n" +
+                "            return div;}));\n" +
+                "            "+ fieldName +".setItemLabelGenerator(obj -> {\n" +
+                "                return obj.toMinimalPrintString();\n" +
+                "            });\n" +
+                "        }\n");
         return s.toString();
     }
 
