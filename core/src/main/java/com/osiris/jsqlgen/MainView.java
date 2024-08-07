@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.osiris.desku.Icon;
 import com.osiris.desku.ui.DesktopUI;
 import com.osiris.desku.Route;
 import com.osiris.desku.ui.UI;
@@ -81,7 +82,8 @@ public class MainView extends Vertical {
         .scrollable(true, "100%", "25vh", "", "");
     // Database panel
     private final Vertical lyDatabase = vertical();
-    private final OptionField dbSelector = optionfield("Select database to show").onValueChange(e -> {
+    private final OptionField dbSelector = optionfield("Select database to show")
+        .onValueChange(e -> {
         try {
             changeDatabase(e.value);
             updateChooserJavaProjectDir();
@@ -89,16 +91,20 @@ public class MainView extends Vertical {
             AL.warn(ex);
         }
     });
-    private final Vertical listTables = vertical().scrollable(true, "100%", "70vh", "", "");
-    private final TabLayout tabsCode = tablayout();
+    {
+        dbSelector.button.sty("font-size", "xx-large")
+            .sty("font-weight", "bolder");
+    }
+    private final Vertical listTables = vertical().scrollable(true, "100%", "90vh", "", "");
+    private final TabLayout tabsCode = tablayout().grow(1);
     private final Button btnGenerate = button("Generate Code");
-    private final FileChooser chooserJavaProjectDir = filechooser("test",  "").onValueChange(e -> {
+    private final FileChooser chooserJavaProjectDir = filechooser("Select Java project directory/ies",  "").onValueChange(e -> {
         Database database = null;
         try {
             database = getDatabaseOrFail();
             database.setJavaProjectDirs(e.value);
             Data.save();
-            AL.info("Set Java project directory for database '" + database.name + "' to: " + database.getJavaProjectDirs());
+            AL.info("Set Java project directory/ies for database '" + database.name + "' to: " + database.getJavaProjectDirs());
         } catch (Exception ex) {
             AL.warn("Failed to save data for java project dir.", ex);
         }
@@ -119,6 +125,7 @@ public class MainView extends Vertical {
             }
         }
 
+        this.sty("zoom", "0.85");
         this.add(
             lyHome,
             lyDatabase
@@ -365,10 +372,10 @@ public class MainView extends Vertical {
                 e.printStackTrace();
             }
         });
-        chooserJavaProjectDir.tfSelectedFiles.label.setValue("Select Java project directory");
         chooserJavaProjectDir.tfSelectedFiles.setTooltip(("(Optional) Select the directory of your Java project. Classes then will be generated there" +
                 " together with a copy of the schema. Everything gets overwritten, except critical information in the database class." +
-            " If not selected, files will be only shown in the \"Code\" tab."));
+            " If not selected, files will be only shown in the \"Code\" tab.\n" +
+            "Supports multiple directories."));
         updateChooserJavaProjectDir();
 
         lyDatabase.add(dbSelector);
@@ -493,9 +500,12 @@ public class MainView extends Vertical {
             updateTablesList(dbSelector.getValue());
 
             // Refresh tabs
-            tabsCode.removeAll();
+            tabsCode.pages.removeAll();
+            tabsCode.tabs.removeAll();
+            //tabsCode.removeAll();
             for (File f : files) {
-                tabsCode.addTabAndPage(f.getName(), textarea(Files.readString(f.toPath())));
+                // TODO why does page not get added/shown, but tab names do?
+                tabsCode.addTabAndPage(f.getName(), textarea("", Files.readString(f.toPath())).width("100%").height("70vh"));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -544,6 +554,7 @@ public class MainView extends Vertical {
                 String username = "\"\"";
                 String password = "\"\"";
                 if (databaseFile.exists()) {
+                    AL.info("Reading database class file at: "+databaseFile);
                     CompilationUnit unit = StaticJavaParser.parse(Files.readString(databaseFile.toPath()));
                     for (FieldDeclaration field : unit.findAll(FieldDeclaration.class)) {
                         VariableDeclarator var = field.getVariable(0);
@@ -566,6 +577,7 @@ public class MainView extends Vertical {
                                 else password = varInit.toString();
                         }
                     }
+                    AL.info("Success, database class file is valid.");
                 }
                 databaseFile.createNewFile();
                 GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
@@ -589,15 +601,15 @@ public class MainView extends Vertical {
         CopyOnWriteArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
             Table t = tables.get(i);
-            Vertical wrapperTable = new Vertical();
+            Vertical wrapperTable = new Vertical().padding(false);
             listTables.add(wrapperTable);
-            Horizontal paneTable = new Horizontal();
-            paneTable.sty("background-color",
+            Horizontal hl = new Horizontal().padding(false);
+            hl.sty("background-color",
                 "rgba("+new Random().nextInt(250)+","+ new Random().nextInt(250)+","+ new Random().nextInt(250)+","+ 0.7+")"
-            );
-            wrapperTable.add(paneTable);
-            var choiceAction = optionfield();
-            paneTable.add(choiceAction);
+            ).addClass("rounded");
+            wrapperTable.add(hl);
+            var choiceAction = optionfield("", "").sty("max-width", "40px");
+            hl.add(choiceAction);
             choiceAction.addItems("Delete", "Duplicate");
             int finalI = i;
             choiceAction.onValueChange(event -> {
@@ -618,8 +630,9 @@ public class MainView extends Vertical {
                     e.printStackTrace();
                 }
             });
-            TextField tableName = new TextField().setValue(t.name);
-            paneTable.add(tableName);
+            TextField tableName = new TextField().setValue(t.name).width("60%");
+            tableName.input.sty("font-weight", "bold").sty("font-size", "larger");
+            hl.add(tableName);
             tableName.setTooltip("The table name. Changes are auto-saved.");
             tableName.onValueChange(e -> { // enter pressed event
                 try {
@@ -629,7 +642,7 @@ public class MainView extends Vertical {
                 }
             });
             final CheckBox isDebug = new CheckBox("Debug");
-            paneTable.add(isDebug);
+            hl.add(isDebug);
             isDebug.setTooltip("If selected generates additional debug logging to the error stream.");
             isDebug.setValue(t.isDebug);
             isDebug.onValueChange(event -> {
@@ -638,7 +651,7 @@ public class MainView extends Vertical {
             });
 
             final CheckBox isNoExceptions = new CheckBox("No exceptions");
-            paneTable.add(isNoExceptions);
+            hl.add(isNoExceptions);
             isNoExceptions.setTooltip("If selected catches SQL exceptions and throws runtime exceptions instead," +
                     " which means that all methods of a generated class can be used outside of try/catch blocks.");
             isNoExceptions.setValue(t.isNoExceptions);
@@ -648,7 +661,7 @@ public class MainView extends Vertical {
             });
 
             final CheckBox isCache = new CheckBox("Cache");
-            paneTable.add(isCache);
+            hl.add(isCache);
             isCache.setValue(t.isCache);
             isCache.onValueChange(event -> {
                 t.isCache = event.value;
@@ -656,7 +669,7 @@ public class MainView extends Vertical {
             });
 
             final CheckBox isVaadinFlow = new CheckBox("Vaadin-Flow");
-            paneTable.add(isVaadinFlow);
+            hl.add(isVaadinFlow);
             isVaadinFlow.setValue(t.isVaadinFlowUI);
             isVaadinFlow.onValueChange(event -> {
                 t.isVaadinFlowUI = event.value;
@@ -676,7 +689,7 @@ public class MainView extends Vertical {
         listTables.add(wrapper);
         Horizontal lastItem = new Horizontal();
         wrapper.add(lastItem);
-        TextField tableName = new TextField();
+        TextField tableName = new TextField().grow(1);
         var btnAddNewTable = new Button("Add");
         lastItem.add(new Horizontal().add(btnAddNewTable, tableName).childGap(true));
         tableName.label.setValue("New table name");
@@ -732,10 +745,10 @@ public class MainView extends Vertical {
         Objects.requireNonNull(t);
         for (int i = 0; i < t.columns.size(); i++) {
             Column col = t.columns.get(i);
-            Horizontal item = new Horizontal().childGap(true);
-            listColumns.add(item);
-            Button btnMoveUp = button("˄");
-            item.add(btnMoveUp);
+            Horizontal hl = new Horizontal().childGap(true).padding(false);
+            listColumns.add(hl);
+            Button btnMoveUp = button("").add(Icon.solid_arrow_up()).secondary();
+            hl.add(btnMoveUp);
             if (Objects.equals(col.name, "id")) btnMoveUp.enable(false);
             AtomicInteger finalI = new AtomicInteger(i);
             btnMoveUp.onClick(event -> {
@@ -752,8 +765,8 @@ public class MainView extends Vertical {
                     e.printStackTrace();
                 }
             });
-            Button btnMoveDown = button("˅");
-            item.add(btnMoveDown);
+            Button btnMoveDown = button("").add(Icon.solid_arrow_down()).secondary();
+            hl.add(btnMoveDown);
             if (Objects.equals(col.name, "id")) btnMoveDown.enable(false);
             btnMoveDown.onClick(event -> {
                 try {
@@ -769,8 +782,8 @@ public class MainView extends Vertical {
                     e.printStackTrace();
                 }
             });
-            Button btnRemove = button("Delete");
-            item.add(btnRemove);
+            Button btnRemove = button("").add(Icon.solid_trash()).danger();
+            hl.add(btnRemove);
             if (Objects.equals(col.name, "id")) btnRemove.enable(false);
             btnRemove.onClick(event -> {
                 try {
@@ -780,13 +793,14 @@ public class MainView extends Vertical {
                 }
             });
             TextField colName = new TextField("Column name", col.name);
+            colName.input.sty("font-weight", "bold");
             SuggestionTextField colDefinition = new SuggestionTextField("Column definition", col.definition);
             for (ColumnType colType : ColumnType.allTypes) {
                 colDefinition.getEntries().addAll(List.of(colType.inSQL));
             }
             TextField colComment = new TextField("Column comment", col.comment);
 
-            item.add(colName);
+            hl.add(colName);
             if (Objects.equals(col.name, "id")) colName.enable(false);
             colName.setTooltip(("Column name. Changes are auto-saved."));
             colName.onValueChange(event -> {
@@ -798,7 +812,7 @@ public class MainView extends Vertical {
             });
 
 
-            item.add(colDefinition);
+            hl.add(colDefinition);
             colDefinition.setTooltip("Column definition. Changes are auto-saved.");
             colDefinition.textField.onValueChange(event -> {
                 try {
@@ -809,7 +823,7 @@ public class MainView extends Vertical {
             });
 
 
-            item.add(colComment);
+            hl.add(colComment);
             colComment.setTooltip("Column comment. Changes are auto-saved.");
             colComment.onValueChange(event -> {
                 try {
@@ -821,11 +835,16 @@ public class MainView extends Vertical {
         }
 
         var btnAddNewCol = button("Add").width("fit-content");
-        TextField colName = new TextField("New column name");
-        listColumns.add(horizontal().add(btnAddNewCol, colName));
+        TextField colName = new TextField("New column name", "");
+        var colDef = new TextField("New column definition", "");
+        var colComment = new TextField("New column comment", "");
+        listColumns.add(horizontal().add(btnAddNewCol, colName, colDef, colComment));
         btnAddNewCol.onClick(event -> { // enter pressed event
             try {
-                addNewColumn(listColumns, dbName, t.name, colName.getValue(), null);
+                Column col = new Column(colName.getValue());
+                col.definition = colDef.getValue();
+                col.comment = colComment.getValue();
+                addNewColumn(listColumns, dbName, t.name, col, null);
                 colName.setValue("");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -849,11 +868,10 @@ public class MainView extends Vertical {
         AL.info("OK!");
     }
 
-    private void addNewColumn(Vertical listColumns, String dbName, String tableName, String columnName, String columnDefinition) throws IOException {
+    private void addNewColumn(Vertical listColumns, String dbName, String tableName, Column col, String columnDefinition) throws IOException {
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
-        Column col = new Column(columnName);
         col.id = Main.idCounter.getAndIncrement();
         t.columns.add(col);
         col.definition = columnDefinition;
