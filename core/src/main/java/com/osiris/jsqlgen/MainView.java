@@ -504,7 +504,6 @@ public class MainView extends Vertical {
             tabsCode.tabs.removeAll();
             //tabsCode.removeAll();
             for (File f : files) {
-                // TODO why does page not get added/shown, but tab names do?
                 tabsCode.addTabAndPage(f.getName(), textarea("", Files.readString(f.toPath())).width("100%").height("70vh"));
             }
         } catch (Exception e) {
