@@ -26,7 +26,6 @@ repositories {
 
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
 //mainClassName = 'com.author.desktop.Main'
-eclipse.project.name = appName + '-desktop'
 
 dependencies {
   implementation project(':core')
@@ -36,8 +35,6 @@ import io.github.fvarrui.javapackager.gradle.PackageTask;
 import io.github.fvarrui.javapackager.model.*;
 
 group = 'com.author.desktop'
-version = '1.0.0'
-description = 'Desku example app.'
 compileJava.options.encoding = 'UTF-8'
 
 javapackager {
@@ -46,6 +43,7 @@ javapackager {
   generateInstaller = true
   vmArgs = ["-Djava.library.path=."]
   administratorRequired = false
+  name = rootProject.name
 }
 jar {
   manifest {
