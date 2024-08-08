@@ -65,11 +65,19 @@ public class Main {
             JavaCodeGenerator.oldDatabases.add(db.duplicate());
         }
 
+
         App.name = "jSQL-Gen";
         App.theme = new MyTheme();
+        App.init();
         // Create and show windows
         try{
             App.uis.create(mainRoute);
+
+            AL.info("Showing dir details to user:");
+            AL.info("workingDir = " + App.workingDir);
+            AL.info("tempDir = " + App.tempDir);
+            AL.info("userDir = " + App.userDir);
+            AL.info("htmlDir = " + App.htmlDir);
         } catch (Exception e) {
             AL.error(e);
         }

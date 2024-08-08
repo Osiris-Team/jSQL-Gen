@@ -30,7 +30,7 @@ public class AndroidLauncher extends Activity {
         mainHandler = new Handler(Looper.getMainLooper());
 
 
-        App.init(new AndroidUIManager());
+        App.uis = new AndroidUIManager();
         new Thread(() -> {
             Main.main(new String[]{});
         }).start();

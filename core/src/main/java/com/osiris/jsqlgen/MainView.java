@@ -162,7 +162,8 @@ public class MainView extends Vertical {
         AL.info("Initialised jSQL-Gen successfully!");
 
         try {
-            frame.setTitle("jSQL-Gen v"+Const.getVersion());
+            String version = Const.getVersion();
+            if(startsWithNumber(version)) frame.setTitle("jSQL-Gen v"+version);
         } catch (Exception e) {
             e.printStackTrace();
             frame.setTitle("jSQL-Gen");
@@ -213,6 +214,14 @@ public class MainView extends Vertical {
                 runnable.run();
             });
         }
+    }
+
+    private boolean startsWithNumber(String s) {
+        if (s == null || s.isEmpty()) {
+            return false;
+        }
+        char firstChar = s.charAt(0);
+        return Character.isDigit(firstChar);
     }
 
     private void layoutHome() {
