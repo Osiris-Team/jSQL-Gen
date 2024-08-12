@@ -6,7 +6,7 @@ db/
 ## Gradle:
 .gradle/
 gradle-app.setting
-/build/
+**/build/
 /android/build/
 /core/build/
 /desktop/build/
@@ -148,3 +148,5 @@ Thumbs.db
 *~
 *.*#
 *#*#
+/webview.dll
+/webview2loader.dll

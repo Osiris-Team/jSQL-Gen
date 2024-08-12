@@ -1,4 +1,4 @@
-package com.osiris.jsqlgen.home_minimal;
+package com.osiris.jsqlgen.home_example_minimal;
 
 import com.osiris.desku.App;
 import com.osiris.desku.Route;

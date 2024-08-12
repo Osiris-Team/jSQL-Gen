@@ -1,0 +1,174 @@
+{
+  "name": "jsqlgen",
+  "tables": [
+    {
+      "id": 594,
+      "name": "Timer",
+      "columns": [
+        {
+          "id": 595,
+          "name": "id",
+          "nameQuoted": "`id`",
+          "definition": "INT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 596,
+          "name": "start",
+          "nameQuoted": "`start`",
+          "definition": "TIMESTAMP NOT NULL",
+          "comment": ""
+        },
+        {
+          "id": 597,
+          "name": "end",
+          "nameQuoted": "`end`",
+          "definition": "TIMESTAMP NOT NULL",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": false,
+      "changes": [
+        {
+          "oldTableName": "Timer",
+          "newTableName": "Timer",
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "start",
+            "end"
+          ],
+          "addedColumnDefinitions": [
+            "INT NOT NULL PRIMARY KEY",
+            "TIMESTAMP NOT NULL",
+            "TIMESTAMP NOT NULL"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 598,
+      "name": "TimerTask",
+      "columns": [
+        {
+          "id": 599,
+          "name": "id",
+          "nameQuoted": "`id`",
+          "definition": "INT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 600,
+          "name": "timerId",
+          "nameQuoted": "`timerId`",
+          "definition": "INT NOT NULL",
+          "comment": ""
+        },
+        {
+          "id": 603,
+          "name": "taskId",
+          "nameQuoted": "`taskId`",
+          "definition": "INT NOT NULL",
+          "comment": ""
+        },
+        {
+          "id": 606,
+          "name": "percentageOfTimer",
+          "nameQuoted": "`percentageOfTimer`",
+          "definition": "DOUBLE NOT NULL",
+          "comment": ""
+        },
+        {
+          "id": 605,
+          "name": "changelog",
+          "nameQuoted": "`changelog`",
+          "definition": "TEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": false,
+      "changes": [
+        {
+          "oldTableName": "TimerTask",
+          "newTableName": "TimerTask",
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "timerId",
+            "taskId",
+            "percentageOfTimer",
+            "changelog"
+          ],
+          "addedColumnDefinitions": [
+            "INT NOT NULL PRIMARY KEY",
+            "INT NOT NULL",
+            "INT NOT NULL",
+            "DOUBLE NOT NULL",
+            "TEXT DEFAULT \u0027\u0027"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 601,
+      "name": "Task",
+      "columns": [
+        {
+          "id": 602,
+          "name": "id",
+          "nameQuoted": "`id`",
+          "definition": "INT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 604,
+          "name": "name",
+          "nameQuoted": "`name`",
+          "definition": "TEXT DEFAULT \u0027New Task\u0027",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": false,
+      "changes": [
+        {
+          "oldTableName": "Task",
+          "newTableName": "Task",
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "name"
+          ],
+          "addedColumnDefinitions": [
+            "INT NOT NULL PRIMARY KEY",
+            "TEXT DEFAULT \u0027New Task\u0027"
+          ]
+        }
+      ]
+    }
+  ],
+  "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen\\core ;"
+}

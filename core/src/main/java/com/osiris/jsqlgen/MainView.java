@@ -12,6 +12,7 @@ import com.osiris.desku.Route;
 import com.osiris.desku.ui.UI;
 import com.osiris.desku.ui.Component;
 import com.osiris.desku.ui.input.*;
+import com.osiris.desku.ui.input.filechooser.FileAsRow;
 import com.osiris.desku.ui.input.filechooser.FileChooser;
 import com.osiris.desku.ui.layout.Horizontal;
 import com.osiris.desku.ui.layout.Popup;
@@ -98,17 +99,36 @@ public class MainView extends Vertical {
     private final Vertical listTables = vertical().scrollable(true, "100%", "90vh", "", "");
     private final TabLayout tabsCode = tablayout().grow(1);
     private final Button btnGenerate = button("Generate Code");
-    private final FileChooser chooserJavaProjectDir = filechooser("Select Java project directory/ies",  "").onValueChange(e -> {
-        Database database = null;
-        try {
-            database = getDatabaseOrFail();
-            database.setJavaProjectDirs(e.value);
-            Data.save();
-            AL.info("Set Java project directory/ies for database '" + database.name + "' to: " + database.getJavaProjectDirs());
-        } catch (Exception ex) {
-            AL.warn("Failed to save data for java project dir.", ex);
-        }
-    });
+    private final FileChooser chooserJavaProjectDir;
+
+    {
+        chooserJavaProjectDir = getFileChooser("");
+    }
+
+    private @NotNull FileChooser getFileChooser(String defaultValue) {
+        final FileChooser chooserJavaProjectDir;
+        Consumer<FileAsRow> fileSelectListener = e -> {
+            Database database = null;
+            try {
+                database = getDatabaseOrFail();
+                CopyOnWriteArrayList<File> dirs = database.getJavaProjectDirs();
+                if(e.checkBox.getValue())
+                    dirs.addIfAbsent(e.file);
+                else dirs.remove(e.file);
+                database.setJavaProjectDirs(dirs);
+                save();
+                AL.info("Set Java project directory/ies for database '" + database.name + "' to: " + dirs);
+            } catch (Exception ex) {
+                AL.warn("Failed to save data for java project dir.", ex);
+            }
+        };
+        chooserJavaProjectDir = filechooser("",  defaultValue).onFileSelected(fileSelectListener)
+            .onFileDeselected(fileSelectListener);
+        Component selectFilesBtn = chooserJavaProjectDir.btnsSelectedFiles.children.get(0);
+        selectFilesBtn.setValue("Select Java project directory/ies");
+        return chooserJavaProjectDir;
+    }
+
     private @Nullable JFrame frame;
 
     public MainView() {
@@ -413,10 +433,26 @@ public class MainView extends Vertical {
                     }
                     break;
                 }
-                if (p2 != projectDir) {
+                if(p2 == null || !p2.exists()){
+                    AL.warn("Removed directory since it doesn't exist: "+projectDir);
+                    isChanged = true;
+                    javaProjectDirs.remove(projectDir);
+                }
+                else if (p2 != projectDir) {
                     AL.warn("Changed directory since original doesn't exist, new: "+p2+" old: "+projectDir);
                     isChanged = true;
                     javaProjectDirs.set(i, p2);
+                }
+                if(p2 != null){
+                    int count = 0;
+                    for (File anotherDir : javaProjectDirs) {
+                        if(anotherDir.getAbsolutePath().equals(p2.getAbsolutePath())) count++;
+                    }
+                    if(count > 1){
+                        AL.warn("Removed directory since it already exists in list (duplicate): "+p2);
+                        isChanged = true;
+                        javaProjectDirs.remove(p2);
+                    }
                 }
             }
             if(isChanged && !javaProjectDirs.isEmpty()){
@@ -429,7 +465,7 @@ public class MainView extends Vertical {
                 for (File javaProjectDir : javaProjectDirs) {
                     s += javaProjectDir+"; ";
                 }
-                chooserJavaProjectDir.tfSelectedFiles.setValue(s);
+                chooserJavaProjectDir.setValue(s);
             }
 
         } catch (Exception e) {
@@ -545,6 +581,7 @@ public class MainView extends Vertical {
             if (!db.getJavaProjectDirs().isEmpty()) {
                 // Write json structure data
                 for (File jsonData : getDatabaseStructureFile(db, dirs)) {
+                    AL.info(jsonData.getAbsolutePath());
                     jsonData.createNewFile();
                     StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
                     Data.parser.toJson(db, sw);

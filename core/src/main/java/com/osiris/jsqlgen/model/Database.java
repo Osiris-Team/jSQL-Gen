@@ -28,7 +28,7 @@ public class Database {
         CopyOnWriteArrayList<File> files = new CopyOnWriteArrayList<>();
         if(javaProjectDir == null || javaProjectDir.isEmpty()) return files;
         for (String s : javaProjectDir.split(";")) {
-            files.add(new File(s));
+            files.add(new File(s.trim()));
         }
         return files;
     }

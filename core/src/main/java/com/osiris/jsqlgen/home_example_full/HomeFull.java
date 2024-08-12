@@ -1,4 +1,4 @@
-package com.osiris.jsqlgen.home_full;
+package com.osiris.jsqlgen.home_example_full;
 
 import com.osiris.desku.App;
 import com.osiris.desku.Icon;
@@ -125,7 +125,7 @@ public class HomeFull extends Route {
             vertical().childGap(true).scrollable(true, "100%", "100px", // Size for scroll layout
                     "100%", "5px") // Min sizes for children
                 .onScroll(e -> {
-                    AL.info("SCROLL: "+e.rawJSMessage);
+                    AL.info("SCROLL: "+e.messageRaw);
                 })
         );
         for (int i = 0; i < 20; i++) {
