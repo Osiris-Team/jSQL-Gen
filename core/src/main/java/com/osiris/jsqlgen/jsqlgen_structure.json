@@ -15,14 +15,14 @@
           "id": 596,
           "name": "start",
           "nameQuoted": "`start`",
-          "definition": "TIMESTAMP NOT NULL",
+          "definition": "DATETIME NOT NULL",
           "comment": ""
         },
         {
           "id": 597,
           "name": "end",
           "nameQuoted": "`end`",
-          "definition": "TIMESTAMP NOT NULL",
+          "definition": "DATETIME NOT NULL",
           "comment": ""
         }
       ],
@@ -48,8 +48,8 @@
           ],
           "addedColumnDefinitions": [
             "INT NOT NULL PRIMARY KEY",
-            "TIMESTAMP NOT NULL",
-            "TIMESTAMP NOT NULL"
+            "DATETIME NOT NULL",
+            "DATETIME NOT NULL"
           ]
         }
       ]
@@ -83,7 +83,7 @@
           "name": "percentageOfTimer",
           "nameQuoted": "`percentageOfTimer`",
           "definition": "DOUBLE NOT NULL",
-          "comment": ""
+          "comment": "0-100%"
         },
         {
           "id": 605,
@@ -170,5 +170,6 @@
       ]
     }
   ],
-  "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen\\core ;"
+  "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen\\core ;",
+  "isWithMariadb4j": true
 }

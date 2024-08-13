@@ -26,6 +26,8 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.ui.LayoutDatabaseOptions;
+import com.osiris.jsqlgen.ui.timer.LayoutTimer;
 import com.osiris.jsqlgen.utils.*;
 import org.fusesource.jansi.utils.UtilsAnsiHtml;
 import org.jetbrains.annotations.NotNull;
@@ -83,8 +85,8 @@ public class MainView extends Vertical {
         .scrollable(true, "100%", "25vh", "", "");
     // Database panel
     private final Vertical lyDatabase = vertical();
-    private final OptionField dbSelector = optionfield("Select database to show")
-        .onValueChange(e -> {
+    private final OptionField dbSelector = optionfield("Select database to show",
+        instance.databases.isEmpty() ? "Select" : instance.databases.get(0).name).onValueChange(e -> {
         try {
             changeDatabase(e.value);
             updateChooserJavaProjectDir();
@@ -100,7 +102,6 @@ public class MainView extends Vertical {
     private final TabLayout tabsCode = tablayout().grow(1);
     private final Button btnGenerate = button("Generate Code");
     private final FileChooser chooserJavaProjectDir;
-
     {
         chooserJavaProjectDir = getFileChooser("");
     }
@@ -129,6 +130,14 @@ public class MainView extends Vertical {
         return chooserJavaProjectDir;
     }
 
+    private final LayoutDatabaseOptions lyDatabaseOptions = new LayoutDatabaseOptions(null, Database.class);
+    {
+        try{
+            lyDatabaseOptions.setValue(getDatabaseOrFail());
+        } catch (Exception e) {
+        }
+    }
+
     private @Nullable JFrame frame;
 
     public MainView() {
@@ -146,10 +155,12 @@ public class MainView extends Vertical {
         }
 
         this.sty("zoom", "0.85");
-        this.add(
-            lyHome,
-            lyDatabase
-        );
+
+        var tabs = new TabLayout();
+        this.add(tabs);
+
+        tabs.addTabAndPage("Home", new Vertical().add(lyHome, lyDatabase).padding(false).grow(1));
+        tabs.addTabAndPage("Timer", new LayoutTimer().grow(1));
 
         MainView.asyncIn.listeners.add(line -> {
             ui.access(() -> {
@@ -409,7 +420,7 @@ public class MainView extends Vertical {
 
         lyDatabase.add(dbSelector);
         lyDatabase.add(btnGenerate);
-        lyDatabase.add(chooserJavaProjectDir);
+        lyDatabase.add(chooserJavaProjectDir, lyDatabaseOptions);
         TabLayout tabs = new TabLayout();
         tabs.addTabAndPage("Tables", listTables);
         tabs.addTabAndPage("Code", tabsCode);
@@ -485,7 +496,9 @@ public class MainView extends Vertical {
             System.err.println("Provided database name cannot be null or empty!");
             return;
         }
+        Database db = Data.getDatabase(dbName);
         updateTablesList(dbName);
+        lyDatabaseOptions.setValue(db);
     }
 
     public void updateDatabaseSelector() {

@@ -16,7 +16,13 @@ public class GenDatabaseFile {
 
         StringBuilder s = new StringBuilder((!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
                 "import java.sql.*;\n" +
-                "import java.util.*;\n\n" +
+                "import java.util.*;\n" +
+                "import java.io.File;\n" +
+            (db.isWithMariadb4j ? "" +
+                "import ch.vorburger.exec.ManagedProcessException;\n" +
+                "import ch.vorburger.mariadb4j.DB;\n" +
+                "import ch.vorburger.mariadb4j.DBConfigurationBuilder;\n" : "")+
+            "\n"+
                 "/*\n" +
                 "Auto-generated class that is used by all table classes to create connections. <br>\n" +
                 "It holds the database credentials (set by you at first run of jSQL-Gen).<br>\n" +
@@ -76,7 +82,9 @@ public class GenDatabaseFile {
 
         s.append("};\n" +
                 "\n" +
-                "    static{create();} // Create database if not exists\n" +
+                "    static{" +
+                (db.isWithMariadb4j ? "initIntegratedMariaDB();" : "")+
+            "create();} // Create database if not exists\n" +
                 "\n" +
                 "public static void create() {\n" +
                 "\n" +
@@ -286,6 +294,40 @@ public class GenDatabaseFile {
                                 }""");
                 break;
             }
+        }
+
+        if(db.isWithMariadb4j){
+            s.append("""
+    public static DB mariaDB;
+    /**
+     * Creates or uses the database inside ./db and runs it via MariaDB4j on a random available port. <br>
+     * MariaDB4j handles downloading of MariaDB and launching it. <br>
+     * Returns once fully launched or throws exception on fail. <br>
+     */
+    public static void initIntegratedMariaDB() {
+        try{
+            DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
+            configBuilder.setPort(0); // OR, default: setPort(0); => autom. detect free port
+            configBuilder.setDataDir(new File(System.getProperty("user.dir") + "/db").getAbsolutePath());
+            mariaDB = DB.newEmbeddedDB(configBuilder.build());
+            mariaDB.start();
+            String port = url.substring(url.lastIndexOf(":"), url.lastIndexOf("/"));
+            url = url.replace(port, ":"+mariaDB.getConfiguration().getPort());
+            rawUrl = getRawDbUrlFrom(url);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    System.out.println("Stopping database...");
+                    mariaDB.stop();
+                    System.out.println("Stopped database successfully.");
+                } catch (ManagedProcessException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    """);
         }
 
         s.append("}\n");

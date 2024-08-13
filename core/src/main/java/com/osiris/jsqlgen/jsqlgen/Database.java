@@ -1,6 +1,10 @@
 package com.osiris.jsqlgen.jsqlgen;
 import java.sql.*;
 import java.util.*;
+import java.io.File;
+import ch.vorburger.exec.ManagedProcessException;
+import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 
 /*
 Auto-generated class that is used by all table classes to create connections. <br>
@@ -24,9 +28,9 @@ public static boolean isRemoveRefs = false;
 * Use synchronized on this before doing changes to it. 
 */
 public static final List<Connection> availableConnections = new ArrayList<>();
-public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(594, 1, 0, "Timer", new String[]{"id", "start", "end"}, new String[]{"INT NOT NULL PRIMARY KEY", "TIMESTAMP NOT NULL", "TIMESTAMP NOT NULL"}){public Class<?> getTableClass(){return Timer.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Timer obj : Timer.get()) l.add(obj); return l;}public Database.Row get(int i){return Timer.get(i);}public void update(Database.Row obj){Timer.update((Timer)obj);}public void add(Database.Row obj){Timer.add((Timer)obj);}public void remove(Database.Row obj){Timer.remove((Timer)obj);}}, new TableMetaData(598, 1, 0, "TimerTask", new String[]{"id", "timerId", "taskId", "percentageOfTimer", "changelog"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT NOT NULL", "INT NOT NULL", "DOUBLE NOT NULL", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return TimerTask.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(TimerTask obj : TimerTask.get()) l.add(obj); return l;}public Database.Row get(int i){return TimerTask.get(i);}public void update(Database.Row obj){TimerTask.update((TimerTask)obj);}public void add(Database.Row obj){TimerTask.add((TimerTask)obj);}public void remove(Database.Row obj){TimerTask.remove((TimerTask)obj);}}, new TableMetaData(601, 1, 0, "Task", new String[]{"id", "name"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT DEFAULT 'New Task'"}){public Class<?> getTableClass(){return Task.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Task obj : Task.get()) l.add(obj); return l;}public Database.Row get(int i){return Task.get(i);}public void update(Database.Row obj){Task.update((Task)obj);}public void add(Database.Row obj){Task.add((Task)obj);}public void remove(Database.Row obj){Task.remove((Task)obj);}}};
+public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(594, 1, 0, "Timer", new String[]{"id", "start", "end"}, new String[]{"INT NOT NULL PRIMARY KEY", "DATETIME NOT NULL", "DATETIME NOT NULL"}){public Class<?> getTableClass(){return Timer.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Timer obj : Timer.get()) l.add(obj); return l;}public Database.Row get(int i){return Timer.get(i);}public void update(Database.Row obj){Timer.update((Timer)obj);}public void add(Database.Row obj){Timer.add((Timer)obj);}public void remove(Database.Row obj){Timer.remove((Timer)obj);}}, new TableMetaData(598, 1, 0, "TimerTask", new String[]{"id", "timerId", "taskId", "percentageOfTimer", "changelog"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT NOT NULL", "INT NOT NULL", "DOUBLE NOT NULL", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return TimerTask.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(TimerTask obj : TimerTask.get()) l.add(obj); return l;}public Database.Row get(int i){return TimerTask.get(i);}public void update(Database.Row obj){TimerTask.update((TimerTask)obj);}public void add(Database.Row obj){TimerTask.add((TimerTask)obj);}public void remove(Database.Row obj){TimerTask.remove((TimerTask)obj);}}, new TableMetaData(601, 1, 0, "Task", new String[]{"id", "name"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT DEFAULT 'New Task'"}){public Class<?> getTableClass(){return Task.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Task obj : Task.get()) l.add(obj); return l;}public Database.Row get(int i){return Task.get(i);}public void update(Database.Row obj){Task.update((Task)obj);}public void add(Database.Row obj){Task.add((Task)obj);}public void remove(Database.Row obj){Task.remove((Task)obj);}}};
 
-    static{create();} // Create database if not exists
+    static{initIntegratedMariaDB();create();} // Create database if not exists
 
 public static void create() {
 
@@ -223,4 +227,33 @@ public static void create() {
         public void add(Database.Row obj){throw new RuntimeException("Not implemented!");}
         public void remove(Database.Row obj){throw new RuntimeException("Not implemented!");}
     }
+public static DB mariaDB;
+/**
+ * Creates or uses the database inside ./db and runs it via MariaDB4j on a random available port. <br>
+ * MariaDB4j handles downloading of MariaDB and launching it. <br>
+ * Returns once fully launched or throws exception on fail. <br>
+ */
+public static void initIntegratedMariaDB() {
+    try{
+        DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
+        configBuilder.setPort(0); // OR, default: setPort(0); => autom. detect free port
+        configBuilder.setDataDir(new File(System.getProperty("user.dir") + "/db").getAbsolutePath());
+        mariaDB = DB.newEmbeddedDB(configBuilder.build());
+        mariaDB.start();
+        String port = url.substring(url.lastIndexOf(":"), url.lastIndexOf("/"));
+        url = url.replace(port, ":"+mariaDB.getConfiguration().getPort());
+        rawUrl = getRawDbUrlFrom(url);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                System.out.println("Stopping database...");
+                mariaDB.stop();
+                System.out.println("Stopped database successfully.");
+            } catch (ManagedProcessException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
 }

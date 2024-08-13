@@ -26,9 +26,9 @@ public class ColumnType {
     public static ColumnType DOUBLE = new ColumnType(new String[]{"DOUBLE", "DOUBLE PRECISION"},
             "double", "setDouble", "getDouble");
     // TIME/DATE TYPES:
-    public static ColumnType DATE = new ColumnType(new String[]{"DATE", "DATETIME"},
+    public static ColumnType DATE = new ColumnType(new String[]{"DATE"},
             "Date","java.sql.Date", "setDate", "getDate");
-    public static ColumnType TIMESTAMP = new ColumnType(new String[]{"TIMESTAMP"},
+    public static ColumnType TIMESTAMP = new ColumnType(new String[]{"TIMESTAMP", "DATETIME"},
             "Timestamp", "java.sql.Timestamp", "setTimestamp", "getTimestamp");
     public static ColumnType TIME = new ColumnType(new String[]{"TIME"},
             "Time", "java.sql.Time","setTime", "getTime");

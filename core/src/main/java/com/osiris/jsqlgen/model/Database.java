@@ -12,6 +12,7 @@ public class Database {
      * Can be multiple paths seperated by ;
      */
     protected String javaProjectDir;
+    public boolean isWithMariadb4j;
 
     public Database duplicate() {
         Database db = new Database();

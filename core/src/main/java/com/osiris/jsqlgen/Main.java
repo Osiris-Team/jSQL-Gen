@@ -21,6 +21,10 @@ public class Main {
     public static MainRoute mainRoute = new MainRoute();
 
     public static void main(String[] args) {
+        App.name = "jSQL-Gen";
+        App.theme = new MyTheme();
+        App.init();
+        AL.info("DB initialized at: "+com.osiris.jsqlgen.jsqlgen.Database.url);
 
         for (Database db : Data.instance.databases) {
             // If there are missing ids set them
@@ -66,13 +70,10 @@ public class Main {
         }
 
 
-        App.name = "jSQL-Gen";
-        App.theme = new MyTheme();
-        App.init();
+
         // Create and show windows
         try{
             App.uis.create(mainRoute);
-
             AL.info("Showing dir details to user:");
             AL.info("workingDir = " + App.workingDir);
             AL.info("tempDir = " + App.tempDir);

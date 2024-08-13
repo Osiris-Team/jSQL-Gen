@@ -178,7 +178,7 @@ Database field/value: INT NOT NULL. <br>
 public int taskId;
 /**
 Database field/value: DOUBLE NOT NULL. <br>
-
+0-100%
 */
 public double percentageOfTimer;
 /**

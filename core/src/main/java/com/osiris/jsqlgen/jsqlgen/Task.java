@@ -831,6 +831,15 @@ public static class WHERE<T> {
     }
 // The code below will not be removed when re-generating this class.
 // Additional code start -> 
+    public static Task WORK;
+    public static Task PAUSE;
+    static{
+        WORK = whereName().is("Work").getFirstOrNull();
+        if(WORK == null) WORK = createAndAdd("Work");
+
+    PAUSE = whereName().is("Pause/Other").getFirstOrNull();
+    if(PAUSE == null) PAUSE = createAndAdd("Pause/Other");
+}
     private Task(){}
 // Additional code end <- 
 }

@@ -18,8 +18,8 @@ import java.sql.SQLException;
 Table Timer with id 594 and 1 changes/version. <br>
 Structure (3 fields/columns): <br>
 - int id = INT NOT NULL PRIMARY KEY <br>
-- Timestamp start = TIMESTAMP NOT NULL <br>
-- Timestamp end = TIMESTAMP NOT NULL <br>
+- Timestamp start = DATETIME NOT NULL <br>
+- Timestamp end = DATETIME NOT NULL <br>
 
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
 that contains static methods for fetching/updating data from the `timer` table.
@@ -117,9 +117,9 @@ for (int i = t.version; i < 1; i++) {
 if(i == 0){
 if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `timer` (`id` INT NOT NULL PRIMARY KEY)");
 t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `timer` ADD COLUMN `start` TIMESTAMP NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `timer` ADD COLUMN `start` DATETIME NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `timer` ADD COLUMN `end` TIMESTAMP NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `timer` ADD COLUMN `end` DATETIME NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
@@ -153,12 +153,12 @@ Database field/value: INT NOT NULL PRIMARY KEY. <br>
 */
 public int id;
 /**
-Database field/value: TIMESTAMP NOT NULL. <br>
+Database field/value: DATETIME NOT NULL. <br>
 
 */
 public Timestamp start;
 /**
-Database field/value: TIMESTAMP NOT NULL. <br>
+Database field/value: DATETIME NOT NULL. <br>
 
 */
 public Timestamp end;
@@ -797,6 +797,7 @@ public static class WHERE<T> {
     }
 // The code below will not be removed when re-generating this class.
 // Additional code start -> 
+    public static Timestamp NULL = new Timestamp(0);
     private Timer(){}
 // Additional code end <- 
 }

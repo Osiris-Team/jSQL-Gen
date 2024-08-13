@@ -12,11 +12,15 @@ dependencies {
   implementation "org.apache.maven:maven-model:3.3.9"
   implementation "com.github.Osiris-Team:Dyml:9.8.3"
   implementation 'com.github.jsqlparser:jsqlparser:4.9'
+  implementation "ch.vorburger.mariaDB4j:mariaDB4j:3.0.1" // used in testing and in the project itself
+  implementation "mysql:mysql-connector-java:8.0.24"
+  implementation 'net.java.dev.jna:jna:5.14.0'
+  implementation 'net.java.dev.jna:jna-platform:5.14.0'
+
 
   testImplementation "org.junit.jupiter:junit-jupiter-api:5.3.0"
   testImplementation "org.junit.jupiter:junit-jupiter-engine:5.3.0"
-  testImplementation "mysql:mysql-connector-java:8.0.24"
-  testImplementation "ch.vorburger.mariaDB4j:mariaDB4j:2.4.0"
+
 
 }
 
