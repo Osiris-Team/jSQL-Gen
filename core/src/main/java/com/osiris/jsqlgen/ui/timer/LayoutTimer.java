@@ -16,6 +16,7 @@ import com.osiris.jsqlgen.ui.Refreshable;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -144,102 +145,5 @@ public class LayoutTimer extends Vertical implements Refreshable {
 
         add(btnStartStop, summary, lyTimerDetails);
     }
-
-    public static void fillBtnTasks(Timer timer, Horizontal lyBtnsTasks, Vertical lyWithTimerUI) {
-        lyBtnsTasks.removeAll();
-        for (Task task : Task.get()) {
-            boolean alreadyAdded = false;
-            for (Component child : lyWithTimerUI.children) {
-                TimerTaskUI comp = (TimerTaskUI) child;
-                if(comp.internalValue.taskId == task.id){
-                    alreadyAdded = true;
-                    break;
-                }
-            }
-
-            // Add task
-            lyBtnsTasks.add(button(task.name).onClick(e -> {
-                TimerTask timerTask = TimerTask.whereTaskId().is(task.id).getFirstOrNull();
-                if(timerTask != null){
-                    AL.warn("Task '"+task.name+"' already exits in timer '"+timerTask.timerId+"', duplicate tasks in a single timer are not allowed.");
-                    return;
-                }
-                TimerTask.createAndAdd(timer.id, task.id, 0);
-            }).enable(!alreadyAdded));
-
-            // Remove task
-            if(task.id != Task.WORK.id && task.id != Task.PAUSE.id)
-                lyBtnsTasks.add(button("").danger().add(Icon.solid_trash()).onClick(e -> {
-                    TimerTask timerTask = TimerTask.whereTimerId().is(timer.id).and(
-                        TimerTask.whereTaskId().is(task.id)
-                    ).getFirstOrNull();
-                    if(timerTask != null) timerTask.remove();
-                }).setTooltip("This does not delete the task itself, but instead its entry/slider for this timer."));
-        }
-    }
-
-    public static class TimerTaskUI extends Component<TimerTaskUI, TimerTask>{
-        public Slider slider;
-        public Task task;
-        public String taskName;
-
-        public TimerTaskUI(@UnknownNullability TimerTask timerTask) {
-            super(timerTask, TimerTask.class, "c");
-            task = Task.whereId().is(timerTask.taskId).getFirstOrNull();
-            taskName = task == null ? "-Deleted-" : task.name;
-            slider = new Slider(taskName, timerTask.percentageOfTimer).grow(1);
-            add(slider);
-        }
-    }
-
-    public static Vertical fillTimerTasks(Component ly, Timer timer) {
-        ly.removeAll();
-
-        for (TimerTask timerTask : TimerTask.whereTimerId().is(timer.id).get()) {
-            TimerTaskUI comp = new TimerTaskUI(timerTask);
-            ly.add(comp);
-
-            var _this = comp.slider;
-            AtomicReference<Double> refValueBefore = new AtomicReference<>(comp.slider.getValue());
-            AtomicBoolean isHolding = new AtomicBoolean();
-            UI.get().registerJSListener("mousedown", _this, (msg) -> {
-                refValueBefore.set(comp.slider.getValue());
-                isHolding.set(true);
-            });
-            UI.get().registerJSListener("mouseup", _this, (msg) -> {
-                if(isHolding.get()){
-                    isHolding.set(false);
-                    //if(e.isProgrammatic) return; // ignore programmatic changes to avoid infinite loop
-
-                    TimerTask v = comp.getValue();
-                    double currentValue = comp.slider.getValue();
-                    double valueBefore = refValueBefore.get();
-                    v.percentageOfTimer = currentValue;
-                    v.update();
-
-                    // Decrease or increase the other sliders
-                    double change = currentValue - valueBefore;
-                    int relevantChildrenSize = ly.children.isEmpty() ? 1 : ly.children.size() - 1; // -1 because we dont include the current slider
-                    double changePerSlider = change > 0 ?
-                        change /  relevantChildrenSize * -1 : // Positive change, thus decrease others
-                        Math.abs(change / relevantChildrenSize); // Negative change, thus increase others
-
-                    for (Object child : ly.children) {
-                        TimerTaskUI otherComp = (TimerTaskUI) child;
-                        if(otherComp.slider == comp.slider) continue;
-
-                        double newVal = otherComp.slider.getValue() + changePerSlider;
-                        otherComp.slider.setValue(newVal);
-                        v = otherComp.getValue();
-                        v.percentageOfTimer = newVal;
-                        v.update();
-                        AL.info("Updated: "+v.toPrintString());
-                    }
-                }
-            });
-        }
-        return null;
-    }
-
 
 }

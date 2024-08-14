@@ -11,13 +11,10 @@ import java.util.function.Consumer;
 
 import static com.osiris.desku.Statics.*;
 import static com.osiris.desku.Statics.text;
-import static com.osiris.jsqlgen.ui.timer.LayoutTimer.fillBtnTasks;
-import static com.osiris.jsqlgen.ui.timer.LayoutTimer.fillTimerTasks;
 
 public class SlidersPopup extends Popup {
     public SlidersPopup(boolean isBackFromAFK, Timer timer) {
         super(text(isBackFromAFK ? "Welcome back!" : "Good job!"), button("Okay"), null);
-        // TODO nothing in popup can be clicked?!
         UI ui = UI.get();
 
         var tfTaskName = textfield("New task name").grow(1);
@@ -32,31 +29,8 @@ public class SlidersPopup extends Popup {
                 Task.createAndAdd(v);
             }));
 
-        var lySliders = vertical().padding(false).grow(1);
-        fillTimerTasks(lySliders, timer);
-
-        var lyBtnsTasks = horizontalCL().scrollable(true, "100%", "fit-content");
-        fillBtnTasks(timer, lyBtnsTasks, lySliders);
-
-
-        Consumer<TimerTask> onChange = task -> {
-            ui.access(() -> {
-                fillTimerTasks(lySliders, timer);
-                fillBtnTasks(timer, lyBtnsTasks, lySliders);
-            });
-        };
-        TimerTask.onAdd.add(onChange);
-        //TimerTask.onUpdate.add((val) -> {});
-        TimerTask.onRemove.add(onChange);
-
-        Consumer<Task> onChange1 = task -> {
-            ui.access(() -> {
-                fillBtnTasks(timer, lyBtnsTasks, lySliders);
-            });
-        };
-        Task.onAdd.add(onChange1);
-        Task.onUpdate.add(onChange1);
-        Task.onRemove.add(onChange1);
+        var lySliders = new LayoutSliders(timer).padding(false).grow(1);
+        var lyBtnsTasks = new LayoutButtonsTasks(timer, lySliders);
 
         // Get recently used task
         Task task = null;

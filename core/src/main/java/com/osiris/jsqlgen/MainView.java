@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.osiris.desku.App;
 import com.osiris.desku.Icon;
 import com.osiris.desku.ui.DesktopUI;
 import com.osiris.desku.Route;
@@ -162,34 +163,36 @@ public class MainView extends Vertical {
         tabs.addTabAndPage("Home", new Vertical().add(lyHome, lyDatabase).padding(false).grow(1));
         tabs.addTabAndPage("Timer", new LayoutTimer().grow(1));
 
-        MainView.asyncIn.listeners.add(line -> {
-            ui.access(() -> {
-                var comp = horizontal().padding(false);
-                try {
-                    txtLogs.add(comp);
-                    comp.executeJS("comp.innerHTML = `" + new UtilsAnsiHtml().convertAnsiToHtml(line)
-                        .replace("\\", "\\\\") +"`");
-                    txtLogs.scrollToBottom();
-                } catch (IOException e) {
-                    AL.warn(e);
-                }
+        if(!App.isInDepthDebugging){
+            MainView.asyncIn.listeners.add(line -> {
+                ui.access(() -> {
+                    var comp = horizontal().padding(false);
+                    try {
+                        txtLogs.add(comp);
+                        comp.executeJS("comp.innerHTML = `" + new UtilsAnsiHtml().convertAnsiToHtml(line)
+                            .replace("\\", "\\\\") +"`");
+                        txtLogs.scrollToBottom();
+                    } catch (IOException e) {
+                        AL.warn(e);
+                    }
+                });
             });
-        });
 
-        MainView.asyncInErr.listeners.add(line -> {
-            ui.access(() -> {
-                var comp = horizontal().padding(false);
-                try {
-                    txtLogs.add(comp);
-                    comp.executeJS("comp.innerHTML = `[!] " + new UtilsAnsiHtml().convertAnsiToHtml(line)
-                        .replace("\\", "\\\\")+"`");
-                    txtLogs.scrollToBottom();
-                } catch (IOException e) {
-                    AL.warn(e);
-                }
+            MainView.asyncInErr.listeners.add(line -> {
+                ui.access(() -> {
+                    var comp = horizontal().padding(false);
+                    try {
+                        txtLogs.add(comp);
+                        comp.executeJS("comp.innerHTML = `[!] " + new UtilsAnsiHtml().convertAnsiToHtml(line)
+                            .replace("\\", "\\\\")+"`");
+                        txtLogs.scrollToBottom();
+                    } catch (IOException e) {
+                        AL.warn(e);
+                    }
+                });
             });
-        });
-        AL.info("Registered log listener.");
+            AL.info("Registered log listener.");
+        }
         AL.info("Initialised jSQL-Gen successfully!");
 
         try {

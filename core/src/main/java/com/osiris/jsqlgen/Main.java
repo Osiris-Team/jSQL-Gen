@@ -23,7 +23,10 @@ public class Main {
     public static void main(String[] args) {
         App.name = "jSQL-Gen";
         App.theme = new MyTheme();
-        App.init();
+        App.LoggerParams loggerParams = new App.LoggerParams();
+        loggerParams.debug = true;
+        App.isInDepthDebugging = true;
+        App.init(null, loggerParams);
         AL.info("DB initialized at: "+com.osiris.jsqlgen.jsqlgen.Database.url);
 
         for (Database db : Data.instance.databases) {
