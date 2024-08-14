@@ -17,6 +17,7 @@ import org.jetbrains.annotations.UnknownNullability;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,16 +56,23 @@ public class LayoutTimer extends Vertical implements Refreshable {
                 isPendingAFKPopup = false;
                 if(ui instanceof DesktopUI){
                     try{
-                        ui.fullscreen(true);
+                        ui.maximize(true);
                         ui.focus(true);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
                 Timer timer = Timer.whereId().biggestFirst().limit(1).getFirstOrNull();
-                if(timer != null && timer.end != Timer.NULL){
-                    add(new SlidersPopup(true, timer));
+                Objects.requireNonNull(timer);
+                if(timer.end != Timer.NULL){
+                    timer.end = new Timestamp(msLastActivity);
+                    timer.update();
                 }
+                // Open the popup to determine the previous actual work timer work amount
+                add(new SlidersPopup(true, timer));
+                // Create a timer for the AFK portion
+                timer = Timer.createAndAdd(new Timestamp(msLastActivity), new Timestamp(System.currentTimeMillis()));
+                add(new SlidersPopup(true, timer));
             });
         };
         refresh();
