@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.generator;
 
+import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.Data;
 import com.osiris.jsqlgen.model.*;
 import net.sf.jsqlparser.parser.CCJSqlParser;
@@ -206,7 +207,10 @@ public class JavaCodeGenerator {
 
         // STATIC TABLE INIT METHOD
         TableChange currentTableChange = GetTableChange.get(t, oldDatabases);
-        if(t.changes.isEmpty() || currentTableChange.hasChanges()) t.changes.add(currentTableChange);
+        if(t.changes.isEmpty() || currentTableChange.hasChanges()) {
+            t.changes.add(currentTableChange);
+            AL.info("Detected change in table '"+t.name+"' and added it.");
+        }
         classContentBuilder.append(GenStaticTableConstructor.s(t, tNameQuoted));
 
         if (t.isCache)

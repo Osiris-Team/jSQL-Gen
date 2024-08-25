@@ -55,7 +55,7 @@ public class LayoutSliders extends Component<LayoutSliders, Timer> {
         return super.setValue(timer);
     }
 
-    private Component<?, ?> getTimerTaskUI(TimerTask timerTask) {
+    private TimerTaskUI getTimerTaskUI(TimerTask timerTask) {
         TimerTaskUI comp = new TimerTaskUI(timerTask);
         var slider = comp.slider;
         AtomicReference<Double> refValueBefore = new AtomicReference<>(slider.getValue());
@@ -79,13 +79,16 @@ public class LayoutSliders extends Component<LayoutSliders, Timer> {
                     double remainingPercentage = 100.0 - currentValue;
                     double scaleFactor = remainingPercentage / (100.0 - currentValue);
 
-                    if(this.children.size() != timerTasks.size())
-                        throw new RuntimeException(this.children.size() +" != "+ timerTasks.size());
+                    if(this.children.size() != timerTasks.size()) {
+                        AL.warn(this.children.size() +" != "+ timerTasks.size());
+                        return;
+                    };
+                    AL.info("Sliders: "+children.size());
                     for (Object obj : this.children) {
                         TimerTaskUI otherComp = (TimerTaskUI) obj;
-                        AL.info("EXPECTING GETVALUE() FROM "+otherComp.toPrintString());
+                        //AL.info("EXPECTING GETVALUE() FROM "+otherComp.toPrintString());
                         TimerTask otherTask = debugGetValue(otherComp);
-                        AL.info("SUCCESS "+otherComp.toPrintString());
+                        //AL.info("SUCCESS "+otherComp.toPrintString());
 
                         if (otherComp.slider == slider) {
                             otherTask.percentageOfTimer = currentValue;

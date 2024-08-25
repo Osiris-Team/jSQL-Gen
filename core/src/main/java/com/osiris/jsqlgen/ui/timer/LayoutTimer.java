@@ -64,7 +64,8 @@ public class LayoutTimer extends Vertical implements Refreshable {
                 }
                 Timer timer = Timer.whereId().biggestFirst().limit(1).getFirstOrNull();
                 Objects.requireNonNull(timer);
-                if(timer.end != Timer.NULL){
+                if(msLastActivity <= 0) throw new RuntimeException("msLastActivity="+msLastActivity+" for timer="+timer.toPrintString());
+                if(timer.end == Timer.NULL){
                     timer.end = new Timestamp(msLastActivity);
                     timer.update();
                 }

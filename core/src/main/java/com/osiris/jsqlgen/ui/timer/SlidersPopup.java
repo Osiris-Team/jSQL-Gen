@@ -29,9 +29,6 @@ public class SlidersPopup extends Popup {
                 Task.createAndAdd(v);
             }));
 
-        var lySliders = new LayoutSliders(timer).padding(false).grow(1);
-        var lyBtnsTasks = new LayoutButtonsTasks(timer, lySliders);
-
         // Get recently used task
         Task task = null;
         for (TimerTask timerTask : TimerTask.whereId().biggestFirst().limit(50).get()) {
@@ -48,7 +45,8 @@ public class SlidersPopup extends Popup {
                 TimerTask.createAndAdd(timer.id, Task.PAUSE.id, isBackFromAFK ? 90 : 10);
             } else{
                 TimerTask.createAndAdd(timer.id, task.id, isBackFromAFK ? 10 : 90);
-                TimerTask.createAndAdd(timer.id, Task.PAUSE.id, isBackFromAFK ? 90 : 10);
+                if(task.id != Task.PAUSE.id)
+                    TimerTask.createAndAdd(timer.id, Task.PAUSE.id, isBackFromAFK ? 90 : 10);
             }
         }
 
@@ -56,6 +54,9 @@ public class SlidersPopup extends Popup {
         this.body.scrollable(true, "100%", "100%");
         this.add(text(isBackFromAFK ? "Please select the amount of work and tasks done while you were away." :
             "Please select the amount of work and tasks done."));
+
+        var lySliders = new LayoutSliders(timer).padding(false).grow(1);
+        var lyBtnsTasks = new LayoutButtonsTasks(timer, lySliders);
         this.add(hlNewTask, lyBtnsTasks, lySliders);
     }
 }
