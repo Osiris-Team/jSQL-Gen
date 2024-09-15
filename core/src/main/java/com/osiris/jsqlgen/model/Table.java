@@ -13,7 +13,11 @@ public class Table {
     public boolean isCache = false;
     public boolean isVaadinFlowUI = false;
     public ArrayList<TableChange> changes = new ArrayList<>();
-
+    /**
+     * Should be added to {@link #changes} before generating the code. <br>
+     * Should be always up-to-date with the latest user changes (like adding/removing/changing columns). <br>
+     */
+    public TableChange currentChange = new TableChange();
 
     public Table addIdColumn(){
         Column idColumn = new Column("id");
@@ -36,6 +40,7 @@ public class Table {
         t.isVaadinFlowUI = isVaadinFlowUI;
         t.changes.clear();
         t.changes.addAll(changes); // TODO is proper duplicate function required for this?
+        t.currentChange = currentChange;
         return t;
     }
 }

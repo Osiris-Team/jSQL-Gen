@@ -96,7 +96,8 @@ public class JavaCodeGenerator {
     public static List<Database> oldDatabases = new ArrayList<>();
 
     /**
-     * Generates Java source code, for the provided table.
+     * Generates Java source code, for the provided table. <br>
+     * Modifies the provided db object, for example to reset the {@link Table#currentChange}.
      */
     public static String generateTableFile(File oldGeneratedClass, Table t, Database db) throws Exception {
 
@@ -206,9 +207,13 @@ public class JavaCodeGenerator {
                 "public void setId(int id){this.id = id;}\n");
 
         // STATIC TABLE INIT METHOD
-        TableChange currentTableChange = GetTableChange.get(t, oldDatabases);
-        if(t.changes.isEmpty() || currentTableChange.hasChanges()) {
-            t.changes.add(currentTableChange);
+        // TODO make sure SQL is valid before saving JSON, make this check directly inse the update/delete/add methods for columns.
+        // TODO also check if a type conversion was made and check if that conversion is valid.
+        if(t.changes.isEmpty() || t.currentChange.hasChanges()) {
+            if(t.currentChange.oldTableName.isEmpty()) t.currentChange.oldTableName = t.name;
+            if(t.currentChange.newTableName.isEmpty()) t.currentChange.newTableName = t.name;
+            t.changes.add(t.currentChange);
+            t.currentChange = new TableChange();
             AL.info("Detected change in table '"+t.name+"' and added it.");
         }
         classContentBuilder.append(GenStaticTableConstructor.s(t, tNameQuoted));

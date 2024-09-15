@@ -9,7 +9,6 @@ import com.github.javaparser.ast.expr.Expression;
 import com.osiris.desku.App;
 import com.osiris.desku.Icon;
 import com.osiris.desku.ui.DesktopUI;
-import com.osiris.desku.Route;
 import com.osiris.desku.ui.UI;
 import com.osiris.desku.ui.Component;
 import com.osiris.desku.ui.input.*;
@@ -19,7 +18,6 @@ import com.osiris.desku.ui.layout.Horizontal;
 import com.osiris.desku.ui.layout.Popup;
 import com.osiris.desku.ui.layout.TabLayout;
 import com.osiris.desku.ui.layout.Vertical;
-import com.osiris.dyml.utils.UtilsFile;
 import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.generator.GenDatabaseFile;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
@@ -594,18 +592,7 @@ public class MainView extends Vertical {
                 dir.mkdirs();
             }
 
-            if (!db.getJavaProjectDirs().isEmpty()) {
-                // Write json structure data
-                for (File jsonData : getDatabaseStructureFile(db, dirs)) {
-                    AL.info(jsonData.getAbsolutePath());
-                    jsonData.createNewFile();
-                    StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
-                    Data.parser.toJson(db, sw);
-                    String out = sw.toString();
-                    //AL.info(out);
-                    Files.writeString(jsonData.toPath(), out);
-                }
-            }
+
             // Write Database class files and Tables files
             for (JavaProjectGenDir javaProjectGenDir : dirs) {
                 File databaseFile = getDatabaseFile(javaProjectGenDir);
@@ -652,6 +639,20 @@ public class MainView extends Vertical {
                         JavaCodeGenerator.generateTableFile(javaFile, t, db));
                 }
             }
+
+            // After generation, since db object might still change
+            if (!db.getJavaProjectDirs().isEmpty()) {
+                // Write json structure data
+                for (File jsonData : getDatabaseStructureFile(db, dirs)) {
+                    AL.info(jsonData.getAbsolutePath());
+                    jsonData.createNewFile();
+                    StringWriter sw = new StringWriter(); // Passing the filewriter directly results in a blank file
+                    Data.parser.toJson(db, sw);
+                    String out = sw.toString();
+                    //AL.info(out);
+                    Files.writeString(jsonData.toPath(), out);
+                }
+            }
         }
         return files;
     }
@@ -695,7 +696,7 @@ public class MainView extends Vertical {
             tableName.input.sty("font-weight", "bold").sty("font-size", "larger");
             hl.add(tableName);
             tableName.setTooltip("The table name. Changes are auto-saved.");
-            tableName.onValueChange(e -> { // enter pressed event
+            tableName.onValueChange(e -> {
                 try {
                     renameTable(dbName, e.valueBefore, e.value);
                 } catch (Exception ex) {
@@ -770,6 +771,10 @@ public class MainView extends Vertical {
         Table t = Data.findTable(db.tables, oldName);
         Objects.requireNonNull(t);
         t.name = newName;
+
+        // Update current change
+        t.currentChange.newTableName = newName;
+
         Data.save();
         AL.info("OK!");
     }
@@ -785,6 +790,11 @@ public class MainView extends Vertical {
         t.addIdColumn();
         db.tables.add(t);
         t.name = tableName;
+
+        // Update current change
+        t.currentChange.newTableName = tableName;
+        t.currentChange.oldTableName = tableName;
+
         Data.save();
         updateTablesList(dbName);
     }
@@ -905,7 +915,7 @@ public class MainView extends Vertical {
                 Column col = new Column(colName.getValue());
                 col.definition = colDef.getValue();
                 col.comment = colComment.getValue();
-                addNewColumn(listColumns, dbName, t.name, col, null);
+                addNewColumn(listColumns, dbName, t.name, col);
                 colName.setValue("");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -914,28 +924,70 @@ public class MainView extends Vertical {
     }
 
     private void updateColumn(Vertical listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws IOException {
-        AL.info("Updating column...");
+        AL.info("Updating column "+oldName+" -> "+newName);
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, oldName);
         Objects.requireNonNull(col);
-        AL.info("OLD: " + col.name + " " + col.definition + " " + col.comment);
         col.updateName(newName);
+        String oldDefinition = col.definition;
         col.definition = newDefinition;
         col.comment = newComment;
-        AL.info("NEW: " + col.name + " " + col.definition + " " + col.comment);
+
+        // Update current change
+        t.currentChange.deletedColumnNames.remove(oldName);
+        if(t.currentChange.addedColumnNames.contains(oldName)){
+            int i = t.currentChange.addedColumnNames.indexOf(oldName);
+            t.currentChange.addedColumnNames.set(i, newName);
+            t.currentChange.addedColumnDefinitions.set(i, newDefinition);
+        } else{
+            // Existing column, check for changes
+            int i = t.currentChange.newColumnNames.indexOf(oldName);
+            if(i >= 0){
+                t.currentChange.newColumnNames.remove(i);
+                t.currentChange.newColumnNames_Definitions.remove(i);
+                t.currentChange.oldColumnNames.remove(i);
+            }
+            if(!newName.equals(oldName)) {
+                t.currentChange.newColumnNames.add(newName);
+                t.currentChange.newColumnNames_Definitions.add(newDefinition);
+                t.currentChange.oldColumnNames.add(oldName);
+            }
+
+            i = t.currentChange.newColumnDefinitions.indexOf(oldDefinition);
+            if(i >= 0){
+                t.currentChange.newColumnDefinitions.remove(i);
+                t.currentChange.oldColumnDefinitions.remove(i);
+                t.currentChange.newColumnDefinitions_Names.remove(i);
+            }
+            if(!newDefinition.equals(oldDefinition)) {
+                t.currentChange.newColumnDefinitions.add(newDefinition);
+                t.currentChange.oldColumnDefinitions.add(oldDefinition);
+                t.currentChange.newColumnDefinitions_Names.add(newName);
+            }
+        }
+
+        if(!oldDefinition.equals(newDefinition))
+            AL.info("Updating column definition "+oldDefinition+ " -> " + newDefinition);
         Data.save();
         AL.info("OK!");
     }
 
-    private void addNewColumn(Vertical listColumns, String dbName, String tableName, Column col, String columnDefinition) throws IOException {
+    private void addNewColumn(Vertical listColumns, String dbName, String tableName, Column col) throws IOException {
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         col.id = Main.idCounter.getAndIncrement();
         t.columns.add(col);
-        col.definition = columnDefinition;
+
+        // Update current change
+        if(!t.currentChange.addedColumnNames.contains(col.name)){
+            t.currentChange.addedColumnNames.add(col.name);
+            t.currentChange.addedColumnDefinitions.add(col.definition);
+            t.currentChange.deletedColumnNames.remove(col.name);
+        }
+
         Data.save();
         updateColumnsList(listColumns, dbName, tableName);
     }
@@ -947,6 +999,17 @@ public class MainView extends Vertical {
         Column col = Data.findColumn(t.columns, columnName);
         Objects.requireNonNull(col);
         t.columns.remove(col);
+
+        // Update current change
+        if(!t.currentChange.deletedColumnNames.contains(col.name)){
+            t.currentChange.deletedColumnNames.add(col.name);
+            int i = t.currentChange.addedColumnNames.indexOf(col.name);
+            if(i >= 0) {
+                t.currentChange.addedColumnNames.remove(i);
+                t.currentChange.addedColumnDefinitions.remove(i);
+            }
+        }
+
         Data.save();
         updateColumnsList(listColumns, dbName, tableName);
     }

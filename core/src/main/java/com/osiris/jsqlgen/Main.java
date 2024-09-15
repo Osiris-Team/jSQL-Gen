@@ -32,6 +32,16 @@ public class Main {
         App.init(null, loggerParams);
         AL.info("DB initialized at: "+com.osiris.jsqlgen.jsqlgen.Database.url); // Init DB by static constructor
 
+        // Update id counter if there is an imported table with larger ids
+        for (Database db : Data.instance.databases) {
+            for (Table t : db.tables) {
+                for (Column col : t.columns) {
+                    if(col.id > idCounter.get())
+                        idCounter.set((int) (col.id + 1));
+                }
+            }
+        }
+
         for (Database db : Data.instance.databases) {
             // If there are missing ids set them
             for (Table t : db.tables) {
