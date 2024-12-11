@@ -930,46 +930,12 @@ public class MainView extends Vertical {
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, oldName);
         Objects.requireNonNull(col);
-        col.updateName(newName);
-        String oldDefinition = col.definition;
-        col.definition = newDefinition;
-        col.comment = newComment;
+        Column colOld = col.duplicate();
 
-        // Update current change
-        t.currentChange.deletedColumnNames.remove(oldName);
-        if(t.currentChange.addedColumnNames.contains(oldName)){
-            int i = t.currentChange.addedColumnNames.indexOf(oldName);
-            t.currentChange.addedColumnNames.set(i, newName);
-            t.currentChange.addedColumnDefinitions.set(i, newDefinition);
-        } else{
-            // Existing column, check for changes
-            int i = t.currentChange.newColumnNames.indexOf(oldName);
-            if(i >= 0){
-                t.currentChange.newColumnNames.remove(i);
-                t.currentChange.newColumnNames_Definitions.remove(i);
-                t.currentChange.oldColumnNames.remove(i);
-            }
-            if(!newName.equals(oldName)) {
-                t.currentChange.newColumnNames.add(newName);
-                t.currentChange.newColumnNames_Definitions.add(newDefinition);
-                t.currentChange.oldColumnNames.add(oldName);
-            }
+        t.updateCol(col, oldName, newName, newDefinition, newComment);
 
-            i = t.currentChange.newColumnDefinitions.indexOf(oldDefinition);
-            if(i >= 0){
-                t.currentChange.newColumnDefinitions.remove(i);
-                t.currentChange.oldColumnDefinitions.remove(i);
-                t.currentChange.newColumnDefinitions_Names.remove(i);
-            }
-            if(!newDefinition.equals(oldDefinition)) {
-                t.currentChange.newColumnDefinitions.add(newDefinition);
-                t.currentChange.oldColumnDefinitions.add(oldDefinition);
-                t.currentChange.newColumnDefinitions_Names.add(newName);
-            }
-        }
-
-        if(!oldDefinition.equals(newDefinition))
-            AL.info("Updating column definition "+oldDefinition+ " -> " + newDefinition);
+        if(!colOld.definition.equals(newDefinition))
+            AL.info("Updating column definition "+colOld.definition+ " -> " + newDefinition);
         Data.save();
         AL.info("OK!");
     }
@@ -979,14 +945,7 @@ public class MainView extends Vertical {
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         col.id = Main.idCounter.getAndIncrement();
-        t.columns.add(col);
-
-        // Update current change
-        if(!t.currentChange.addedColumnNames.contains(col.name)){
-            t.currentChange.addedColumnNames.add(col.name);
-            t.currentChange.addedColumnDefinitions.add(col.definition);
-            t.currentChange.deletedColumnNames.remove(col.name);
-        }
+        t.addCol(col);
 
         Data.save();
         updateColumnsList(listColumns, dbName, tableName);
@@ -998,17 +957,8 @@ public class MainView extends Vertical {
         Objects.requireNonNull(t);
         Column col = Data.findColumn(t.columns, columnName);
         Objects.requireNonNull(col);
-        t.columns.remove(col);
 
-        // Update current change
-        if(!t.currentChange.deletedColumnNames.contains(col.name)){
-            t.currentChange.deletedColumnNames.add(col.name);
-            int i = t.currentChange.addedColumnNames.indexOf(col.name);
-            if(i >= 0) {
-                t.currentChange.addedColumnNames.remove(i);
-                t.currentChange.addedColumnDefinitions.remove(i);
-            }
-        }
+        t.removeCol(col);
 
         Data.save();
         updateColumnsList(listColumns, dbName, tableName);

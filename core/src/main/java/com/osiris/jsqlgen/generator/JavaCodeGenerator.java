@@ -11,6 +11,7 @@ import net.sf.jsqlparser.statement.StatementVisitor;
 import net.sf.jsqlparser.statement.Statements;
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
+import ru.lanwen.verbalregex.VerbalExpression;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -21,6 +22,48 @@ import java.util.*;
 import static com.osiris.jsqlgen.utils.UString.*;
 
 public class JavaCodeGenerator {
+
+    public static String[] sqlDefinitionWords = {
+        // Data Types, not needed since this is checked by another class
+        "", // Empty string allowed
+
+        // Some values, (numbers, strings will be excluded later)
+        "TRUE", "FALSE",
+
+        // Constraints
+        "PRIMARY", "KEY", "FOREIGN", "KEY", "UNIQUE", "NOT", "NULL", "DEFAULT", "CHECK",
+        "AUTO_INCREMENT", "IDENTITY", "ON", "DELETE", "ON", "UPDATE", "REFERENCES",
+
+        // Modifiers
+        "UNSIGNED", "ZEROFILL", "CHARACTER", "SET", "COLLATE",
+
+        // Indexing
+        "INDEX", "FULLTEXT", "SPATIAL", "HASH", "BTREE",
+
+        // Table Options
+        "ENGINE", "AUTO_INCREMENT", "CHARSET", "ROW_FORMAT", "COMMENT",
+
+        // Miscellaneous
+        "GENERATED", "ALWAYS", "AS", "STORED", "VIRTUAL", "COLUMN",
+
+        // Dialect-Specific Keywords
+        // MySQL
+        "NOW", "CURDATE", "CURTIME", "CURRENT_TIMESTAMP",
+
+        // PostgreSQL
+        "SERIAL", "BIGSERIAL", "SMALLSERIAL", "JSONB", "UUID", "ARRAY",
+        "CITEXT", "MONEY", "XML", "TSVECTOR", "TSQUERY", "INTERVAL",
+
+        // Oracle
+        "NUMBER", "VARCHAR2", "NVARCHAR2", "CLOB", "NCLOB", "BFILE",
+        "RAW", "LONG RAW", "ROWID", "UROWID", "XMLTYPE", "TIMESTAMP", "WITH", "TIME", "ZONE",
+        "TIMESTAMP", "WITH", "LOCAL", "TIME", "ZONE",
+
+        // SQL Server
+        "NVARCHAR", "NTEXT", "UNIQUEIDENTIFIER", "SMALLDATETIME", "DATETIME2",
+        "DATETIMEOFFSET", "SQL_VARIANT", "GEOMETRY", "GEOGRAPHY", "IMAGE",
+        "HIERARCHYID", "ROWVERSION"
+    };
 
     public static void prepareTables(Database db) throws Exception {
         for (Table t : db.tables) {
@@ -65,19 +108,61 @@ public class JavaCodeGenerator {
             }
         }
 
+        var validWordsInDefinition = Arrays.asList(sqlDefinitionWords);
         for (Table t : db.tables) {
             for (Column col : t.columns) {
                 // CHECK SQL
                 try{
                     Alter sql = (Alter) CCJSqlParserUtil.parse("ALTER TABLE `table` ADD COLUMN `column` " + col.definition);
-                    for (AlterExpression alterExpression : sql.getAlterExpressions()) {
-                        for (AlterExpression.ColumnDataType columnDataType : alterExpression.getColDataTypeList()) {
-                            for (String columnSpec : columnDataType.getColumnSpecs()) {
-                                // TODO compare each constraint with a list of all supported/valid constraints, since CCJSqlParserUtil does not do that
-                                // or instead launch a MySQL server for example and run the SQL to see if it works
-                                // to make this perfect, we would need to run other other servers like PostgreSQL too, if the user wants to use that instead
-                            }
-                        }
+                    // TODO compare each constraint with a list of all supported/valid constraints, since CCJSqlParserUtil does not do that
+                    // or instead launch a MySQL server for example and run the SQL to see if it works
+                    // to make this perfect, we would need to run other other servers like PostgreSQL too, if the user wants to use that instead
+                    VerbalExpression parenthesesRegex = VerbalExpression.regex()
+                        .find("(").anything().find(")")
+                        .build();
+
+                    VerbalExpression doubleQuotesRegex = VerbalExpression.regex()
+                        .find("\"").anything().find("\"")
+                        .build();
+
+                    VerbalExpression singleQuotesRegex = VerbalExpression.regex()
+                        .find("'").anything().find("'")
+                        .build();
+
+                    VerbalExpression backticksRegex = VerbalExpression.regex()
+                        .find("`").anything().find("`")
+                        .build();
+
+                    VerbalExpression numbersRegex = VerbalExpression.regex()
+                        .maybe("-")          // Optional negative sign
+                        .digit()              // Matches digits
+                        .zeroOrMore()         // Matches any number of digits (integer part)
+                        .maybe(".")           // Matches the decimal point
+                        .digit().zeroOrMore() // Matches the decimal part if exists
+                        .build();
+
+                    // Test string
+                    String input = "Example text (remove this) and \"this too\" or `this one`, even 'this', plus -123.45 and 567 or -89 numbers.";
+
+                    // Test string
+                    //String example = "Example text (remove this) and \"this too\" or `this one`, even 'this', plus 123 numbers.";
+
+                    // Remove data types from def since this was already checked before
+                    // This also has the side-effect that only one data type is allowed in a definition
+                    String def = col.definition;
+                    for (String s : col.type.inSQL) {
+                        def = def.replaceAll(s, "");
+                    }
+
+                    // Apply all regex replacements
+                    def = def.replaceAll(parenthesesRegex.toString(), "")
+                        .replaceAll(doubleQuotesRegex.toString(), "")
+                        .replaceAll(singleQuotesRegex.toString(), "")
+                        .replaceAll(backticksRegex.toString(), "")
+                        .replaceAll(numbersRegex.toString(), "");
+                    for (String word : def.split(" ")) {
+                        if(!validWordsInDefinition.contains(word.toUpperCase()))
+                            throw new Exception("'"+word+"' is very likely an invalid SQL definition in '"+def+"'! If not create a pull request on GitHub.");
                     }
                 } catch (Throwable e) {
                     throw new RuntimeException("Invalid SQL found in "+db.name+"."+t.name+"."+col.name+": "+e.getMessage(), e);
@@ -174,9 +259,6 @@ public class JavaCodeGenerator {
             classContentBuilder.append(generatedEnumClass);
         }
 
-        // Add other dependencies
-        classContentBuilder.append(GenDefBlobClass.s(importsList));
-
         // Add listeners
         classContentBuilder.append("/** Limitation: Not executed in constructor, but only the create methods. */\n" +
                 "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onCreate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
@@ -268,6 +350,13 @@ public class JavaCodeGenerator {
                     (col.comment != null ? (col.comment + "\n") : "") +
                     "*/\n" +
                     "public " + col.type.inJava + " " + col.name + ";\n");
+            classContentBuilder.append("" +
+                "/**\n" +
+                "Database field/value: " + col.definition + ". <br>\n" +
+                (col.comment != null ? (col.comment + "\n") : "") + "\n"+
+                "Convenience builder-like setter with method-chaining.\n"+
+                "*/\n" +
+                "public "+t.name+" "+col.name+"("+col.type.inJava+" "+col.name+"){ this."+ col.name+" = "+col.name+"; return this;}\n");
         }
 
         // CREATE INIT DEFAULTS METHOD:
@@ -287,7 +376,7 @@ public class JavaCodeGenerator {
 
 
         // CREATE COUNT METHOD:
-        classContentBuilder.append("public static int count(){ return count(null, null); }\n" +
+        classContentBuilder.append("public static int count(){ return count(null, (Object[]) null); }\n" +
                 "\n" +
                 "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "String sql = \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
@@ -713,7 +802,7 @@ public class JavaCodeGenerator {
                     if (col.type == ColumnType.YEAR) fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
                     else fieldsBuilder.append(objName + "." + col.name + "=new " + col.type.inJava + "(" + val + "); ");
                 } else if (col.type.isBlob()) {
-                    fieldsBuilder.append(objName + "." + col.name + "=new DefaultBlob(new byte[0]); ");
+                    fieldsBuilder.append(objName + "." + col.name + "=new Database.DefaultBlob(new byte[0]); ");
                     // This is not directly supported by SQL
                 } else if (col.type.isNumber() || col.type.isDecimalNumber()) {
                     fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");

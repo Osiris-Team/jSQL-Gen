@@ -10,38 +10,45 @@ import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.Arrays;
-import java.time.*;
-import java.util.Date;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.sql.*;
-import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.datetimepicker.DateTimePicker;
-import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.sql.SQLException;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
+import java.util.function.Function;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Span;
 
 /**
+Table Person with id 1 and 0 changes/version. <br>
+Structure (8 fields/columns): <br>
+- int id = INT NOT NULL PRIMARY KEY <br>
+- String name = TEXT NOT NULL <br>
+- int age = INT NOT NULL <br>
+- Flair flair = ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL' <br>
+- String lastName = TEXT DEFAULT '' <br>
+- int parentAge = INT DEFAULT 10 <br>
+- Blob myblob = BLOB DEFAULT '' <br>
+- Timestamp timestamp = TIMESTAMP DEFAULT NOW() <br>
+
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
 that contains static methods for fetching/updating data from the `person` table.
 A single object/instance of this class represents a single row in the table
 and data can be accessed via its public fields. <br>
 <br>
-You can add your own code to the top of this class. <br>
+You can add your own code to the bottom of this class. <br>
 Do not modify the rest of this class since those changes will be removed at regeneration.
 If modifications are really needed create a pull request directly to jSQL-Gen instead. <br>
 <br>
@@ -55,90 +62,16 @@ The cache gets cleared/invalidated at any update/insert/delete. <br>
 - VAADIN FLOW is enabled, which means that an additional obj.toComp() method<br>
 will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
 <br>
-Structure (8 fields/columns): <br>
-- int id = INT NOT NULL PRIMARY KEY <br>
-- String name = TEXT NOT NULL <br>
-- int age = INT NOT NULL <br>
-- Flair flair = ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL' <br>
-- String lastName = TEXT DEFAULT '' <br>
-- int parentAge = INT DEFAULT 10 <br>
-- Blob myblob = BLOB DEFAULT '' <br>
-- Timestamp timestamp = TIMESTAMP DEFAULT NOW() <br>
 */
-public class Person implements Database.Row<Person>{
-// The code below will not be removed when re-generating this class.
-// Additional code start -> 
-private Person(){}
-// Additional code end <- 
+public class Person implements Database.Row{
 public enum Flair {COOL, CHILL, FLY,}
-class DefaultBlob implements Blob{
-    private byte[] data;
-
-    // Constructor that accepts a byte array
-    public DefaultBlob(byte[] data) {
-        this.data = data;
-    }
-    @Override
-    public long length() throws SQLException {
-        return data.length;
-    }
-
-    @Override
-    public byte[] getBytes(long pos, int length) throws SQLException {
-        return data;
-    }
-
-    @Override
-    public InputStream getBinaryStream() throws SQLException {
-        return new ByteArrayInputStream(data);
-    }
-
-    @Override
-    public long position(byte[] pattern, long start) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public long position(Blob pattern, long start) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public int setBytes(long pos, byte[] bytes) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public OutputStream setBinaryStream(long pos) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public void truncate(long len) throws SQLException {
-
-    }
-
-    @Override
-    public void free() throws SQLException {
-
-    }
-
-    @Override
-    public InputStream getBinaryStream(long pos, long length) throws SQLException {
-        return new ByteArrayInputStream(data);
-    }
-}
 /** Limitation: Not executed in constructor, but only the create methods. */
 public static CopyOnWriteArrayList<Consumer<Person>> onCreate = new CopyOnWriteArrayList<Consumer<Person>>();
 public static CopyOnWriteArrayList<Consumer<Person>> onAdd = new CopyOnWriteArrayList<Consumer<Person>>();
 public static CopyOnWriteArrayList<Consumer<Person>> onUpdate = new CopyOnWriteArrayList<Consumer<Person>>();
-/** Limitation: Only executed in remove(obj) method. */
 public static CopyOnWriteArrayList<Consumer<Person>> onRemove = new CopyOnWriteArrayList<Consumer<Person>>();
+
+private static boolean isEqual(Person obj1, Person obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }
     /**
      * Only works correctly if the package name is com.osiris.jsqlgen.
      */
@@ -154,6 +87,8 @@ public static CopyOnWriteArrayList<Consumer<Person>> onRemove = new CopyOnWriteA
         return s +"..."+ stack[1].toString(); //stack[0] == current method, gets ignored
     }
 public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);
+public int getId(){return id;}
+public void setId(int id){this.id = id;}
 public static volatile boolean hasChanges = false;
 static {
 try{
@@ -164,20 +99,6 @@ Database.TableMetaData t = Database.getTableMetaData(1);
 for (int i = t.version; i < 1; i++) {
 if(i == 0){
 if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `person` (`id` INT NOT NULL PRIMARY KEY)");
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `name` TEXT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `age` INT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 4){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 5){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `lastName` TEXT DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 6){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `parentAge` INT DEFAULT 10");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 7){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `myblob` BLOB DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 8){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `timestamp` TIMESTAMP DEFAULT NOW()");}catch(Exception exAdd){if(!exAdd.getMessage().startsWith("Duplicate")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
@@ -305,7 +226,13 @@ public Timestamp timestamp;
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
 protected Person initDefaultFields() {
-this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new DefaultBlob(new byte[0]); this.timestamp=new Timestamp(System.currentTimeMillis()); return this;
+this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new Database.DefaultBlob(new byte[0]); this.timestamp=new Timestamp(System.currentTimeMillis()); return this;
+}
+
+public static class Optionals{
+public Optionals(){this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new Database.DefaultBlob(new byte[0]); this.timestamp=new Timestamp(System.currentTimeMillis()); }
+public Flair flair; public String lastName; public int parentAge; public Blob myblob; public Timestamp timestamp; 
+public Optionals flair(Flair flair){ this.flair = flair; return this;} public Optionals lastName(String lastName){ this.lastName = lastName; return this;} public Optionals parentAge(int parentAge){ this.parentAge = parentAge; return this;} public Optionals myblob(Blob myblob){ this.myblob = myblob; return this;} public Optionals timestamp(Timestamp timestamp){ this.timestamp = timestamp; return this;} 
 }
 
 /**
@@ -314,8 +241,35 @@ Increments the id (thread-safe) and sets it for this object (basically reserves 
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 Also note that this method will NOT add the object to the table.
 */
-public static Person create( String name, int age) {
+public static Person create(String name, int age) {
 int id = idCounter.getAndIncrement();
+Person obj = new Person(id, name, age);
+onCreate.forEach(code -> code.accept(obj));
+return obj;
+}
+
+/**
+Creates and returns an object that can be added to this table.
+Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
+Note that this method will NOT add the object to the table.
+*/
+public static Person create(String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
+int id = idCounter.getAndIncrement();
+Person obj = new Person();
+obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
+onCreate.forEach(code -> code.accept(obj));
+return obj;
+}
+
+/**
+Creates and returns an in-memory object with -1 as id, that can be added to this table
+AFTER you manually did obj.id = idCounter.getAndIncrement().
+This is useful for objects that may never be added to the table.
+Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+Also note that this method will NOT add the object to the table.
+*/
+public static Person createInMem(String name, int age) {
+int id = -1;
 Person obj = new Person(id, name, age);
 onCreate.forEach(code -> code.accept(obj));
 return obj;
@@ -328,20 +282,8 @@ This is useful for objects that may never be added to the table.
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 Also note that this method will NOT add the object to the table.
 */
-public static Person createInMem( String name, int age) {
+public static Person createInMem(String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
 int id = -1;
-Person obj = new Person(id, name, age);
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that this method will NOT add the object to the table.
-*/
-public static Person create( String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
-int id = idCounter.getAndIncrement();
 Person obj = new Person();
 obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
 onCreate.forEach(code -> code.accept(obj));
@@ -352,7 +294,7 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
-public static Person createAndAdd( String name, int age)  {
+public static Person createAndAdd(String name, int age)  {
 int id = idCounter.getAndIncrement();
 Person obj = new Person(id, name, age);
 onCreate.forEach(code -> code.accept(obj));
@@ -363,10 +305,19 @@ return obj;
 /**
 Convenience method for creating and directly adding a new object to the table.
 */
-public static Person createAndAdd( String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
+public static Person createAndAdd(String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
 int id = idCounter.getAndIncrement();
 Person obj = new Person();
 obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
+onCreate.forEach(code -> code.accept(obj));
+add(obj);
+return obj;
+}
+
+public static Person createAndAdd(String name, int age, Optionals optionals)  {
+int id = idCounter.getAndIncrement();
+Person obj = new Person(id, name, age);
+obj.flair = optionals.flair; obj.lastName = optionals.lastName; obj.parentAge = optionals.parentAge; obj.myblob = optionals.myblob; obj.timestamp = optionals.timestamp; 
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
@@ -519,7 +470,7 @@ return list;}
         return thread;
     }
 
-public static int count(){ return count(null, null); }
+public static int count(){ return count(null, (Object[]) null); }
 
 public static int count(String where, Object... whereValues)  {
 String sql = "SELECT COUNT(`id`) AS recordCount FROM `person`" +
@@ -603,20 +554,20 @@ onAdd.forEach(code -> code.accept(obj));
 }
 
 /**
-Unsets its references (sets them to -1) and deletes the provided object from the database.
+Unsets its references (sets them to -1/'') and deletes the provided object from the database.
 */
 public static void remove(Person obj)  {
-remove(obj, true, false);
+remove(obj, true, Database.isRemoveRefs);
 }
 /**
  * Deletes the provided object from the database.
- * @param unsetRefs If true, sets ids in other tables to -1.
+ * @param unsetRefs If true, sets ids in other tables to -1/''.
  * @param removeRefs !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!! If true removes the complete obj/row(s) in all tables that reference/contain this id.
  *                   This is recursive. It's highly recommended to call removeRefs() before instead, which allows to explicitly exclude some tables.
 */
 public static void remove(Person obj, boolean unsetRefs, boolean removeRefs)  {
-if(unsetRefs) unsetRefs(obj, PersonOrder.class);
-if(removeRefs) removeRefs(obj, PersonOrder.class);
+if(unsetRefs) unsetRefs(obj, PersonOrder.class, true);
+if(removeRefs) removeRefs(obj, PersonOrder.class, true);
 remove("WHERE id = "+obj.id);
 onRemove.forEach(code -> code.accept(obj));
 }
@@ -650,57 +601,46 @@ clearCache();
 }
 
 public static void removeAll()  {
-String sql = "DELETE FROM `person`";
-long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
-Connection con = Database.getCon();
-msGetCon = System.currentTimeMillis() - msGetCon;
-msJDBC = System.currentTimeMillis();
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.executeUpdate();
-msJDBC = System.currentTimeMillis() - msJDBC;
-}catch(Exception e){throw new RuntimeException(e);}
-        finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
-Database.freeCon(con);
-clearCache();
-}
+getLazySync(objs -> {for(Person obj : objs) {obj.remove();}});
     }
 
 /**
- * @see #remove(Person, boolean, boolean)
- */
-public static void unsetRefs(Person obj, Class<PersonOrder> personId_in_PersonOrder)  {
-if (personId_in_PersonOrder != null) {PersonOrder.getLazySync(results -> { 
-  for(PersonOrder obj1 : results) {obj1.personId = -1; obj1.update();};
+     * @see #remove(Person, boolean, boolean) 
+     */
+public static void unsetRefs(Person obj, Class<PersonOrder> personId_in_PersonOrder, boolean remove_personId_in_PersonOrder)  {
+if (remove_personId_in_PersonOrder) {PersonOrder.getLazySync(results -> { 
+  for(PersonOrder refObj : results) {refObj.personId = -1; refObj.update();};
 }, totalCount -> {}, 100, PersonOrder.wherePersonId().is(obj.id));}
+
     }
 
 /** !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!!
      * @see #remove(Person, boolean, boolean) 
      */
-public static void removeRefs(Person obj, Class<PersonOrder> personId_in_PersonOrder)  {
-if (personId_in_PersonOrder != null) {PersonOrder.getLazySync(results -> { 
-  for(PersonOrder obj1 : results) {obj1.remove(false, true);};
+public static void removeRefs(Person obj, Class<PersonOrder> personId_in_PersonOrder, boolean remove_personId_in_PersonOrder)  {
+// Take care of direct refs and indirect refs
+if (remove_personId_in_PersonOrder) {PersonOrder.getLazySync(results -> { 
+  for(PersonOrder refObj : results) {PersonOrder.removeRefs(refObj);refObj.remove();};
 }, totalCount -> {}, 100, PersonOrder.wherePersonId().is(obj.id));}
+
+
+
     }
 
 public Person clone(){
 return new Person(this.id,this.name,this.age,this.flair,this.lastName,this.parentAge,this.myblob,this.timestamp);
 }
-public Person add(){
+public void add(){
 Person.add(this);
-return this;
 }
-public Person update(){
+public void update(){
 Person.update(this);
-return this;
 }
-public Person remove(){
+public void remove(){
 Person.remove(this);
-return this;
 }
-public Person remove(boolean unsetRefs, boolean removeRefs){
+public void remove(boolean unsetRefs, boolean removeRefs){
 Person.remove(this, unsetRefs, removeRefs);
-return this;
 }
 public String toPrintString(){
 return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+this.flair+" "+"lastName="+this.lastName+" "+"parentAge="+this.parentAge+" "+"myblob="+this.myblob+" "+"timestamp="+this.timestamp+" ";
@@ -708,8 +648,6 @@ return  ""+"id="+this.id+" "+"name="+this.name+" "+"age="+this.age+" "+"flair="+
 public String toMinimalPrintString(){
 return ""+this.id+"; "+this.name+"; "+this.age+"; "+this.flair+"; "+this.lastName+"; "+this.parentAge+"; "+"";
 }
-    public static class Comp extends VerticalLayout{
-
 public static class BooleanSelect extends Select<Boolean> {
     public Span yes = genYesLabel();
     public Span no = genNoLabel();
@@ -748,7 +686,103 @@ public static class BooleanSelect extends Select<Boolean> {
         txt.getStyle().set("background-color", "var(--lumo-error-color)");
         return txt;
     }
+}// Executed for all objects
+public static Consumer<Person> onCreateV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onCreate.remove(code2);}); Person.onCreate.add(code2); return code2;
 }
+// Executed for all objects
+public static Consumer<Person> onAddV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onAdd.remove(code2);}); Person.onAdd.add(code2); return code2;
+}
+// Executed for all objects
+public static Consumer<Person> onUpdateV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onUpdate.remove(code2);}); Person.onUpdate.add(code2); return code2;
+}
+// Executed for all objects
+public static Consumer<Person> onRemoveV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onRemove.remove(code2);}); Person.onRemove.add(code2); return code2;
+}
+
+
+// Executed only for this object
+public Consumer<Person> onCreateThisV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onCreate.remove(code2);}); Person.onCreate.add(code2); return code2;
+}
+// Executed only for this object
+public Consumer<Person> onAddThisV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onAdd.remove(code2);}); Person.onAdd.add(code2); return code2;
+}
+// Executed only for this object
+public Consumer<Person> onUpdateThisV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onUpdate.remove(code2);}); Person.onUpdate.add(code2); return code2;
+}
+// Executed only for this object
+public Consumer<Person> onRemoveThisV(Consumer<Person> code){
+UI ui = UI.getCurrent(); Consumer<Person> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {Person.onRemove.remove(code2);}); Person.onRemove.add(code2); return code2;
+}
+
+
+public static ComboBox<Person> newTableComboBox(){
+         ComboBox<Person> comboBox = new ComboBox<Person>("Person");
+        {comboBox.setItems(Person.get());
+            comboBox.setRenderer(new ComponentRenderer<>(obj -> {
+                Div div = new Div();
+                div.setText(obj.toMinimalPrintString());
+            return div;}));
+            comboBox.setItemLabelGenerator(obj -> {
+                return obj.toMinimalPrintString();
+            });
+        }
+return comboBox;
+}
+
+public static NumberField newNfId(){
+         NumberField nfId = new NumberField("Id");
+return nfId;
+}
+
+public static TextField newTfName(){
+         TextField tfName = new TextField("Name");
+return tfName;
+}
+
+public static NumberField newNfAge(){
+         NumberField nfAge = new NumberField("Age");
+return nfAge;
+}
+
+public static Select<Person.Flair> newSelFlair(){
+         Select<Person.Flair> selFlair = new Select<Person.Flair>();
+        {selFlair.setLabel("Flair"); selFlair.setItems(Person.Flair.values()); }
+return selFlair;
+}
+
+public static TextField newTfLastName(){
+         TextField tfLastName = new TextField("LastName");
+return tfLastName;
+}
+
+public static NumberField newNfParentAge(){
+         NumberField nfParentAge = new NumberField("ParentAge");
+return nfParentAge;
+}
+
+public static DateTimePicker newDfTimestamp(){
+         DateTimePicker dfTimestamp = new DateTimePicker("Timestamp");
+return dfTimestamp;
+}
+
+    /**
+     * Gets executed later if {@link #isOnlyInMemory()}, otherwise provided
+     * code gets executed directly.
+     */    public void whenReadyV(Consumer<Person> code) {
+        if(isOnlyInMemory()) onAddThisV(obj -> code.accept(obj));
+        else code.accept(this);
+    }
+
+    public static class Comp extends VerticalLayout{
+
+        public Person dataPerson;
         public Person data;
 
         // Form and fields
@@ -770,7 +804,7 @@ public static class BooleanSelect extends Select<Boolean> {
                 updateData();
                 data.id = idCounter.getAndIncrement();
                 Person.add(data);
-                e.unregisterListener(); // Make sure it gets only added once to the database
+                e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
 };
         public Button btnSave = new Button("Save");
@@ -787,12 +821,13 @@ public static class BooleanSelect extends Select<Boolean> {
         public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {
                 btnDelete.setEnabled(false);
                 Person.remove(data);
-                e.unregisterListener(); // Make sure it gets only added once to the database
+                e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
 };
 
         public Comp(Person data) {
             this.data = data;
+            this.dataPerson = this.data;
             setWidthFull();
             setPadding(false);
 
@@ -852,10 +887,13 @@ public static class BooleanSelect extends Select<Boolean> {
             hlButtons.add(btnDelete);
             hlButtons.addAndExpand(btnSave);
         }
+
     }
 
+    public static volatile Function<Person, Person.Comp> global_fn_toComp = (obj) -> {return new Person.Comp(obj);};
+    public volatile Function<Void, Person.Comp> fn_toComp = (_null) -> {return global_fn_toComp.apply(this);};
     public Person.Comp toComp(){
-        return new Person.Comp(this);
+        return fn_toComp.apply(null);
     }
 
 public boolean isOnlyInMemory(){
@@ -919,6 +957,16 @@ public static class WHERE<T> {
                 return Person.get(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
             else
                 return Person.get(where+orderBy+limitBuilder.toString(), (T[]) null);
+        }
+
+        /**
+         * Executes the generated SQL statement
+         * and returns the first object matching the query or null if none.
+         */
+        public Person getFirstOrNull()  {
+            List<Person> results = get();
+            if(results.isEmpty()) return null;
+            else return results.get(0);
         }
 
         /**
@@ -1037,6 +1085,51 @@ public static class WHERE<T> {
             whereObjects.add(obj);
             return this;
         }
+        /**
+         * columnName LIKE ? <br>
+         * Example: WHERE CustomerName LIKE 'a%' <br>
+         * Explanation: Finds any values that start with "a" <br>
+         * Note: Your provided obj gets turned to a string and if it already contains '_' or '%' these get escaped with '/' to ensure a correct query. <br>
+         *
+         * @see <a href="https://www.w3schools.com/mysql/mysql_like.asp">https://www.w3schools.com/mysql/mysql_like.asp</a>
+         */
+        public WHERE<T> startsWith(T obj) {
+            String s = obj.toString().replace("_", "/_").replace("%", "/%");
+            s = s + "%";
+            sqlBuilder.append(columnName).append(" LIKE ? ESCAPE '/' ");
+            whereObjects.add(s);
+            return this;
+        }
+        /**
+         * columnName LIKE ? <br>
+         * Example: WHERE CustomerName LIKE '%a' <br>
+         * Explanation: Finds any values that end with "a" <br>
+         * Note: Your provided obj gets turned to a string and if it already contains '_' or '%' these get escaped with '/' to ensure a correct query. <br>
+         *
+         * @see <a href="https://www.w3schools.com/mysql/mysql_like.asp">https://www.w3schools.com/mysql/mysql_like.asp</a>
+         */
+        public WHERE<T> endsWith(T obj) {
+            String s = obj.toString().replace("_", "/_").replace("%", "/%");
+            s = "%" + s;
+            sqlBuilder.append(columnName).append(" LIKE ? ESCAPE '/' ");
+            whereObjects.add(s);
+            return this;
+        }
+        /**
+         * columnName LIKE ? <br>
+         * Example: WHERE CustomerName LIKE '%or%' <br>
+         * Explanation: Finds any values that have "or" in any position <br>
+         * Note: Your provided obj gets turned to a string and if it already contains '_' or '%' these get escaped with '/' to ensure a correct query. <br>
+         *
+         * @see <a href="https://www.w3schools.com/mysql/mysql_like.asp">https://www.w3schools.com/mysql/mysql_like.asp</a>
+         */
+        public WHERE<T> contains(T obj) {
+            String s = obj.toString().replace("_", "/_").replace("%", "/%");
+            s = "%" + s + "%";
+            sqlBuilder.append(columnName).append(" LIKE ? ESCAPE '/' ");
+            whereObjects.add(s);
+            return this;
+        }
 
         /**
          * columnName NOT LIKE ? <br>
@@ -1126,4 +1219,8 @@ public static class WHERE<T> {
         }
 
     }
+// The code below will not be removed when re-generating this class.
+// Additional code start -> 
+    private Person(){}
+// Additional code end <- 
 }

@@ -1,7 +1,13 @@
 package com.osiris.jsqlgen.testDB;
+
 import java.sql.*;
 import java.util.*;
-
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.ByteArrayInputStream;
+import java.sql.Blob;
+import java.sql.SQLException;
 /*
 Auto-generated class that is used by all table classes to create connections. <br>
 It holds the database credentials (set by you at first run of jSQL-Gen).<br>
@@ -24,7 +30,7 @@ public static boolean isRemoveRefs = false;
 * Use synchronized on this before doing changes to it. 
 */
 public static final List<Connection> availableConnections = new ArrayList<>();
-public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(1, 0, 0, "Person", new String[]{"id", "name", "age", "flair", "lastName", "parentAge", "myblob", "timestamp"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT NOT NULL", "INT NOT NULL", "ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'", "TEXT DEFAULT ''", "INT DEFAULT 10", "BLOB DEFAULT ''", "TIMESTAMP DEFAULT NOW()"}){public Class<?> getTableClass(){return Person.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Person obj : Person.get()) l.add(obj); return l;}public Database.Row get(int i){return Person.get(i);}public void update(Database.Row obj){Person.update((Person)obj);}public void add(Database.Row obj){Person.add((Person)obj);}public void remove(Database.Row obj){Person.remove((Person)obj);}}, new TableMetaData(2, 0, 0, "PersonOrder", new String[]{"id", "personId", "name"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return PersonOrder.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(PersonOrder obj : PersonOrder.get()) l.add(obj); return l;}public Database.Row get(int i){return PersonOrder.get(i);}public void update(Database.Row obj){PersonOrder.update((PersonOrder)obj);}public void add(Database.Row obj){PersonOrder.add((PersonOrder)obj);}public void remove(Database.Row obj){PersonOrder.remove((PersonOrder)obj);}}};
+public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(1, 0, 0, "Person", new String[]{"id", "name", "age", "flair", "lastName", "parentAge", "myblob", "timestamp"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT NOT NULL", "INT NOT NULL", "ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'", "TEXT DEFAULT ''", "INT DEFAULT 10", "BLOB DEFAULT ''", "TIMESTAMP DEFAULT NOW()"}){public Class<?> getTableClass(){return Person.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Person obj : Person.get()) l.add(obj); return l;}public Database.Row get(int i){return Person.get(i);}public void update(Database.Row obj){Person.update((Person)obj);}public void add(Database.Row obj){Person.add((Person)obj);}public void remove(Database.Row obj){Person.remove((Person)obj);}}, new TableMetaData(2, 0, 0, "PersonOrder", new String[]{"id", "personId", "name", "time"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT NOT NULL", "TEXT DEFAULT ''", "INT DEFAULT 10000"}){public Class<?> getTableClass(){return PersonOrder.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(PersonOrder obj : PersonOrder.get()) l.add(obj); return l;}public Database.Row get(int i){return PersonOrder.get(i);}public void update(Database.Row obj){PersonOrder.update((PersonOrder)obj);}public void add(Database.Row obj){PersonOrder.add((PersonOrder)obj);}public void remove(Database.Row obj){PersonOrder.remove((PersonOrder)obj);}}};
 
     static{create();} // Create database if not exists
 
@@ -187,10 +193,12 @@ public static void create() {
             System.exit(1);
         }
     }
-    public interface Row<T extends Row>{
-        T update();
-        T add();
-        T remove();
+    public interface Row{
+        int getId();
+        void setId(int id);
+        void update();
+        void add();
+        void remove();
         String toPrintString();
         String toMinimalPrintString();
     }
@@ -227,4 +235,66 @@ public static synchronized void printTable(TableMetaData table) {
     for (Database.Row row : rows) {
         System.err.println(row.toPrintString());
     }
-}}
+}public static class DefaultBlob implements Blob{
+    private byte[] data;
+
+    // Constructor that accepts a byte array
+    public DefaultBlob(byte[] data) {
+        this.data = data;
+    }
+    @Override
+    public long length() throws SQLException {
+        return data.length;
+    }
+
+    @Override
+    public byte[] getBytes(long pos, int length) throws SQLException {
+        return data;
+    }
+
+    @Override
+    public InputStream getBinaryStream() throws SQLException {
+        return new ByteArrayInputStream(data);
+    }
+
+    @Override
+    public long position(byte[] pattern, long start) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public long position(Blob pattern, long start) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int setBytes(long pos, byte[] bytes) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public OutputStream setBinaryStream(long pos) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public void truncate(long len) throws SQLException {
+
+    }
+
+    @Override
+    public void free() throws SQLException {
+
+    }
+
+    @Override
+    public InputStream getBinaryStream(long pos, long length) throws SQLException {
+        return new ByteArrayInputStream(data);
+    }
+}
+}

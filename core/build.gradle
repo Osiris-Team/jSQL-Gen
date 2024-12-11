@@ -16,10 +16,13 @@ dependencies {
   implementation "mysql:mysql-connector-java:8.0.24"
   implementation 'net.java.dev.jna:jna:5.14.0'
   implementation 'net.java.dev.jna:jna-platform:5.14.0'
+  implementation "ru.lanwen.verbalregex:java-verbal-expressions:1.8"
 
 
   testImplementation "org.junit.jupiter:junit-jupiter-api:5.3.0"
   testImplementation "org.junit.jupiter:junit-jupiter-engine:5.3.0"
+  testImplementation "com.vaadin:vaadin-bom:24.4.7"
+  testImplementation "com.vaadin:vaadin-core:24.4.7"
 
 
 }
@@ -37,3 +40,7 @@ sourceSets {
 }
 // This must also be included if you want to generate the sources jar without issues
 tasks.withType(Jar).configureEach { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+
+tasks.test {
+  useJUnitPlatform() // For JUnit 5
+}

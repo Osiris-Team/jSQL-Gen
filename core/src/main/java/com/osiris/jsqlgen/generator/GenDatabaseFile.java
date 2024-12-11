@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GenDatabaseFile {
@@ -14,15 +16,12 @@ public class GenDatabaseFile {
         databaseFile.getParentFile().mkdirs();
         databaseFile.createNewFile();
 
-        StringBuilder s = new StringBuilder((!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                "import java.sql.*;\n" +
-                "import java.util.*;\n" +
-                "import java.io.File;\n" +
-            (db.isWithMariadb4j ? "" +
-                "import ch.vorburger.exec.ManagedProcessException;\n" +
-                "import ch.vorburger.mariadb4j.DB;\n" +
-                "import ch.vorburger.mariadb4j.DBConfigurationBuilder;\n" : "")+
-            "\n"+
+        LinkedHashSet<String> imports = new LinkedHashSet<>();
+        imports.add("import java.sql.*;");
+        imports.add("import java.util.*;");
+        imports.add("import java.io.File;");
+
+        StringBuilder s = new StringBuilder(
                 "/*\n" +
                 "Auto-generated class that is used by all table classes to create connections. <br>\n" +
                 "It holds the database credentials (set by you at first run of jSQL-Gen).<br>\n" +
@@ -330,9 +329,27 @@ public class GenDatabaseFile {
     """);
         }
 
+        // Add other dependencies
+        s.append(GenDefBlobClass.s(imports));
+
         s.append("}\n");
 
 
-        Files.writeString(databaseFile.toPath(), s.toString());
+
+        String sNoImports = s.toString();
+
+        String finalS = (!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
+            (db.isWithMariadb4j ? "" +
+                "import ch.vorburger.exec.ManagedProcessException;\n" +
+                "import ch.vorburger.mariadb4j.DB;\n" +
+                "import ch.vorburger.mariadb4j.DBConfigurationBuilder;\n" : "")+
+            "\n";
+        for (String anImport : imports) {
+            finalS += anImport+"\n";
+        }
+        finalS += sNoImports;
+
+
+        Files.writeString(databaseFile.toPath(), finalS.toString());
     }
 }

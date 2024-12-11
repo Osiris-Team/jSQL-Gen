@@ -52,7 +52,20 @@
             "DATETIME NOT NULL"
           ]
         }
-      ]
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
     },
     {
       "id": 598,
@@ -123,7 +136,20 @@
             "TEXT DEFAULT \u0027\u0027"
           ]
         }
-      ]
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
     },
     {
       "id": 601,
@@ -167,7 +193,20 @@
             "TEXT DEFAULT \u0027New Task\u0027"
           ]
         }
-      ]
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
     }
   ],
   "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen\\core ;",

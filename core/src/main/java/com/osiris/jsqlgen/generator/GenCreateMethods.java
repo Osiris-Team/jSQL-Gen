@@ -3,6 +3,8 @@ package com.osiris.jsqlgen.generator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Table;
 
+import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
+
 public class GenCreateMethods {
     public static String s(Table t, String tNameQuoted, JavaCodeGenerator.Constructor constructor, JavaCodeGenerator.Constructor minimalConstructor, boolean hasMoreFields) {
         StringBuilder sb = new StringBuilder();

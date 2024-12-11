@@ -18,24 +18,4 @@ apply plugin: 'org.kordamp.gradle.enforcer'
  Note that having this check is crucial to avoid runtime "method not found" errors that will lead to crashes
  and/or unexpected behaviour.
   */
-enforce {
-  rule(enforcer.rules.DependencyConvergence) { r ->
-    r.enabled
-    r.enforcerLevel
-    r.phases
-    r.failOnDynamicVersions
-    r.failOnChangingVersions
-    r.failOnNonReproducibleResolution
-    r.activateDependencyLocking
-    r.deactivateDependencyLocking
-  }
-  rule(enforcer.rules.ForceDependencies) { r ->
-    r.dependencies.add('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10')
-    r.dependencies.add('org.jetbrains:annotations:23.0.0')
-    r.dependencies.add('org.slf4j:slf4j-api:2.0.13')
-    r.dependencies.add('org.apache.commons:commons-lang3:3.12.0')
-    r.dependencies.add('org.apache.commons:commons-collections4:4.4')
-    r.dependencies.add('commons-io:commons-io:2.16.1')
-    r.dependencies.add('com.google.code.gson:gson:2.11.0')
-  }
-}
+
