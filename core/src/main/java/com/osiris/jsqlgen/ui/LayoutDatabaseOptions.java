@@ -21,12 +21,18 @@ public class LayoutDatabaseOptions extends Component<LayoutDatabaseOptions, Data
         removeAll();
         if(db == null) return super.setValue(db);
 
-        add(Statics.checkbox("Use MariaDB4j").setValue(db.isWithMariadb4j).onValueChange(e -> {
+        add(Statics.checkbox("MariaDB4j").setValue(db.isWithMariadb4j).grow(0).onValueChange(e -> {
             db.isWithMariadb4j = e.value;
             Data.save();
         }).setTooltip("Expects you to have MariaDB4j 3.0.1 or LOWER added as dependency. <br>" +
             "Lower because the newer versions do not really support persistent databases. <br>" +
             "Also expects a MariaDB driver/client present."));
+
+        add(Statics.checkbox("Versioning").setValue(db.isVersioning).grow(0).onValueChange(e -> {
+            db.isVersioning = e.value;
+            Data.save();
+        }).setTooltip("Creates the database, tables, columns if needed <br>" +
+            "and also ensures any changes like renaming/adding/deleting of tables/columns are reflected in the actual database. <br>"));
         return super.setValue(db);
     }
 }

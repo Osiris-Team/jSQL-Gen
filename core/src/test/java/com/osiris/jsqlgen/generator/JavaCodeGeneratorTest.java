@@ -1,7 +1,6 @@
 package com.osiris.jsqlgen.generator;
 
 import com.osiris.jlib.logger.AL;
-import com.osiris.jsqlgen.SQLTestServer;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
@@ -76,12 +75,12 @@ class JavaCodeGeneratorTest {
         File javaFile = new File(dir + "/" + t.name + ".java");
         javaFile.createNewFile();
         Files.writeString(javaFile.toPath(), (!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                JavaCodeGenerator.generateTableFile(javaFile, db.tables.get(0), db));
+                GenTableFile.s(javaFile, db.tables.get(0), db));
 
         File javaFile2 = new File(dir + "/" + t2.name + ".java");
         javaFile2.createNewFile();
         Files.writeString(javaFile2.toPath(), (!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                JavaCodeGenerator.generateTableFile(javaFile2, db.tables.get(1), db));
+                GenTableFile.s(javaFile2, db.tables.get(1), db));
 
         System.err.println("""
                 !>>>> Remember that the above generated classes are source code which

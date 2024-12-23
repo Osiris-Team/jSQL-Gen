@@ -65,7 +65,7 @@ public class GenRemoveMethods {
                 "public static void remove(" + t.name + " obj, boolean unsetRefs, boolean removeRefs) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "if(unsetRefs) unsetRefs("+paramsInvokeDirect+");\n" +
                         "if(removeRefs) removeRefs("+paramsInvoke+");\n" +
-                        "remove(\"WHERE id = \"+obj.id);\n" +
+                        "remove(\"WHERE "+idCol.name+" = \"+obj.getId());\n" +
                 "onRemove.forEach(code -> code.accept(obj));\n" +
                 "}\n" +
                 "/**\n" +
@@ -145,7 +145,7 @@ public class GenRemoveMethods {
                 if(!refCol.type.equals(idCol.type)) s = "/* Possibly not a primary id, since types do not match, thus ignored! " +
                         t1.name+"."+refCol.name+" "+refCol.type.inJava +" != "+t.name+"."+idCol.name+" "+idCol.type.inJava+" \n" + s + "*/";
                 sb.append(s + "\n\n");
-                //sb.append(t1.name+".remove(\"WHERE "+col.name+"=?\", obj.id);");
+                //sb.append(t1.name+".remove(\"WHERE "+col.name+"=?\", obj.getId());");
             }
         });
         sb.append("    }\n\n");

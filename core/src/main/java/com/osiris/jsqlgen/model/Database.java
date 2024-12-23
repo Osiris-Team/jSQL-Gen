@@ -1,7 +1,6 @@
 package com.osiris.jsqlgen.model;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -13,6 +12,7 @@ public class Database {
      */
     protected String javaProjectDir;
     public boolean isWithMariadb4j;
+    public boolean isVersioning = true;
 
     public Database duplicate() {
         Database db = new Database();

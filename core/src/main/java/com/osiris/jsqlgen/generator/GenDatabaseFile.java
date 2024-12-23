@@ -67,10 +67,11 @@ public class GenDatabaseFile {
             s.append("})");
 
             // Create overriding methods
+            var idCol = t.columns.get(0);
             s.append("{");
             s.append("public Class<?> getTableClass(){return "+t.name+".class;}");
             s.append("public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for("+t.name+" obj : "+t.name+".get()) l.add(obj); return l;}");
-            s.append("public Database.Row get(int i){return "+t.name+".get(i);}");
+            s.append("public Database.Row get(Object id){return "+t.name+".get(("+idCol.type.inJava+") id);}");
             s.append("public void update(Database.Row obj){"+t.name+".update(("+ t.name +")obj);}");
             s.append("public void add(Database.Row obj){"+t.name+".add(("+ t.name +")obj);}");
             s.append("public void remove(Database.Row obj){"+t.name+".remove(("+ t.name +")obj);}");
@@ -109,29 +110,34 @@ public class GenDatabaseFile {
                 "        System.err.println(\"Failed to find critical database driver class, program will exit! Searched classes: \"+ Arrays.toString(driversClassNames));\n" +
                 "        System.exit(1);\n" +
                 "    }\n" +
-                "\n" +
+                "\n");
+        if(db.isVersioning)
+            s.append(
                 "        // Create database if not exists\n" +
-                "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
-                "            Statement s = c.createStatement();) {\n" +
-                "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
-                "        } catch (SQLException e) {\n" +
-                "            e.printStackTrace();\n" +
-                "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
-                "            System.exit(1);\n" +
-                "        }\n" +
-                "        // Create metadata table if not exists\n" +
-                "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
-                "             Statement s = c.createStatement()) {\n" +
-                "            s.executeUpdate(\"CREATE TABLE IF NOT EXISTS `jsqlgen_metadata` (`tableId` INT NOT NULL PRIMARY KEY)\");\n" +
-                "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `tableVersion` INT NOT NULL\");} catch (Exception ignored) {}\n" +
-                "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `steps` INT NOT NULL\");} catch (Exception ignored) {}\n" +
-                "\n" +
-                "        } catch (SQLException e) {\n" +
-                "            e.printStackTrace();\n" +
-                "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
-                "            System.exit(1);\n" +
-                "        }\n" +
-                "    }\n" +
+            "        try(Connection c = DriverManager.getConnection(Database.rawUrl, Database.username, Database.password);\n" +
+            "            Statement s = c.createStatement();) {\n" +
+            "            s.executeUpdate(\"CREATE DATABASE IF NOT EXISTS `\"+Database.name+\"`\");\n" +
+            "        } catch (SQLException e) {\n" +
+            "            e.printStackTrace();\n" +
+            "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+            "            System.exit(1);\n" +
+            "        }\n" +
+            "        // Create metadata table if not exists\n" +
+            "        try (Connection c = DriverManager.getConnection(Database.url, Database.username, Database.password);\n" +
+            "             Statement s = c.createStatement()) {\n" +
+            "            s.executeUpdate(\"CREATE TABLE IF NOT EXISTS `jsqlgen_metadata` (`tableId` INT NOT NULL PRIMARY KEY)\");\n" +
+            "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `tableVersion` INT NOT NULL\");} catch (Exception ignored) {}\n" +
+            "            try {s.executeUpdate(\"ALTER TABLE `jsqlgen_metadata` ADD COLUMN `steps` INT NOT NULL\");} catch (Exception ignored) {}\n" +
+            "\n" +
+            "        } catch (SQLException e) {\n" +
+            "            e.printStackTrace();\n" +
+            "            System.err.println(\"Something went really wrong during database initialisation, program will exit.\");\n" +
+            "            System.exit(1);\n" +
+            "        }\n");
+        else
+            s.append("// No database creation and no creation of jsqlgen_metadata table because versioning is disabled!\n");
+        s.append(
+            "    }\n" +
                 "\n" +
                 "    public static Connection getCon() {\n" +
                 "        synchronized (availableConnections){\n" +
@@ -246,8 +252,8 @@ public class GenDatabaseFile {
                 "        }\n" +
                 "    }\n" +
                 "    public interface Row{\n" +
-                "        int getId();\n" +
-                "        void setId(int id);\n" +
+                "        Object getId();\n" +
+                "        void setId(Object id);\n" +
                 "        void update();\n" +
                 "        void add();\n" +
                 "        void remove();\n" +
@@ -276,7 +282,7 @@ public class GenDatabaseFile {
                 "\n" +
                 "        public Class<?> getTableClass(){throw new RuntimeException(\"Not implemented!\");}\n" + // Class is not provided as field to prevent static constructor execution
                 "        public List<Database.Row> get(){throw new RuntimeException(\"Not implemented!\");}\n" +
-                "        public Database.Row get(int i){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public Database.Row get(Object id){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void update(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void add(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void remove(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +

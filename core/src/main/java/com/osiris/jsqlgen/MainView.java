@@ -20,6 +20,7 @@ import com.osiris.desku.ui.layout.TabLayout;
 import com.osiris.desku.ui.layout.Vertical;
 import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.generator.GenDatabaseFile;
+import com.osiris.jsqlgen.generator.GenTableFile;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.ColumnType;
@@ -97,12 +98,26 @@ public class MainView extends Vertical {
         dbSelector.button.sty("font-size", "xx-large")
             .sty("font-weight", "bolder");
     }
-    private final Vertical listTables = vertical().scrollable(true, "100%", "90vh", "", "");
+    private final Vertical listTables = vertical().scrollable(true, "100%", "90vh", "", "")
+        .atr("id", "listTables");
     private final TabLayout tabsCode = tablayout().grow(1);
     private final Button btnGenerate = button("Generate Code");
     private final FileChooser chooserJavaProjectDir;
     {
         chooserJavaProjectDir = getFileChooser("");
+    }
+
+    static {
+        try {
+            String styles = """
+                #listTables c {
+                  flex-grow: unset;
+                }
+                """;
+            App.appendToGlobalCSS(styles);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private @NotNull FileChooser getFileChooser(String defaultValue) {
@@ -595,6 +610,8 @@ public class MainView extends Vertical {
 
             // Write Database class files and Tables files
             for (JavaProjectGenDir javaProjectGenDir : dirs) {
+                JavaCodeGenerator.prepareTables(db);
+
                 File databaseFile = getDatabaseFile(javaProjectGenDir);
                 String url = "\"jdbc:mysql://localhost:3306/" + db.name+"\"";
                 String rawUrl = "getRawDbUrlFrom(url)";
@@ -630,13 +647,13 @@ public class MainView extends Vertical {
                 databaseFile.createNewFile();
                 GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
                 files.add(databaseFile);
-                JavaCodeGenerator.prepareTables(db);
+
                 for (Table t : db.tables) {
                     File javaFile = new File(javaProjectGenDir + "/" + t.name + ".java");
                     javaFile.createNewFile();
                     files.add(javaFile);
                     Files.writeString(javaFile.toPath(), (!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : "") +
-                        JavaCodeGenerator.generateTableFile(javaFile, t, db));
+                        GenTableFile.s(javaFile, t, db));
                 }
             }
 

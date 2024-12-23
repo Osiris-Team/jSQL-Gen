@@ -4,6 +4,7 @@ import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Table;
 
 import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
+import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
 
 public class GenCreateMethods {
     public static String s(Table t, String tNameQuoted, JavaCodeGenerator.Constructor constructor, JavaCodeGenerator.Constructor minimalConstructor, boolean hasMoreFields) {
@@ -116,9 +117,9 @@ public class GenCreateMethods {
                 "@return object with the provided id or null if there is no object with the provided id in this table.\n" +
                 "@throws Exception on SQL issues.\n" +
                 "*/\n" +
-                "public static " + t.name + " get(int id) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+                "public static " + t.name + " get("+idCol.type.inJava+" id) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
                 "try{\n" +
-                "return get(\"WHERE id = \"+id).get(0);\n" +
+                "return get(\"WHERE "+idCol.name+" = \"+id).get(0);\n" +
                 "}catch(IndexOutOfBoundsException ignored){}\n" +
                 (t.isNoExceptions ? "catch(Exception e){throw new RuntimeException(e);}\n" : "") + // Close try/catch
                 "return null;\n" + // Close tr
@@ -202,27 +203,34 @@ public class GenCreateMethods {
                 "     */\n" +
                 "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit)" + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        return getLazy(onResultReceived, onFinish, limit, null);\n" +
-                "    }\n" +
-                "    /**\n" +
-                "     * Loads results lazily in a new thread. <br>\n" +
-                "     * Add {@link Thread#sleep(long)} at the end of your onResultReceived code, to sleep between fetches.\n" +
-                "     * @param onResultReceived can NOT be null. Gets executed until there are no results left, thus the results list is never empty.\n" +
-                "     * @param onFinish can be null. Gets executed when finished receiving all results. Provides the total amount of received elements as parameter.\n" +
-                "     * @param limit the maximum amount of elements for each fetch.\n" +
-                "     * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.\n" +
-                "     */\n" +
-                "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) " + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
+                "    }\n");
+
+        sb.append("""
+                /**
+                 * Instead of using the SQL OFFSET keyword this function uses the primary key / id (must be numeric).
+                 * We do NOT use OFFSET due to performance and require a numeric id . <br>
+                 * Loads results lazily in a new thread. <br>
+                 * Add {@link Thread#sleep(long)} at the end of your onResultReceived code, to sleep between fetches.
+                 * @param onResultReceived can NOT be null. Gets executed until there are no results left, thus the results list is never empty.
+                 * @param onFinish can be null. Gets executed when finished receiving all results. Provides the total amount of received elements as parameter.
+                 * @param limit the maximum amount of elements for each fetch.
+                 * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.
+                 */
+            """);
+        sb.append(
+            "    public static Thread getLazy(Consumer<List<" + t.name + ">> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) " + (t.isNoExceptions ? "" : "throws Exception") + "{\n" +
                 "        Thread thread = new Thread(() -> {\n" +
                 "            WHERE finalWhere;\n" +
                 "            if(where == null) finalWhere = new WHERE(\"\");\n" +
                 "            else finalWhere = where;\n" +
                 "            List<" + t.name + "> results;\n" +
-                "            int lastId = -1;\n" +
+                "            "+idCol.type.inJava+" lastId = -1;\n" + (!idCol.type.isNumber() && !idCol.type.isDecimalNumber() ?
+                "// Your code will not compile here, because your id is not a numeric type!\n" : "")+
                 "            long count = 0;\n" +
                 "            while(true){\n" +
-                "                results = whereId().biggerThan(lastId).and(finalWhere).limit(limit).get();\n" +
+                "                results = where"+firstToUpperCase(idCol.name)+"().biggerThan(lastId).and(finalWhere).limit(limit).get();\n" +
                 "                if(results.isEmpty()) break;\n" +
-                "                lastId = results.get(results.size() - 1).id;\n" +
+                "                lastId = ("+idCol.type.inJava+") results.get(results.size() - 1).getId();\n" +
                 "                count += results.size();\n" +
                 "                onResultReceived.accept(results);\n" +
                 "            }\n" +
