@@ -154,7 +154,10 @@ public class JavaCodeGenerator {
                     // Remove data types from def since this was already checked before
                     // This also has the side-effect that only one data type is allowed in a definition
                     String def = col.definition;
-                    for (String s : col.type.inSQL) {
+                    var types = new ArrayList<>(Arrays.asList(col.type.inSQL));
+                    // Make sure longer types are always first to ensure CHAR for example is not before VARCHAR, because in that case we would remove CHAR first and stay with VAR left, not ideal...
+                    types.sort((s1, s2) -> Integer.compare(s2.length(), s1.length()));
+                    for (String s : types) {
                         def = def.replaceAll(s, "");
                     }
 
