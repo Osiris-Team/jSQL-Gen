@@ -47,4 +47,24 @@ public class UString {
 
         return s; // No outer quotes to remove
     }
+
+    /**
+     * Inserts a string into another string at a specific position.
+     *
+     * @param original The original string.
+     * @param position The position where the string should be inserted (0-based index).
+     * @param toInsert The string to insert.
+     * @return The resulting string after insertion.
+     * @throws IllegalArgumentException if the position is out of bounds.
+     */
+    public static String insertAt(String original, int position, String toInsert) {
+        if (original == null || toInsert == null) {
+            throw new IllegalArgumentException("Neither the original string nor the string to insert can be null.");
+        }
+        if (position < 0 || position > original.length()) {
+            throw new IllegalArgumentException("Position out of bounds: " + position);
+        }
+
+        return original.substring(0, position) + toInsert + original.substring(position);
+    }
 }

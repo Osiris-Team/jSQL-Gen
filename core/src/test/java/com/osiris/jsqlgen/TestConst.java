@@ -11,7 +11,7 @@ public class TestConst {
     static{
         try {
             db = SQLTestServer.buildAndRun("testDB", 3307);
-        } catch (ManagedProcessException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         new Thread(() -> {

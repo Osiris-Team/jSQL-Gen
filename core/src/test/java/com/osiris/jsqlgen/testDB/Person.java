@@ -34,7 +34,7 @@ import com.vaadin.flow.component.html.Span;
 /**
 Table Person with id 1 and 0 changes/version. <br>
 Structure (8 fields/columns): <br>
-- int id = INT NOT NULL PRIMARY KEY <br>
+- int id = INT AUTO_INCREMENT NOT NULL PRIMARY KEY <br>
 - String name = TEXT NOT NULL <br>
 - int age = INT NOT NULL <br>
 - Flair flair = ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL' <br>
@@ -71,7 +71,7 @@ public static CopyOnWriteArrayList<Consumer<Person>> onAdd = new CopyOnWriteArra
 public static CopyOnWriteArrayList<Consumer<Person>> onUpdate = new CopyOnWriteArrayList<Consumer<Person>>();
 public static CopyOnWriteArrayList<Consumer<Person>> onRemove = new CopyOnWriteArrayList<Consumer<Person>>();
 
-private static boolean isEqual(Person obj1, Person obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }
+private static boolean isEqual(Person obj1, Person obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
     /**
      * Only works correctly if the package name is com.osiris.jsqlgen.
      */
@@ -86,9 +86,8 @@ private static boolean isEqual(Person obj1, Person obj2){ return obj1.equals(obj
         }
         return s +"..."+ stack[1].toString(); //stack[0] == current method, gets ignored
     }
-public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);
-public int getId(){return id;}
-public void setId(int id){this.id = id;}
+public Object getId(){return id;}
+public void setId(Object id){this.id = (int) id;}
 public static volatile boolean hasChanges = false;
 static {
 try{
@@ -98,13 +97,26 @@ try (Statement s = con.createStatement()) {
 Database.TableMetaData t = Database.getTableMetaData(1);
 for (int i = t.version; i < 1; i++) {
 if(i == 0){
-if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `person` (`id` INT NOT NULL PRIMARY KEY)");
+if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `person` (`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY)");
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `name` TEXT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `age` INT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 4){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `flair` ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 5){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `lastName` TEXT DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 6){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `parentAge` INT DEFAULT 10");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 7){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `myblob` BLOB DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 8){try{s.executeUpdate("ALTER TABLE `person` ADD COLUMN `timestamp` TIMESTAMP DEFAULT NOW()");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
 }
 }
-
     new Thread(() -> {
         try{
             onAdd.add(obj -> {hasChanges = true;});
@@ -124,16 +136,14 @@ Database.updateTableMetaData(t);
     }).start();
 
 }
-try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `person` ORDER BY id DESC LIMIT 1")) {
-ResultSet rs = ps.executeQuery();
-if (rs.next()) idCounter.set(rs.getInt(1) + 1);
-}
+
 }
 catch(Exception e){ throw new RuntimeException(e); }
 finally {Database.freeCon(con);}
+
 }catch(Exception e){
 e.printStackTrace();
-System.err.println("Something went really wrong during table (Person) initialisation, thus the program will exit!");System.exit(1);}
+System.err.println("Something went really wrong during table (Person) initialisation, subsequent operations will fail!");}
 }
 
     private static final List<CachedResult> cachedResults = new ArrayList<>();
@@ -191,37 +201,85 @@ initDefaultFields();
 this.id = id;this.name = name;this.age = age;this.flair = flair;this.lastName = lastName;this.parentAge = parentAge;this.myblob = myblob;this.timestamp = timestamp;
 }
 /**
-Database field/value: INT NOT NULL PRIMARY KEY. <br>
+Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
 */
-public int id;
+public int id = Database.defaultInMemoryOnlyObjId;
+/**
+Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person id(int id){ this.id = id; return this;}
 /**
 Database field/value: TEXT NOT NULL. <br>
 */
 public String name;
 /**
+Database field/value: TEXT NOT NULL. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person name(String name){ this.name = name; return this;}
+/**
 Database field/value: INT NOT NULL. <br>
 */
 public int age;
+/**
+Database field/value: INT NOT NULL. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person age(int age){ this.age = age; return this;}
 /**
 Database field/value: ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'. <br>
 */
 public Flair flair;
 /**
+Database field/value: ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person flair(Flair flair){ this.flair = flair; return this;}
+/**
 Database field/value: TEXT DEFAULT ''. <br>
 */
 public String lastName;
+/**
+Database field/value: TEXT DEFAULT ''. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person lastName(String lastName){ this.lastName = lastName; return this;}
 /**
 Database field/value: INT DEFAULT 10. <br>
 */
 public int parentAge;
 /**
+Database field/value: INT DEFAULT 10. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person parentAge(int parentAge){ this.parentAge = parentAge; return this;}
+/**
 Database field/value: BLOB DEFAULT ''. <br>
 */
 public Blob myblob;
 /**
+Database field/value: BLOB DEFAULT ''. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person myblob(Blob myblob){ this.myblob = myblob; return this;}
+/**
 Database field/value: TIMESTAMP DEFAULT NOW(). <br>
 */
 public Timestamp timestamp;
+/**
+Database field/value: TIMESTAMP DEFAULT NOW(). <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public Person timestamp(Timestamp timestamp){ this.timestamp = timestamp; return this;}
 /**
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
@@ -229,61 +287,28 @@ protected Person initDefaultFields() {
 this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new Database.DefaultBlob(new byte[0]); this.timestamp=new Timestamp(System.currentTimeMillis()); return this;
 }
 
-public static class Optionals{
-public Optionals(){this.flair=Flair.COOL; this.lastName=""; this.parentAge=10; this.myblob=new Database.DefaultBlob(new byte[0]); this.timestamp=new Timestamp(System.currentTimeMillis()); }
-public Flair flair; public String lastName; public int parentAge; public Blob myblob; public Timestamp timestamp; 
-public Optionals flair(Flair flair){ this.flair = flair; return this;} public Optionals lastName(String lastName){ this.lastName = lastName; return this;} public Optionals parentAge(int parentAge){ this.parentAge = parentAge; return this;} public Optionals myblob(Blob myblob){ this.myblob = myblob; return this;} public Optionals timestamp(Timestamp timestamp){ this.timestamp = timestamp; return this;} 
-}
-
 /**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
+Creates and returns an object that can be added to this table. <br>
+The parameters of this method represent only the "NOT NULL" fields in the table and thus should not be null. <br>
+- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+- This method will NOT add the object to the table. <br>
+- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
 public static Person create(String name, int age) {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 Person obj = new Person(id, name, age);
 onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
 
 /**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that this method will NOT add the object to the table.
+Creates and returns an object that can be added to this table. <br>
+- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+- This method will NOT add the object to the table. <br>
+- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
 public static Person create(String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
-int id = idCounter.getAndIncrement();
-Person obj = new Person();
-obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an in-memory object with -1 as id, that can be added to this table
-AFTER you manually did obj.id = idCounter.getAndIncrement().
-This is useful for objects that may never be added to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
-*/
-public static Person createInMem(String name, int age) {
-int id = -1;
-Person obj = new Person(id, name, age);
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an in-memory object with -1 as id, that can be added to this table
-AFTER you manually did obj.id = idCounter.getAndIncrement().
-This is useful for objects that may never be added to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
-*/
-public static Person createInMem(String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
-int id = -1;
+int id = Database.defaultInMemoryOnlyObjId;
 Person obj = new Person();
 obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
 onCreate.forEach(code -> code.accept(obj));
@@ -292,10 +317,10 @@ return obj;
 
 /**
 Convenience method for creating and directly adding a new object to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+The parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
 public static Person createAndAdd(String name, int age)  {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 Person obj = new Person(id, name, age);
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
@@ -306,18 +331,9 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 */
 public static Person createAndAdd(String name, int age, Flair flair, String lastName, int parentAge, Blob myblob, Timestamp timestamp)  {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 Person obj = new Person();
 obj.id=id; obj.name=name; obj.age=age; obj.flair=flair; obj.lastName=lastName; obj.parentAge=parentAge; obj.myblob=myblob; obj.timestamp=timestamp; 
-onCreate.forEach(code -> code.accept(obj));
-add(obj);
-return obj;
-}
-
-public static Person createAndAdd(String name, int age, Optionals optionals)  {
-int id = idCounter.getAndIncrement();
-Person obj = new Person(id, name, age);
-obj.flair = optionals.flair; obj.lastName = optionals.lastName; obj.parentAge = optionals.parentAge; obj.myblob = optionals.myblob; obj.timestamp = optionals.timestamp; 
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
@@ -409,6 +425,8 @@ return list;}
         return getLazy(onResultReceived, onFinish, limit, null);
     }
     /**
+     * Instead of using the SQL OFFSET keyword this function uses the primary key / id (must be numeric).
+     * We do NOT use OFFSET due to performance and require a numeric id . <br>
      * Loads results lazily in a new thread. <br>
      * Add {@link Thread#sleep(long)} at the end of your onResultReceived code, to sleep between fetches.
      * @param onResultReceived can NOT be null. Gets executed until there are no results left, thus the results list is never empty.
@@ -427,7 +445,7 @@ return list;}
             while(true){
                 results = whereId().biggerThan(lastId).and(finalWhere).limit(limit).get();
                 if(results.isEmpty()) break;
-                lastId = results.get(results.size() - 1).id;
+                lastId = (int) results.get(results.size() - 1).getId();
                 count += results.size();
                 onResultReceived.accept(results);
             }
@@ -470,10 +488,19 @@ return list;}
         return thread;
     }
 
+
+/**
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
+We are using this approach because its universal to all databases. 
+*/
 public static int count(){ return count(null, (Object[]) null); }
 
+/**
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
+We are using this approach because its universal to all databases. 
+*/
 public static int count(String where, Object... whereValues)  {
-String sql = "SELECT COUNT(`id`) AS recordCount FROM `person`" +
+String sql = "SELECT COUNT(`id`) FROM `person`" +
 (where != null ? where : ""); 
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
@@ -486,7 +513,7 @@ Object val = whereValues[i];
 ps.setObject(i+1, val);
 }
 ResultSet rs = ps.executeQuery();
-if (rs.next()) return rs.getInt("recordCount");
+if (rs.next()) return rs.getInt(1);
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally {System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
@@ -501,7 +528,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(Person obj)  {
-String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=?,`lastName`=?,`parentAge`=?,`myblob`=?,`timestamp`=? WHERE id="+obj.id;
+String sql = "UPDATE `person` SET `id`=?,`name`=?,`age`=?,`flair`=?,`lastName`=?,`parentAge`=?,`myblob`=?,`timestamp`=? WHERE id="+obj.getId();
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -529,22 +556,28 @@ onUpdate.forEach(code -> code.accept(obj));
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(Person obj)  {
-String sql = "INSERT INTO `person` (`id`,`name`,`age`,`flair`,`lastName`,`parentAge`,`myblob`,`timestamp`) VALUES (?,?,?,?,?,?,?,?)";
+String sql = "INSERT INTO `person` (`name`,`age`,`flair`,`lastName`,`parentAge`,`myblob`,`timestamp`) VALUES (?,?,?,?,?,?,?)";
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
 msJDBC = System.currentTimeMillis();
-try (PreparedStatement ps = con.prepareStatement(sql)) {
-ps.setInt(1, obj.id);
-ps.setString(2, obj.name);
-ps.setInt(3, obj.age);
-ps.setString(4, obj.flair.name());
-ps.setString(5, obj.lastName);
-ps.setInt(6, obj.parentAge);
-ps.setBlob(7, obj.myblob);
-ps.setTimestamp(8, obj.timestamp);
+try (PreparedStatement ps = con.prepareStatement(sql, new String[]{"id"})) {
+ps.setString(1, obj.name);
+ps.setInt(2, obj.age);
+ps.setString(3, obj.flair.name());
+ps.setString(4, obj.lastName);
+ps.setInt(5, obj.parentAge);
+ps.setBlob(6, obj.myblob);
+ps.setTimestamp(7, obj.timestamp);
 ps.executeUpdate();
-msJDBC = System.currentTimeMillis() - msJDBC;
+    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { 
+        if (generatedKeys.next()) { // Retrieve the first auto-generated ID
+            int generatedId = generatedKeys.getInt(1);
+            obj.id = generatedId;
+        } else {
+            //System.out.println("No ID generated."); This should never happen...
+        }
+    }msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
 Database.freeCon(con);
@@ -568,7 +601,7 @@ remove(obj, true, Database.isRemoveRefs);
 public static void remove(Person obj, boolean unsetRefs, boolean removeRefs)  {
 if(unsetRefs) unsetRefs(obj, PersonOrder.class, true);
 if(removeRefs) removeRefs(obj, PersonOrder.class, true);
-remove("WHERE id = "+obj.id);
+remove("WHERE id = "+obj.getId());
 onRemove.forEach(code -> code.accept(obj));
 }
 /**
@@ -802,7 +835,6 @@ return dfTimestamp;
         public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {
                 btnAdd.setEnabled(false);
                 updateData();
-                data.id = idCounter.getAndIncrement();
                 Person.add(data);
                 e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
@@ -897,7 +929,7 @@ return dfTimestamp;
     }
 
 public boolean isOnlyInMemory(){
-return id < 0;
+return id == Database.defaultInMemoryOnlyObjId;
 }
 public static WHERE<Integer> whereId() {
 return new WHERE<Integer>("`id`");

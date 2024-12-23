@@ -3,8 +3,10 @@ package com.osiris.jsqlgen;
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
+import com.osiris.jlib.UtilsFiles;
 
 import java.io.File;
+import java.io.IOException;
 
 public class SQLTestServer {
     private final DBConfigurationBuilder properties;
@@ -28,14 +30,14 @@ public class SQLTestServer {
         running = true;
     }
 
-    public static SQLTestServer buildAndRun() throws ManagedProcessException {
+    public static SQLTestServer buildAndRun() throws ManagedProcessException, IOException {
         return buildAndRun("testDB", 3306);
     }
 
-    public static SQLTestServer buildAndRun(String name, int port) throws ManagedProcessException {
+    public static SQLTestServer buildAndRun(String name, int port) throws ManagedProcessException, IOException {
         DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
         configBuilder.setPort(port); // OR, default: setPort(0); => autom. detect free port
-        configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false);
+        configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false); // this doesnt seem to work if true
         configBuilder.setBaseDir(System.getProperty("user.dir") + File.separator +
                 "db" + File.separator + "base");
         configBuilder.setDataDir(System.getProperty("user.dir") + File.separator +
@@ -43,7 +45,18 @@ public class SQLTestServer {
         configBuilder.setLibDir(System.getProperty("user.dir") + File.separator +
                 "db" + File.separator + "libs");
 
+        new UtilsFiles().forceDeleteDirectory(new File(configBuilder.getDataDir()));
         SQLTestServer server = new SQLTestServer(configBuilder);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try{
+                while (server.isRunning()) Thread.yield();
+                new UtilsFiles().forceDeleteDirectory(new File(configBuilder.getDataDir()));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }));
+
         server.setName(name);
         server.setUrl("jdbc:mysql://localhost/");// MUST BE TEST, see: https://github.com/vorburger/MariaDB4j#how-java
         return server;

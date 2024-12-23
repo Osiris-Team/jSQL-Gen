@@ -8,13 +8,14 @@ import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-/*
+/**
 Auto-generated class that is used by all table classes to create connections. <br>
 It holds the database credentials (set by you at first run of jSQL-Gen).<br>
 Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class. <br>
 All tables use the cached connection pool in this class which has following advantages: <br>
-- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.
-- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors).*/
+- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.<br>
+- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors).<br>
+*/
 public class Database{
 public static String url = "jdbc:mysql://localhost:3307/testDB";
 public static String rawUrl = getRawDbUrlFrom(url);
@@ -30,7 +31,8 @@ public static boolean isRemoveRefs = false;
 * Use synchronized on this before doing changes to it. 
 */
 public static final List<Connection> availableConnections = new ArrayList<>();
-public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(1, 0, 0, "Person", new String[]{"id", "name", "age", "flair", "lastName", "parentAge", "myblob", "timestamp"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT NOT NULL", "INT NOT NULL", "ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'", "TEXT DEFAULT ''", "INT DEFAULT 10", "BLOB DEFAULT ''", "TIMESTAMP DEFAULT NOW()"}){public Class<?> getTableClass(){return Person.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Person obj : Person.get()) l.add(obj); return l;}public Database.Row get(int i){return Person.get(i);}public void update(Database.Row obj){Person.update((Person)obj);}public void add(Database.Row obj){Person.add((Person)obj);}public void remove(Database.Row obj){Person.remove((Person)obj);}}, new TableMetaData(2, 0, 0, "PersonOrder", new String[]{"id", "personId", "name", "time"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT NOT NULL", "TEXT DEFAULT ''", "INT DEFAULT 10000"}){public Class<?> getTableClass(){return PersonOrder.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(PersonOrder obj : PersonOrder.get()) l.add(obj); return l;}public Database.Row get(int i){return PersonOrder.get(i);}public void update(Database.Row obj){PersonOrder.update((PersonOrder)obj);}public void add(Database.Row obj){PersonOrder.add((PersonOrder)obj);}public void remove(Database.Row obj){PersonOrder.remove((PersonOrder)obj);}}};
+public static final int defaultInMemoryOnlyObjId = -1;
+public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(1, 0, 0, "Person", new String[]{"id", "name", "age", "flair", "lastName", "parentAge", "myblob", "timestamp"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "TEXT NOT NULL", "INT NOT NULL", "ENUM('COOL', 'CHILL', 'FLY') DEFAULT 'COOL'", "TEXT DEFAULT ''", "INT DEFAULT 10", "BLOB DEFAULT ''", "TIMESTAMP DEFAULT NOW()"}){public Class<?> getTableClass(){return Person.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Person obj : Person.get()) l.add(obj); return l;}public Database.Row get(Object id){return Person.get((int) id);}public void update(Database.Row obj){Person.update((Person)obj);}public void add(Database.Row obj){Person.add((Person)obj);}public void remove(Database.Row obj){Person.remove((Person)obj);}}, new TableMetaData(2, 0, 0, "PersonOrder", new String[]{"id", "personId", "name", "time"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "INT NOT NULL", "TEXT DEFAULT ''", "INT DEFAULT 10000"}){public Class<?> getTableClass(){return PersonOrder.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(PersonOrder obj : PersonOrder.get()) l.add(obj); return l;}public Database.Row get(Object id){return PersonOrder.get((int) id);}public void update(Database.Row obj){PersonOrder.update((PersonOrder)obj);}public void add(Database.Row obj){PersonOrder.add((PersonOrder)obj);}public void remove(Database.Row obj){PersonOrder.remove((PersonOrder)obj);}}};
 
     static{create();} // Create database if not exists
 
@@ -194,8 +196,8 @@ public static void create() {
         }
     }
     public interface Row{
-        int getId();
-        void setId(int id);
+        Object getId();
+        void setId(Object id);
         void update();
         void add();
         void remove();
@@ -224,7 +226,7 @@ public static void create() {
 
         public Class<?> getTableClass(){throw new RuntimeException("Not implemented!");}
         public List<Database.Row> get(){throw new RuntimeException("Not implemented!");}
-        public Database.Row get(int i){throw new RuntimeException("Not implemented!");}
+        public Database.Row get(Object id){throw new RuntimeException("Not implemented!");}
         public void update(Database.Row obj){throw new RuntimeException("Not implemented!");}
         public void add(Database.Row obj){throw new RuntimeException("Not implemented!");}
         public void remove(Database.Row obj){throw new RuntimeException("Not implemented!");}

@@ -11,68 +11,36 @@ public class GenCreateMethods {
         StringBuilder sb = new StringBuilder();
         sb.append("""
                 /**
-                Creates and returns an object that can be added to this table.
-                Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-                Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-                Also note that this method will NOT add the object to the table.
+                Creates and returns an object that can be added to this table. <br>
+                The parameters of this method represent only the "NOT NULL" fields in the table and thus should not be null. <br>
+                - Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+                - This method will NOT add the object to the table. <br>
+                - This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
                 */
                 """);
         Column idCol = t.columns.get(0); // always first
         sb.append(
                 "public static " + t.name + " create(" + minimalConstructor.paramsWithoutId
                         + ") {\n" +
-                        idCol.type.inJava + " " + idCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        idCol.type.inJava + " " + idCol.name + " = Database.defaultInMemoryOnlyObjId;\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "onCreate.forEach(code -> code.accept(obj));\n" +
                         "return obj;\n");
         sb.append("}\n\n"); // Close create method
 
-
-        if (hasMoreFields) {
-            sb.append("/**\n" +
-                    "Creates and returns an object that can be added to this table.\n" +
-                    "Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).\n" +
-                    "Note that this method will NOT add the object to the table.\n" +
-                    "*/\n");
-            sb.append(
-                    "public static " + t.name + " create(" + constructor.paramsWithoutId
-                            + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                            idCol.type.inJava + " " + idCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "();\n" + JavaCodeGenerator.genFieldAssignments("obj", t.columns) + "\n" +
-                            "onCreate.forEach(code -> code.accept(obj));\n" +
-                            "return obj;\n");
-            sb.append("}\n\n"); // Close create method
-        }
-
-        sb.append("""
-                /**
-                Creates and returns an in-memory object with -1 as id, that can be added to this table
-                AFTER you manually did obj.id = idCounter.getAndIncrement().
-                This is useful for objects that may never be added to the table.
-                Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-                Also note that this method will NOT add the object to the table.
-                */
-                """);
-        sb.append(
-                "public static " + t.name + " createInMem(" + minimalConstructor.paramsWithoutId
-                        + ") {\n" +
-                        idCol.type.inJava + " " + idCol.name + " = -1;\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
-                        "onCreate.forEach(code -> code.accept(obj));\n" +
-                        "return obj;\n");
-        sb.append("}\n\n"); // Close create method
 
         if (hasMoreFields) {
             sb.append("""
                 /**
-                Creates and returns an in-memory object with -1 as id, that can be added to this table
-                AFTER you manually did obj.id = idCounter.getAndIncrement().
-                This is useful for objects that may never be added to the table.
-                Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-                Also note that this method will NOT add the object to the table.
+                Creates and returns an object that can be added to this table. <br>
+                - Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+                - This method will NOT add the object to the table. <br>
+                - This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
                 */
                 """);
             sb.append(
-                    "public static " + t.name + " createInMem(" + constructor.paramsWithoutId
+                    "public static " + t.name + " create(" + constructor.paramsWithoutId
                             + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                            idCol.type.inJava + " " + idCol.name + " = -1;\n" + t.name + " obj = new " + t.name + "();\n" + JavaCodeGenerator.genFieldAssignments("obj", t.columns) + "\n" +
+                            idCol.type.inJava + " " + idCol.name + " = Database.defaultInMemoryOnlyObjId;\n" + t.name + " obj = new " + t.name + "();\n" + JavaCodeGenerator.genFieldAssignments("obj", t.columns) + "\n" +
                             "onCreate.forEach(code -> code.accept(obj));\n" +
                             "return obj;\n");
             sb.append("}\n\n"); // Close create method
@@ -81,12 +49,12 @@ public class GenCreateMethods {
 
         sb.append("/**\n" +
                 "Convenience method for creating and directly adding a new object to the table.\n" +
-                "Note that the parameters of this method represent \"NOT NULL\" fields in the table and thus should not be null.\n" +
+                "The parameters of this method represent \"NOT NULL\" fields in the table and thus should not be null.\n" +
                 "*/\n");
         sb.append(
                 "public static " + t.name + " createAndAdd(" + minimalConstructor.paramsWithoutId
                         + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                        idCol.type.inJava + " " + idCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
+                        idCol.type.inJava + " " + idCol.name + " = Database.defaultInMemoryOnlyObjId;\n" + t.name + " obj = new " + t.name + "(" + minimalConstructor.paramsWithoutTypes + ");\n" +
                         "onCreate.forEach(code -> code.accept(obj));\n" +
                         "add(obj);\n" +
                         "return obj;\n");
@@ -100,7 +68,7 @@ public class GenCreateMethods {
             sb.append(
                     "public static " + t.name + " createAndAdd(" + constructor.paramsWithoutId
                             + ") " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                            idCol.type.inJava + " " + idCol.name + " = idCounter.getAndIncrement();\n" + t.name + " obj = new " + t.name + "();\n" + JavaCodeGenerator.genFieldAssignments("obj", t.columns) + "\n" +
+                            idCol.type.inJava + " " + idCol.name + " = Database.defaultInMemoryOnlyObjId;\n" + t.name + " obj = new " + t.name + "();\n" + JavaCodeGenerator.genFieldAssignments("obj", t.columns) + "\n" +
                             "onCreate.forEach(code -> code.accept(obj));\n" +
                             "add(obj);\n" +
                             "return obj;\n");

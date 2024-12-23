@@ -153,7 +153,6 @@ public class GenVaadinFlow {
                 "        public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {\n" +
                 "                btnAdd.setEnabled(false);\n" +
                 "                updateData();\n" +
-                "                data.id = idCounter.getAndIncrement();\n" +
                 "                " + t.name + ".add(data);\n" +
                 "                e.unregisterListener(); // Make sure it gets only executed once\n" +
                 "                updateButtons();\n" +

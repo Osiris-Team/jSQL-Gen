@@ -33,7 +33,7 @@ import com.vaadin.flow.component.html.Span;
 /**
 Table PersonOrder with id 2 and 0 changes/version. <br>
 Structure (4 fields/columns): <br>
-- int id = INT NOT NULL PRIMARY KEY <br>
+- int id = INT AUTO_INCREMENT NOT NULL PRIMARY KEY <br>
 - int personId = INT NOT NULL <br>
 - String name = TEXT DEFAULT '' <br>
 - int time = INT DEFAULT 10000 <br>
@@ -65,7 +65,7 @@ public static CopyOnWriteArrayList<Consumer<PersonOrder>> onAdd = new CopyOnWrit
 public static CopyOnWriteArrayList<Consumer<PersonOrder>> onUpdate = new CopyOnWriteArrayList<Consumer<PersonOrder>>();
 public static CopyOnWriteArrayList<Consumer<PersonOrder>> onRemove = new CopyOnWriteArrayList<Consumer<PersonOrder>>();
 
-private static boolean isEqual(PersonOrder obj1, PersonOrder obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }
+private static boolean isEqual(PersonOrder obj1, PersonOrder obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
     /**
      * Only works correctly if the package name is com.osiris.jsqlgen.
      */
@@ -80,9 +80,8 @@ private static boolean isEqual(PersonOrder obj1, PersonOrder obj2){ return obj1.
         }
         return s +"..."+ stack[1].toString(); //stack[0] == current method, gets ignored
     }
-public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);
-public int getId(){return id;}
-public void setId(int id){this.id = id;}
+public Object getId(){return id;}
+public void setId(Object id){this.id = (int) id;}
 public static volatile boolean hasChanges = false;
 static {
 try{
@@ -92,13 +91,18 @@ try (Statement s = con.createStatement()) {
 Database.TableMetaData t = Database.getTableMetaData(2);
 for (int i = t.version; i < 1; i++) {
 if(i == 0){
-if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `personorder` (`id` INT NOT NULL PRIMARY KEY)");
+if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `personorder` (`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY)");
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `personorder` ADD COLUMN `personId` INT");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `personorder` ADD COLUMN `name` TEXT DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 4){try{s.executeUpdate("ALTER TABLE `personorder` ADD COLUMN `time` INT DEFAULT 10000");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
 }
 }
-
     new Thread(() -> {
         try{
             onAdd.add(obj -> {hasChanges = true;});
@@ -118,16 +122,14 @@ Database.updateTableMetaData(t);
     }).start();
 
 }
-try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `personorder` ORDER BY id DESC LIMIT 1")) {
-ResultSet rs = ps.executeQuery();
-if (rs.next()) idCounter.set(rs.getInt(1) + 1);
-}
+
 }
 catch(Exception e){ throw new RuntimeException(e); }
 finally {Database.freeCon(con);}
+
 }catch(Exception e){
 e.printStackTrace();
-System.err.println("Something went really wrong during table (PersonOrder) initialisation, thus the program will exit!");System.exit(1);}
+System.err.println("Something went really wrong during table (PersonOrder) initialisation, subsequent operations will fail!");}
 }
 
     private static final List<CachedResult> cachedResults = new ArrayList<>();
@@ -185,21 +187,45 @@ initDefaultFields();
 this.id = id;this.personId = personId;this.name = name;this.time = time;
 }
 /**
-Database field/value: INT NOT NULL PRIMARY KEY. <br>
+Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
 */
-public int id;
+public int id = Database.defaultInMemoryOnlyObjId;
+/**
+Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public PersonOrder id(int id){ this.id = id; return this;}
 /**
 Database field/value: INT NOT NULL. <br>
 */
 public int personId;
 /**
+Database field/value: INT NOT NULL. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public PersonOrder personId(int personId){ this.personId = personId; return this;}
+/**
 Database field/value: TEXT DEFAULT ''. <br>
 */
 public String name;
 /**
+Database field/value: TEXT DEFAULT ''. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public PersonOrder name(String name){ this.name = name; return this;}
+/**
 Database field/value: INT DEFAULT 10000. <br>
 */
 public int time;
+/**
+Database field/value: INT DEFAULT 10000. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public PersonOrder time(int time){ this.time = time; return this;}
 /**
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
@@ -207,61 +233,28 @@ protected PersonOrder initDefaultFields() {
 this.name=""; this.time=10000; return this;
 }
 
-public static class Optionals{
-public Optionals(){this.name=""; this.time=10000; }
-public String name; public int time; 
-public Optionals name(String name){ this.name = name; return this;} public Optionals time(int time){ this.time = time; return this;} 
-}
-
 /**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
+Creates and returns an object that can be added to this table. <br>
+The parameters of this method represent only the "NOT NULL" fields in the table and thus should not be null. <br>
+- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+- This method will NOT add the object to the table. <br>
+- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
 public static PersonOrder create(int personId) {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 PersonOrder obj = new PersonOrder(id, personId);
 onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
 
 /**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that this method will NOT add the object to the table.
+Creates and returns an object that can be added to this table. <br>
+- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+- This method will NOT add the object to the table. <br>
+- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
 public static PersonOrder create(int personId, String name, int time)  {
-int id = idCounter.getAndIncrement();
-PersonOrder obj = new PersonOrder();
-obj.id=id; obj.personId=personId; obj.name=name; obj.time=time; 
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an in-memory object with -1 as id, that can be added to this table
-AFTER you manually did obj.id = idCounter.getAndIncrement().
-This is useful for objects that may never be added to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
-*/
-public static PersonOrder createInMem(int personId) {
-int id = -1;
-PersonOrder obj = new PersonOrder(id, personId);
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an in-memory object with -1 as id, that can be added to this table
-AFTER you manually did obj.id = idCounter.getAndIncrement().
-This is useful for objects that may never be added to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
-*/
-public static PersonOrder createInMem(int personId, String name, int time)  {
-int id = -1;
+int id = Database.defaultInMemoryOnlyObjId;
 PersonOrder obj = new PersonOrder();
 obj.id=id; obj.personId=personId; obj.name=name; obj.time=time; 
 onCreate.forEach(code -> code.accept(obj));
@@ -270,10 +263,10 @@ return obj;
 
 /**
 Convenience method for creating and directly adding a new object to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+The parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
 public static PersonOrder createAndAdd(int personId)  {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 PersonOrder obj = new PersonOrder(id, personId);
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
@@ -284,18 +277,9 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 */
 public static PersonOrder createAndAdd(int personId, String name, int time)  {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 PersonOrder obj = new PersonOrder();
 obj.id=id; obj.personId=personId; obj.name=name; obj.time=time; 
-onCreate.forEach(code -> code.accept(obj));
-add(obj);
-return obj;
-}
-
-public static PersonOrder createAndAdd(int personId, Optionals optionals)  {
-int id = idCounter.getAndIncrement();
-PersonOrder obj = new PersonOrder(id, personId);
-obj.name = optionals.name; obj.time = optionals.time; 
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
@@ -383,6 +367,8 @@ return list;}
         return getLazy(onResultReceived, onFinish, limit, null);
     }
     /**
+     * Instead of using the SQL OFFSET keyword this function uses the primary key / id (must be numeric).
+     * We do NOT use OFFSET due to performance and require a numeric id . <br>
      * Loads results lazily in a new thread. <br>
      * Add {@link Thread#sleep(long)} at the end of your onResultReceived code, to sleep between fetches.
      * @param onResultReceived can NOT be null. Gets executed until there are no results left, thus the results list is never empty.
@@ -401,7 +387,7 @@ return list;}
             while(true){
                 results = whereId().biggerThan(lastId).and(finalWhere).limit(limit).get();
                 if(results.isEmpty()) break;
-                lastId = results.get(results.size() - 1).id;
+                lastId = (int) results.get(results.size() - 1).getId();
                 count += results.size();
                 onResultReceived.accept(results);
             }
@@ -444,10 +430,19 @@ return list;}
         return thread;
     }
 
+
+/**
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
+We are using this approach because its universal to all databases. 
+*/
 public static int count(){ return count(null, (Object[]) null); }
 
+/**
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
+We are using this approach because its universal to all databases. 
+*/
 public static int count(String where, Object... whereValues)  {
-String sql = "SELECT COUNT(`id`) AS recordCount FROM `personorder`" +
+String sql = "SELECT COUNT(`id`) FROM `personorder`" +
 (where != null ? where : ""); 
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
@@ -460,7 +455,7 @@ Object val = whereValues[i];
 ps.setObject(i+1, val);
 }
 ResultSet rs = ps.executeQuery();
-if (rs.next()) return rs.getInt("recordCount");
+if (rs.next()) return rs.getInt(1);
 msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally {System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
@@ -475,7 +470,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(PersonOrder obj)  {
-String sql = "UPDATE `personorder` SET `id`=?,`personId`=?,`name`=?,`time`=? WHERE id="+obj.id;
+String sql = "UPDATE `personorder` SET `id`=?,`personId`=?,`name`=?,`time`=? WHERE id="+obj.getId();
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
@@ -499,18 +494,24 @@ onUpdate.forEach(code -> code.accept(obj));
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(PersonOrder obj)  {
-String sql = "INSERT INTO `personorder` (`id`,`personId`,`name`,`time`) VALUES (?,?,?,?)";
+String sql = "INSERT INTO `personorder` (`personId`,`name`,`time`) VALUES (?,?,?)";
 long msGetCon = System.currentTimeMillis(); long msJDBC = 0;
 Connection con = Database.getCon();
 msGetCon = System.currentTimeMillis() - msGetCon;
 msJDBC = System.currentTimeMillis();
-try (PreparedStatement ps = con.prepareStatement(sql)) {
-ps.setInt(1, obj.id);
-ps.setInt(2, obj.personId);
-ps.setString(3, obj.name);
-ps.setInt(4, obj.time);
+try (PreparedStatement ps = con.prepareStatement(sql, new String[]{"id"})) {
+ps.setInt(1, obj.personId);
+ps.setString(2, obj.name);
+ps.setInt(3, obj.time);
 ps.executeUpdate();
-msJDBC = System.currentTimeMillis() - msJDBC;
+    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { 
+        if (generatedKeys.next()) { // Retrieve the first auto-generated ID
+            int generatedId = generatedKeys.getInt(1);
+            obj.id = generatedId;
+        } else {
+            //System.out.println("No ID generated."); This should never happen...
+        }
+    }msJDBC = System.currentTimeMillis() - msJDBC;
 }catch(Exception e){throw new RuntimeException(e);}
 finally{System.err.println(sql+" /* //// msGetCon="+msGetCon+" msJDBC="+msJDBC+" con="+con+" minimalStack="+minimalStackString()+" */");
 Database.freeCon(con);
@@ -534,7 +535,7 @@ remove(obj, true, Database.isRemoveRefs);
 public static void remove(PersonOrder obj, boolean unsetRefs, boolean removeRefs)  {
 if(unsetRefs) unsetRefs(obj);
 if(removeRefs) removeRefs(obj);
-remove("WHERE id = "+obj.id);
+remove("WHERE id = "+obj.getId());
 onRemove.forEach(code -> code.accept(obj));
 }
 /**
@@ -756,7 +757,6 @@ return nfTime;
         public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {
                 btnAdd.setEnabled(false);
                 updateData();
-                data.id = idCounter.getAndIncrement();
                 PersonOrder.add(data);
                 e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
@@ -842,7 +842,7 @@ return nfTime;
     }
 
 public boolean isOnlyInMemory(){
-return id < 0;
+return id == Database.defaultInMemoryOnlyObjId;
 }
 public static WHERE<Integer> whereId() {
 return new WHERE<Integer>("`id`");

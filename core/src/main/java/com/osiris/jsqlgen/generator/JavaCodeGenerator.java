@@ -63,10 +63,25 @@ public class JavaCodeGenerator {
                 if (containsIgnoreCase(col.definition, "NULL")) {
                     throw new Exception("Found suspicious definition using NULL! Please use the DEFAULT keyword instead!");
                 } else {
-                    System.out.println("Found suspicious definition without NOT NULL, appended it.");
+                    System.out.println("Found suspicious definition without NOT NULL, appended it for "+db.name+"."+t.name+"."+col.name);
                     col.definition = col.definition + " NOT NULL";
                 }
             }
+        }
+
+        for (Table t : db.tables) {
+            if(t.columns.isEmpty()) throw new Exception("Table must contain at least one id column!");
+            var idCol = t.columns.get(0);
+
+            // MAKE ALL IDS REQUIRE AUTO_INCREMENT
+            // TODO support other db dialects for this feature
+            if (containsIgnoreCase(idCol.definition, "AUTO_INCREMENT")) continue;
+            System.out.println("Found suspicious definition without AUTO_INCREMENT in id, inserted it for "+db.name+"."+t.name+"."+idCol.name);
+            int firstSpaceI = idCol.definition.indexOf(" ");
+            if(firstSpaceI >= 0){
+                idCol.definition = insertAt(idCol.definition, firstSpaceI, " AUTO_INCREMENT");
+            } else
+                idCol.definition = idCol.definition + " AUTO_INCREMENT";
         }
 
         /*

@@ -22,7 +22,7 @@ public class Table {
     public Table addIdColumn(){
         Column idColumn = new Column("id");
         idColumn.id = Main.idCounter.getAndIncrement();
-        idColumn.definition = "INT NOT NULL PRIMARY KEY";
+        idColumn.definition = "INT AUTO_INCREMENT NOT NULL PRIMARY KEY";
         addCol(idColumn);
         return this;
     }

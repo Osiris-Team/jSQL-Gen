@@ -85,6 +85,8 @@ Just reading the "Safety" section below will already give you an idea.
 - (Optional) Helper WHERE class for generating simple and complex SQL queries, from compile-safe functions.
 - Safe removal of rows where references will be unset (set to -1) by default. Also provides removeRefs(...) to safely remove referenced rows.
 For conveniece if removing all rows with refs should be the default you can set `Database.isRemoveRefs = true;`. References are created by naming your column like so: tableNameId.
+- Forcing ids for all tables and AUTO_INCREMENT ensuring support for databases that
+communicate with multiple clients/applications.
 
 ### ⚡️ Performance
 - No runtime overhead for class generation (unlike other ORMs).
@@ -127,11 +129,15 @@ even execute get/add/update/delete. Provided in the generated Database class.
 ### 🔴 Cons / Todo
 PRs for these issues are greatly appreciated (sorted from most important, to least important).
 - You need to know a bit of SQL, especially about definitions and defaults. This could be fixed by simplifying the GUI further.
-- Internally a `idCounter` is used for each table, meaning if rows are added by another program the counter won't be accurate anymore and thus further insert operations will fail.
-- Direct modifications of the database by a third-party program breaks stuff.
-- Java Code Generator: No support for `FOREIGN KEY` / references between tables. However note that the idea of references is supported (columns named tableNameId are refs).
+- Direct modifications of the database by a third-party program may make cache outdated (if cache enabled).
+- Java Code Generator: No "direct" support for `FOREIGN KEY` / references between tables, ref must contain word "id" in its name. However note that the idea of references is supported (columns named tableNameId are refs).
 - Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
 - Since there is a global id counter for all tables and columns, in each application, collaboration and syncing changes might be difficult. 
+- Compile safety for enums, right now an enum is simply a string.
+- Better compile safety for type length limits, like `VARCHAR(200)` for example. Is this even doable?
+- Database might provide specific keywords/functions for frequently used defaults like `NOW()`, some of those are supported (meaning there is equivalent Java code for it),
+but there are probably more that aren't.
+
 
 ## Tipps
 - You can select a project directory to directly generate the code in there. The generated code/files can also be found in the `generated` folder (press `Show Data` on the first tab, to open the location).

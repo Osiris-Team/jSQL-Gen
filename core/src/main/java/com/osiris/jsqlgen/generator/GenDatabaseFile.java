@@ -22,13 +22,13 @@ public class GenDatabaseFile {
         imports.add("import java.io.File;");
 
         StringBuilder s = new StringBuilder(
-                "/*\n" +
+                "/**\n" +
                 "Auto-generated class that is used by all table classes to create connections. <br>\n" +
                 "It holds the database credentials (set by you at first run of jSQL-Gen).<br>\n" +
                 "Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class. <br>\n" +
                 "All tables use the cached connection pool in this class which has following advantages: <br>\n" +
-                "- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.\n" +
-                "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors)." +
+                "- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.<br>\n" +
+                "- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors).<br>\n" +
                 "*/\n" +
                 "public class Database{\n" +
                 "public static String url = " + url + ";\n" +
@@ -45,6 +45,7 @@ public class GenDatabaseFile {
                 "* Use synchronized on this before doing changes to it. \n" +
                 "*/\n" +
                 "public static final List<Connection> availableConnections = new ArrayList<>();\n" +
+                    "public static final int defaultInMemoryOnlyObjId = -1;\n" +
                 "public static final TableMetaData[] tables = new TableMetaData[]{");
 
         CopyOnWriteArrayList<Table> tables = db.tables;

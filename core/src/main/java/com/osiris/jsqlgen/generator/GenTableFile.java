@@ -121,7 +121,7 @@ public class GenTableFile {
                 "        }\n" +
                 "        return s +\"...\"+ stack[1].toString(); //stack[0] == current method, gets ignored\n" +
                 "    }\n");
-        classContentBuilder.append("public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);\n" +
+        classContentBuilder.append(
             "public Object getId(){return "+idCol.name+";}\n" +
             "public void setId(Object id){this."+idCol.name+" = ("+idCol.type.inJava+") id;}\n");
 
@@ -179,20 +179,22 @@ public class GenTableFile {
             classContentBuilder.append(constructor.asString);
 
         // CREATE FIELDS AKA COLUMNS:
-        for (Column col : t.columns) {
+        ArrayList<Column> columns = t.columns;
+        for (int i = 0; i < columns.size(); i++) {
+            Column col = columns.get(i);
             boolean notNull = containsIgnoreCase(col.definition, "NOT NULL");
             classContentBuilder.append("/**\n" +
                 "Database field/value: " + col.definition + ". <br>\n" +
                 (col.comment != null ? (col.comment + "\n") : "") +
                 "*/\n" +
-                "public " + col.type.inJava + " " + col.name + ";\n");
+                "public " + col.type.inJava + " " + col.name + (i == 0 ? " = Database.defaultInMemoryOnlyObjId;\n" : ";\n")); // Set -1 as default for id
             classContentBuilder.append("" +
                 "/**\n" +
                 "Database field/value: " + col.definition + ". <br>\n" +
-                (col.comment != null ? (col.comment + "\n") : "") + "\n"+
-                "Convenience builder-like setter with method-chaining.\n"+
+                (col.comment != null ? (col.comment + "\n") : "") + "\n" +
+                "Convenience builder-like setter with method-chaining.\n" +
                 "*/\n" +
-                "public "+t.name+" "+col.name+"("+col.type.inJava+" "+col.name+"){ this."+ col.name+" = "+col.name+"; return this;}\n");
+                "public " + t.name + " " + col.name + "(" + col.type.inJava + " " + col.name + "){ this." + col.name + " = " + col.name + "; return this;}\n");
         }
 
         // CREATE INIT DEFAULTS METHOD:
@@ -212,10 +214,22 @@ public class GenTableFile {
 
 
         // CREATE COUNT METHOD:
-        classContentBuilder.append("public static int count(){ return count(null, (Object[]) null); }\n" +
+        classContentBuilder.append("" +
             "\n" +
+            "/**\n" +
+            "Note that this literally counts the rows thus its extremely slow in larger tables, its recommended" +
+            "to use a workaround specific to your database instead. \n" +
+            "We are using this approach because its universal to all databases. \n" +
+            "*/\n" +
+            "public static int count(){ return count(null, (Object[]) null); }\n" +
+            "\n" +
+            "/**\n" +
+            "Note that this literally counts the rows thus its extremely slow in larger tables, its recommended" +
+            "to use a workaround specific to your database instead. \n" +
+            "We are using this approach because its universal to all databases. \n" +
+            "*/\n" +
             "public static int count(String where, Object... whereValues) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-            "String sql = \"SELECT COUNT(`id`) AS recordCount FROM " + tNameQuoted + "\" +\n" +
+            "String sql = \"SELECT COUNT(`"+idCol.name+"`) FROM " + tNameQuoted + "\" +\n" +
             "(where != null ? where : \"\"); \n" +
             (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
             "Connection con = Database.getCon();\n" +
@@ -228,7 +242,7 @@ public class GenTableFile {
             "ps.setObject(i+1, val);\n" +
             "}\n" +
             "ResultSet rs = ps.executeQuery();\n" +
-            "if (rs.next()) return rs.getInt(\"recordCount\");\n" +
+            "if (rs.next()) return rs.getInt(1);\n" +
             (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
             (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") + // Close try/catch
             "finally {" +
@@ -283,12 +297,12 @@ public class GenTableFile {
             "*/\n" +
             "public static void add(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
             "String sql = \"INSERT INTO " + tNameQuoted + " (");
-        for (int i = 0; i < t.columns.size() - 1; i++) {
+        for (int i = 1; i < t.columns.size() - 1; i++) { // start=1 to ignore id
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
         classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
         classContentBuilder.append(") VALUES (");
-        for (int i = 0; i < t.columns.size() - 1; i++) {
+        for (int i = 1; i < t.columns.size() - 1; i++) { // start=1 to ignore id
             classContentBuilder.append("?,");
         }
         classContentBuilder.append("?)\";\n");
@@ -297,14 +311,24 @@ public class GenTableFile {
                 "Connection con = Database.getCon();\n" +
                 (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
                 (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
-                "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" // Open try/catch
+                "try (PreparedStatement ps = con.prepareStatement(sql, new String[]{\""+idCol.name+"\"})) {\n" // Open try/catch
         );
-        for (int i = 0; i < t.columns.size(); i++) {
+        for (int i = 1; i < t.columns.size(); i++) { // start=1 to ignore id
             Column c = t.columns.get(i);
-            classContentBuilder.append(JavaCodeGenerator.genJDBCSet(c, i));
+            classContentBuilder.append(JavaCodeGenerator.genJDBCSet(c, i - 1)); // -1 since we ignore id
         }
         classContentBuilder.append(
             "ps.executeUpdate();\n" +
+                "" +
+                "    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { \n" +
+                "        if (generatedKeys.next()) { // Retrieve the first auto-generated ID\n" +
+                "            "+idCol.type.inJava+" generatedId = generatedKeys.get"+firstToUpperCase(idCol.type.inJava)+"(1);\n" +
+                "            obj."+idCol.name+" = generatedId;\n" +
+                "        } else {\n" +
+                "            //System.out.println(\"No ID generated.\"); This should never happen...\n" +
+                "        }\n" +
+                "    }" +
+                "" +
                 (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
                 "finally{" +
@@ -376,7 +400,7 @@ public class GenTableFile {
 
         // CREATE OBJ ISONLYINMEMORY METHOD
         classContentBuilder.append("public boolean isOnlyInMemory(){\n" +
-            "return "+idCol.name+" < 0;\n}\n");
+            "return "+idCol.name+" == Database.defaultInMemoryOnlyObjId;\n}\n");
 
         // SHORTCUT FOR WHERE METHODS
         for (Column col : t.columns) {

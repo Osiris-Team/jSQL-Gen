@@ -107,40 +107,39 @@ public class GenStaticTableConstructor {
                 s.append("}\n"); // CLOSE IF
             }
             s.append("}\n"); // CLOSE FOR LOOP
+
+            s.append((t.isDebug ?
+                "    new Thread(() -> {\n" +
+                    "        try{\n" +
+                    "            onAdd.add(obj -> {hasChanges = true;});\n" +
+                    "            onRemove.add(obj -> {hasChanges = true;});\n" +
+                    "            onUpdate.add(obj -> {hasChanges = true;});\n" +
+                    "            while(true){\n" +
+                    "                Thread.sleep(10000);\n" +
+                    "                if(hasChanges){\n" +
+                    "                    hasChanges = false;\n" +
+                    "                    System.err.println(\"Changes for "+t.name+" detected within the last 10 seconds, printing...\");\n" +
+                    "                    Database.printTable(t);\n" +
+                    "                }\n" +
+                    "            }\n" +
+                    "        } catch (Exception e) {\n" +
+                    "            throw new RuntimeException(e);\n" +
+                    "        }\n" +
+                    "    }).start();\n\n" : ""));
+
             s.append("}\n"); // CLOSE TRY/CATCH
         }
 
         var idCol = t.columns.get(0);
         s.append("\n" +
-                (t.isDebug ?
-                        "    new Thread(() -> {\n" +
-                                "        try{\n" +
-                                "            onAdd.add(obj -> {hasChanges = true;});\n" +
-                                "            onRemove.add(obj -> {hasChanges = true;});\n" +
-                                "            onUpdate.add(obj -> {hasChanges = true;});\n" +
-                                "            while(true){\n" +
-                                "                Thread.sleep(10000);\n" +
-                                "                if(hasChanges){\n" +
-                                "                    hasChanges = false;\n" +
-                                "                    System.err.println(\"Changes for "+t.name+" detected within the last 10 seconds, printing...\");\n" +
-                                "                    Database.printTable(t);\n" +
-                                "                }\n" +
-                                "            }\n" +
-                                "        } catch (Exception e) {\n" +
-                                "            throw new RuntimeException(e);\n" +
-                                "        }\n" +
-                                "    }).start();\n\n" : "") +
-                        "try (PreparedStatement ps = con.prepareStatement(\"SELECT "+idCol.name+" FROM " + tCurrentNameQuoted + " ORDER BY "+idCol.name+" DESC LIMIT 1\")) {\n" +
-                        "ResultSet rs = ps.executeQuery();\n" +
-                        "if (rs.next()) idCounter.set(rs.getInt(1) + 1);\n" +
-                        "}\n" +
                         "}\n" +
                         "catch(Exception e){ throw new RuntimeException(e); }\n" +
                         "finally {Database.freeCon(con);}\n" +
+                        "\n" +
                         "}catch(Exception e){\n" +
                         "e.printStackTrace();\n" +
-                        "System.err.println(\"Something went really wrong during table (" + t.name + ") initialisation, thus the program will exit!\");" +
-                        "System.exit(1);}\n" +
+                        "System.err.println(\"Something went really wrong during table (" + t.name + ") initialisation, subsequent operations will fail!\");" +
+                        "}\n" +
                         "}\n\n"); // CLOSE STATIC INIT
         return s.toString();
     }
