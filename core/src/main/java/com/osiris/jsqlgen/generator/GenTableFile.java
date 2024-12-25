@@ -23,6 +23,7 @@ public class GenTableFile {
 
         // GENERATE COLUMN TYPES
         LinkedHashSet<String> importsList = new LinkedHashSet<>();
+        importsList.add("import java.math.BigDecimal;");
         String tNameQuoted = JavaCodeGenerator.getSQLTableNameQuoted(t.name);
         List<String> generatedEnumClasses = new ArrayList<>();
         for (Column col : t.columns) {

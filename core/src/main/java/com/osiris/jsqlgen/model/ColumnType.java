@@ -19,7 +19,7 @@ public class ColumnType {
             "long", "setLong", "getLong");
     // DECIMAL TYPES:
     public static ColumnType DECIMAL = new ColumnType(new String[]{"DECIMAL", "NUMERIC"},
-            "java.math.BigDecimal", "setBigDecimal", "getBigDecimal");
+            "BigDecimal", "setBigDecimal", "getBigDecimal");
     // FLOATING POINT TYPES:
     public static ColumnType FLOAT = new ColumnType(new String[]{"FLOAT", "REAL"},
             "float", "setFloat", "getFloat");
