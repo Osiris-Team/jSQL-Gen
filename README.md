@@ -132,7 +132,6 @@ PRs for these issues are greatly appreciated (sorted from most important, to lea
 - Direct modifications of the database by a third-party program may make cache outdated (if cache enabled).
 - Java Code Generator: No "direct" support for `FOREIGN KEY` / references between tables, ref must contain word "id" in its name. However note that the idea of references is supported (columns named tableNameId are refs).
 - Java Code Generator: No support for `VIEW, JOIN, UNION` / merged tables/results. This might never get fixed if its not possible to create a developer-friendly / simple API for this.
-- Since there is a global id counter for all tables and columns, in each application, collaboration and syncing changes might be difficult. 
 - Compile safety for enums, right now an enum is simply a string.
 - Better compile safety for type length limits, like `VARCHAR(200)` for example. Is this even doable?
 - Database might provide specific keywords/functions for frequently used defaults like `NOW()`, some of those are supported (meaning there is equivalent Java code for it),
