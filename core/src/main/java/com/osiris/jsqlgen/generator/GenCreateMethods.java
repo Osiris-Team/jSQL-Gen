@@ -131,6 +131,8 @@ public class GenCreateMethods {
             Column c = t.columns.get(i);
             if (c.type.isEnum())
                 sb.append("obj." + c.name + " = " + c.type.inJava + ".valueOf(rs." + c.type.inJBDCGet + "(" + (i + 1) + "));\n");
+            else if(c.type.inJBDCGet.equals("getObject"))
+                sb.append("obj." + c.name + " = rs." + c.type.inJBDCGet + "(" + (i + 1) + ", "+c.type.inJava+".class);\n");
             else
                 sb.append("obj." + c.name + " = rs." + c.type.inJBDCGet + "(" + (i + 1) + ");\n");
         }

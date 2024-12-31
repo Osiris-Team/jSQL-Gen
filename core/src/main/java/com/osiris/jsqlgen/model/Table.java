@@ -42,13 +42,17 @@ public class Table {
 
     public Table updateCol(Column col, String oldName, String newName, String newDefinition, String newComment){
 
+        if(!currentChange.deletedColumnIds.contains(col.id)){
+            currentChange.deletedColumnIds.add(col.id);
+            currentChange.deletedColumnNames.add(oldName); // Only add once if renamed multiple times to ensure correct old name is used
+        }
+
         col.updateName(newName);
         String oldDefinition = col.definition;
         col.definition = newDefinition;
         col.comment = newComment;
 
         // Update current change
-        currentChange.deletedColumnNames.remove(oldName);
         if(currentChange.addedColumnNames.contains(oldName)){
             int i = currentChange.addedColumnNames.indexOf(oldName);
             currentChange.addedColumnNames.set(i, newName);

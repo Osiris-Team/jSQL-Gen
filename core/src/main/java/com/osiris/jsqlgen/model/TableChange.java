@@ -18,12 +18,13 @@ public class TableChange {
     public ArrayList<String> newColumnDefinitions_Names = new ArrayList<>();
 
     // Deleted column
+    public transient ArrayList<Long> deletedColumnIds = new ArrayList<>();
     public ArrayList<String> deletedColumnNames = new ArrayList<>();
 
     // Added column
     public ArrayList<String> addedColumnNames = new ArrayList<>();
     public ArrayList<String> addedColumnDefinitions = new ArrayList<>();
-    
+
     public boolean hasChanges(){
         return !oldTableName.equals(newTableName) ||
                 !oldColumnNames.isEmpty() ||

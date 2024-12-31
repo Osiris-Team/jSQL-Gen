@@ -2,6 +2,8 @@ package com.osiris.jsqlgen.model;
 
 import com.osiris.jsqlgen.utils.UString;
 
+import java.util.Objects;
+
 public class Column {
     public long id = 0; // Gson always sets to 0 if field doesn't exist yet, no matter what we write here
     public String name;
@@ -36,6 +38,10 @@ public class Column {
     public String getDefaultValue() {
         String val = definition.substring(definition.indexOf("DEFAULT"));
         val = val.substring(val.indexOf(" ") + 1);
+
+        if(type.isText())
+            return Objects.requireNonNull(UString.getContentWithinQuotes(val));
+
         if(val.contains(" ")) val = val.substring(0, val.indexOf(" "));
         return UString.removeOuterQuotes(val);
     }

@@ -49,6 +49,55 @@ public class UString {
     }
 
     /**
+     * Extracts and returns the content within the outermost quotes (if present). <br>
+     * The function does not require the string to start or end with a quote. <br>
+     * It removes everything before the first quote (inclusive) and everything after the last quote (inclusive). <br>
+     * Quotes that will be detected are: " ' ` <br>
+     *
+     * Examples: <br>
+     * - Input: hello 'world'! -> Output: world <br>
+     * - Input: say "hello" -> Output: hello <br>
+     * - Input: no quotes -> Output: null <br>
+     *
+     * @param s the input string to process
+     * @return the content within the outermost quotes, or null if no valid quotes are found
+     */
+    public static String getContentWithinQuotes(String s) {
+        if (s == null || s.isEmpty()) {
+            return null; // No content if the string is null or empty
+        }
+        s = s.trim();
+
+        int firstQuoteIndex = -1;
+        int lastQuoteIndex = -1;
+
+        // Find the first quote
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\'' || c == '"' || c == '`') {
+                firstQuoteIndex = i;
+                break;
+            }
+        }
+
+        // Find the last quote
+        for (int i = s.length() - 1; i >= 0; i--) {
+            char c = s.charAt(i);
+            if (c == '\'' || c == '"' || c == '`') {
+                lastQuoteIndex = i;
+                break;
+            }
+        }
+
+        // If both quotes are found and valid, extract the content
+        if (firstQuoteIndex != -1 && lastQuoteIndex != -1 && firstQuoteIndex < lastQuoteIndex) {
+            return s.substring(firstQuoteIndex + 1, lastQuoteIndex);
+        }
+
+        return null; // No valid quote pairs found
+    }
+
+    /**
      * Inserts a string into another string at a specific position.
      *
      * @param original The original string.

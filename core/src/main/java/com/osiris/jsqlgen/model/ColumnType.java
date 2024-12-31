@@ -156,6 +156,17 @@ public class ColumnType {
         return false;
     }
 
+    @Override
+    public ColumnType clone() {
+        return new ColumnType(
+            this.inSQL != null ? Arrays.copyOf(this.inSQL, this.inSQL.length) : null,
+            this.inJava,
+            this.inJavaWithPackage,
+            this.inJBDCSet,
+            this.inJBDCGet
+        );
+    }
+
 
     // TODO SPATIAL DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
     // TODO JSON DATA TYPES: https://dev.mysql.com/doc/refman/8.0/en/data-types.html

@@ -29,7 +29,7 @@ configure(subprojects - project(':android')) {
 }
 
 subprojects {
-  version = '3.0.2'
+  version = '3.0.3'
   ext.appName = 'Desku-App'
   repositories {
     mavenCentral()
