@@ -42,44 +42,48 @@ public class Table {
 
     public Table updateCol(Column col, String oldName, String newName, String newDefinition, String newComment){
 
-        if(!currentChange.deletedColumnIds.contains(col.id)){
-            currentChange.deletedColumnIds.add(col.id);
-            currentChange.deletedColumnNames.add(oldName); // Only add once if renamed multiple times to ensure correct old name is used
-        }
-
         col.updateName(newName);
         String oldDefinition = col.definition;
         col.definition = newDefinition;
         col.comment = newComment;
 
         // Update current change
-        if(currentChange.addedColumnNames.contains(oldName)){
+        if(currentChange.addedColumnNames.contains(oldName)){ // brand new column
             int i = currentChange.addedColumnNames.indexOf(oldName);
             currentChange.addedColumnNames.set(i, newName);
             currentChange.addedColumnDefinitions.set(i, newDefinition);
         } else{
             // Existing column, check for changes
-            int i = currentChange.newColumnNames.indexOf(oldName);
+
+            // NAMES
+            if(!newName.equals(oldName) && !currentChange.oldColumnNamesIds.contains(col.id)){
+                currentChange.oldColumnNamesIds.add(col.id);
+                currentChange.oldColumnNames.add(oldName); // Only add once if renamed multiple times to ensure correct old name is used
+            }
+
+            int i = currentChange.newColumnNames.indexOf(oldName); // Ensure latest change is only present
             if(i >= 0){
                 currentChange.newColumnNames.remove(i);
                 currentChange.newColumnNames_Definitions.remove(i);
-                currentChange.oldColumnNames.remove(i);
             }
             if(!newName.equals(oldName)) {
                 currentChange.newColumnNames.add(newName);
                 currentChange.newColumnNames_Definitions.add(newDefinition);
-                currentChange.oldColumnNames.add(oldName);
             }
 
-            i = currentChange.newColumnDefinitions.indexOf(oldDefinition);
+            // DEFS
+            if(!newDefinition.equals(oldDefinition) && !currentChange.oldColumnDefinitionsIds.contains(col.id)){
+                currentChange.oldColumnDefinitionsIds.add(col.id);
+                currentChange.oldColumnDefinitions.add(oldDefinition); // Only add once if changed multiple times to ensure correct old def is used
+            }
+
+            i = currentChange.newColumnDefinitions.indexOf(oldDefinition); // Ensure latest change is only present
             if(i >= 0){
                 currentChange.newColumnDefinitions.remove(i);
-                currentChange.oldColumnDefinitions.remove(i);
                 currentChange.newColumnDefinitions_Names.remove(i);
             }
             if(!newDefinition.equals(oldDefinition)) {
                 currentChange.newColumnDefinitions.add(newDefinition);
-                currentChange.oldColumnDefinitions.add(oldDefinition);
                 currentChange.newColumnDefinitions_Names.add(newName);
             }
         }

@@ -1,6 +1,7 @@
 package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.model.*;
+import com.osiris.jsqlgen.utils.UString;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.alter.Alter;
 import ru.lanwen.verbalregex.VerbalExpression;
@@ -64,7 +65,7 @@ public class JavaCodeGenerator {
                     throw new Exception("Found suspicious definition using NULL! Please use the DEFAULT keyword instead!");
                 } else {
                     System.out.println("Found suspicious definition without NOT NULL, appended it for "+db.name+"."+t.name+"."+col.name);
-                    col.definition = col.definition + " NOT NULL";
+                    t.updateCol(col, col.name, col.name, col.definition + " NOT NULL", col.comment);
                 }
             }
         }
@@ -78,10 +79,13 @@ public class JavaCodeGenerator {
             if (containsIgnoreCase(idCol.definition, "AUTO_INCREMENT")) continue;
             System.out.println("Found suspicious definition without AUTO_INCREMENT in id, inserted it for "+db.name+"."+t.name+"."+idCol.name);
             int firstSpaceI = idCol.definition.indexOf(" ");
+            String newDef;
             if(firstSpaceI >= 0){
-                idCol.definition = insertAt(idCol.definition, firstSpaceI, " AUTO_INCREMENT");
+                newDef = insertAt(idCol.definition, firstSpaceI, " AUTO_INCREMENT");
             } else
-                idCol.definition = idCol.definition + " AUTO_INCREMENT";
+                newDef = idCol.definition + " AUTO_INCREMENT";
+
+            t.updateCol(idCol, idCol.name, idCol.name, newDef, idCol.comment);
         }
 
         /*
@@ -167,7 +171,7 @@ public class JavaCodeGenerator {
                     // Make sure longer types are always first to ensure CHAR for example is not before VARCHAR, because in that case we would remove CHAR first and stay with VAR left, not ideal...
                     types.sort((s1, s2) -> Integer.compare(s2.length(), s1.length()));
                     for (String s : types) {
-                        def = def.replaceAll(s, "");
+                        def = UString.replaceAllIgnoreCase(def, s, "");
                     }
 
                     // Apply all regex replacements
@@ -178,7 +182,7 @@ public class JavaCodeGenerator {
                         .replaceAll(numbersRegex.toString(), "");
                     for (String word : def.split(" ")) {
                         if(!validWordsInDefinition.contains(word.toUpperCase()))
-                            throw new Exception("'"+word+"' is very likely an invalid SQL definition in '"+def+"'! If not create a pull request on GitHub.");
+                            throw new Exception("'"+word+"' in '"+t.name+"."+col.name+"' is very likely an invalid SQL definition in '"+def+"'! If not create a pull request on GitHub.");
                     }
                 } catch (Throwable e) {
                     throw new RuntimeException("Invalid SQL found in "+db.name+"."+t.name+"."+col.name+": "+e.getMessage(), e);

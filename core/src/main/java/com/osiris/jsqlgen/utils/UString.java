@@ -48,6 +48,16 @@ public class UString {
         return s; // No outer quotes to remove
     }
 
+    public static String replaceAllIgnoreCase(String str, String oldPattern, String newPattern) {
+        if (str == null || oldPattern == null || newPattern == null) {
+            return str; // Return unchanged if any input is null
+        }
+
+        // Use regex with the CASE_INSENSITIVE flag for case-insensitive replacement
+        return str.replaceAll("(?i)" + oldPattern, newPattern);
+    }
+
+
     /**
      * Extracts and returns the content within the outermost quotes (if present). <br>
      * The function does not require the string to start or end with a quote. <br>

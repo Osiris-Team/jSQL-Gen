@@ -8,11 +8,13 @@ public class TableChange {
     public String newTableName = "";
 
     // Column rename
+    public transient ArrayList<Long> oldColumnNamesIds = new ArrayList<>();
     public ArrayList<String> oldColumnNames = new ArrayList<>();
     public ArrayList<String> newColumnNames = new ArrayList<>();
     public ArrayList<String> newColumnNames_Definitions = new ArrayList<>();
 
     // Column definition change
+    public transient ArrayList<Long> oldColumnDefinitionsIds = new ArrayList<>();
     public ArrayList<String> oldColumnDefinitions = new ArrayList<>();
     public ArrayList<String> newColumnDefinitions = new ArrayList<>();
     public ArrayList<String> newColumnDefinitions_Names = new ArrayList<>();
