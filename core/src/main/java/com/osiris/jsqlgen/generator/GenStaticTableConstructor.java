@@ -3,6 +3,7 @@ package com.osiris.jsqlgen.generator;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.model.TableChange;
+import com.osiris.jsqlgen.utils.UString;
 
 import java.util.ArrayList;
 
@@ -79,6 +80,8 @@ public class GenStaticTableConstructor {
                     String oldColDef = change.oldColumnDefinitions.get(j);
                     String newColDef = change.newColumnDefinitions.get(j);
                     String newColName = change.newColumnDefinitions_Names.get(j);
+                    if(UString.containsIgnoreCase(newColDef, "PRIMARY KEY")) // fix issues with primary key updating, now we detect that case and remove the primary key constraint before updating to avoid issues
+                        newColDef = UString.replaceAllIgnoreCase(newColDef, "PRIMARY KEY", "");
                     s.append("s.executeUpdate(\"ALTER TABLE " + tNameNewQuoted + " MODIFY COLUMN `" + newColName + "` " + newColDef + "\");\n");
                     s.append("t.steps++; Database.updateTableMetaData(t);}\n"); // steps++ and update metadata and close if
                 }
