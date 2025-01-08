@@ -88,6 +88,10 @@ public class ColumnType {
         return this == DECIMAL || this == DOUBLE || this == FLOAT;
     }
 
+    public boolean isPrimitive(){
+        return isNumber() || isDecimalNumber();
+    }
+
     public boolean isDate(){
         return this == DATE;
     }

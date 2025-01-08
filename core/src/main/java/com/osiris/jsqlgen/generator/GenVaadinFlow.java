@@ -221,11 +221,11 @@ public class GenVaadinFlow {
             else if (!col.type.isBitOrBoolean() && col.type.isNumber())
                 s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
             else if (col.type.isDate()) {
-                s.append("            " + fieldName + ".setValue(data." + col.name + ".toLocalDate());\n");
+                s.append("            " + fieldName + ".setValue(data."+col.name+" == null ? null : data." + col.name + ".toLocalDate());\n");
             } else if (col.type.isTime()) {
-                s.append("            " + fieldName + ".setValue(LocalDateTime.from(data." + col.name + ".toLocalTime()));\n");
+                s.append("            " + fieldName + ".setValue(data."+col.name+" == null ? null : LocalDateTime.from(data." + col.name + ".toLocalTime()));\n");
             } else if (col.type.isTimestamp()) {
-                s.append("            " + fieldName + ".setValue(data." + col.name + ".toLocalDateTime());\n");
+                s.append("            " + fieldName + ".setValue(data."+col.name+" == null ? null : data." + col.name + ".toLocalDateTime());\n");
             } else
                 s.append("            " + fieldName + ".setValue(data." + col.name + ");\n");
         }
@@ -242,11 +242,11 @@ public class GenVaadinFlow {
             else if (!col.type.isBitOrBoolean() && (col.type.isNumber() || col.type.isDecimalNumber()))
                 s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");
             else if (col.type.isDate()) {
-                s.append("            data." + col.name + " = new java.sql.Date(" + fieldName + ".getValue().toEpochDay() * 86400000L);\n");
+                s.append("            data." + col.name + " = "+fieldName+".getValue() == null ? null : new java.sql.Date(" + fieldName + ".getValue().toEpochDay() * 86400000L);\n");
             } else if (col.type.isTime()) {
-                s.append("            data." + col.name + " = new java.sql.Time("+fieldName+".getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);\n");
+                s.append("            data." + col.name + " = "+fieldName+".getValue() == null ? null : new java.sql.Time("+fieldName+".getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);\n");
             } else if (col.type.isTimestamp()) {
-                s.append("            data." + col.name + " = new java.sql.Timestamp("+fieldName+".getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);\n");
+                s.append("            data." + col.name + " = "+fieldName+".getValue() == null ? null : new java.sql.Timestamp("+fieldName+".getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);\n");
             }
             else
                 s.append("            data." + col.name + " = " + fieldName + ".getValue();\n");

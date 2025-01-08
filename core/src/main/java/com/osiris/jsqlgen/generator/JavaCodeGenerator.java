@@ -114,7 +114,7 @@ public class JavaCodeGenerator {
                     throw new Exception("Failed to generate code, because failed to find matching java type of definition '" + col.definition
                             + "'. Make sure that the data type is the first word in your definition and that its a supported type by jSQL-Gen.");
                 String def = col.definition.toLowerCase();
-                if(!def.contains("not null") && def.contains("null")){
+                if(!def.contains("not null") && def.contains("null") && col.type.isPrimitive()){
                     // use nullable big/object type of primitive
                     // we do this not because it's recommended to use null but only for compatibility reasons
                     col.type = col.type.clone();
@@ -346,7 +346,11 @@ public class JavaCodeGenerator {
         for (Column col : columns) {
             if (containsIgnoreCase(col.definition, "DEFAULT")) {
                 String val = col.getDefaultValue();
-                if (col.type.isEnum())
+                if(val.equalsIgnoreCase("NULL")) {
+                    val = "null";
+                    fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
+                }
+                else if (col.type.isEnum())
                     fieldsBuilder.append(objName + "." + col.name + "=" + col.type.inJava + "." + val + "; ");
                 else if (col.type.isText()) {
                     fieldsBuilder.append(objName + "." + col.name + "=\"" + val + "\"; ");
