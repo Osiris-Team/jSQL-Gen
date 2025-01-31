@@ -35,8 +35,8 @@ the generated code into my project. Then I can do the following:</b></p>
 // and its columns (and missing columns) will be created if needed.
 
 // Inserting rows:
-Person john = Person.create("John", 34); // id, name, age (id gets automatically set and incremented inside create())
-Person.add(john); // Or: john.add();
+Person john = Person.create("John", 34);
+Person.add(john); // Or: john.add(); id gets automatically set after adding
 Person.createAndAdd("John", 34); // The shorter variant
 
 // Updating existing rows:
