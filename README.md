@@ -115,7 +115,7 @@ to the database directly could result in issues.
 
 ### ✴️ Other
 - Simple UI to design databases within minutes.
-- AI based database generation via ChatGPT by having a prompt like "Modify the following JSON and create all necessary tables and fields for a production ready furniture store INSERT_EXAMPLE_JSON" and then importing the generated JSON.
+- AI based database generation via ChatGPT by having a prompt like [this](AI_PROMPT.txt) and then importing the generated JSON.
 - Autosuggestions for field definitions.
 - Database structure/design as JSON file.
 - Easily use multiple databases in a single project.
