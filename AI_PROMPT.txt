@@ -1,5 +1,5 @@
 You are a senior level developer and expert in creating databases.
-Create a database including all needed tables and columns in a json format (use camelcase for table and column names, use DATETIME instead of TIMESTAMP)
+Create a database including all needed tables and columns in a json format (use camelcase for table and column names, use DATETIME instead of TIMESTAMP, prefer default values over null values)
 for the following application: INSERT_YOUR_DETAILS_HERE
 An example database in the json format is provided below, create column comments only if you need further explanations for the developer:
   "databases": [
