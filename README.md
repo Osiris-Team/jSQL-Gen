@@ -89,7 +89,7 @@ For conveniece if removing all rows with refs should be the default you can set 
 communicate with multiple clients/applications.
 
 ### ⚡️ Performance
-- No runtime overhead for class generation (unlike other ORMs).
+- No runtime overhead for class generation (unlike some ORMs).
 - Cached connection pool ensures optimal performance on small and huge databases.
   Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval
