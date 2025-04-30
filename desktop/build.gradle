@@ -6,7 +6,7 @@ buildscript {
   }
   dependencies {
     classpath 'com.github.johnrengelman:shadow:8.1.1'
-    classpath 'io.github.fvarrui:javapackager:1.7.3-20230525.235840-4' // Later versions like 1.7.5 have issues with generating msi installers
+    classpath 'io.github.fvarrui:javapackager:1.7.7-SNAPSHOT' // Later versions like 1.7.5 have issues with generating msi installers
   }
 }
 

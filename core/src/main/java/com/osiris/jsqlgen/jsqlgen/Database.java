@@ -1,18 +1,24 @@
 package com.osiris.jsqlgen.jsqlgen;
-import java.sql.*;
-import java.util.*;
-import java.io.File;
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 
-/*
+import java.sql.*;
+import java.util.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.ByteArrayInputStream;
+import java.sql.Blob;
+import java.sql.SQLException;
+/**
 Auto-generated class that is used by all table classes to create connections. <br>
 It holds the database credentials (set by you at first run of jSQL-Gen).<br>
 Note that the fields rawUrl, url, username and password do NOT get overwritten when re-generating this class. <br>
 All tables use the cached connection pool in this class which has following advantages: <br>
-- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.
-- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors).*/
+- Ensures optimal performance (cpu and memory usage) for any type of database from small to huge, with millions of queries per second.<br>
+- Connection status is checked before doing a query (since it could be closed or timed out and thus result in errors).<br>
+*/
 public class Database{
 public static String url = "jdbc:mysql://localhost:3306/jsqlgen";
 public static String rawUrl = getRawDbUrlFrom(url);
@@ -28,7 +34,8 @@ public static boolean isRemoveRefs = false;
 * Use synchronized on this before doing changes to it. 
 */
 public static final List<Connection> availableConnections = new ArrayList<>();
-public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(594, 1, 0, "Timer", new String[]{"id", "start", "end"}, new String[]{"INT NOT NULL PRIMARY KEY", "DATETIME NOT NULL", "DATETIME NOT NULL"}){public Class<?> getTableClass(){return Timer.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Timer obj : Timer.get()) l.add(obj); return l;}public Database.Row get(int i){return Timer.get(i);}public void update(Database.Row obj){Timer.update((Timer)obj);}public void add(Database.Row obj){Timer.add((Timer)obj);}public void remove(Database.Row obj){Timer.remove((Timer)obj);}}, new TableMetaData(598, 1, 0, "TimerTask", new String[]{"id", "timerId", "taskId", "percentageOfTimer", "changelog"}, new String[]{"INT NOT NULL PRIMARY KEY", "INT NOT NULL", "INT NOT NULL", "DOUBLE NOT NULL", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return TimerTask.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(TimerTask obj : TimerTask.get()) l.add(obj); return l;}public Database.Row get(int i){return TimerTask.get(i);}public void update(Database.Row obj){TimerTask.update((TimerTask)obj);}public void add(Database.Row obj){TimerTask.add((TimerTask)obj);}public void remove(Database.Row obj){TimerTask.remove((TimerTask)obj);}}, new TableMetaData(601, 1, 0, "Task", new String[]{"id", "name"}, new String[]{"INT NOT NULL PRIMARY KEY", "TEXT DEFAULT 'New Task'"}){public Class<?> getTableClass(){return Task.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Task obj : Task.get()) l.add(obj); return l;}public Database.Row get(int i){return Task.get(i);}public void update(Database.Row obj){Task.update((Task)obj);}public void add(Database.Row obj){Task.add((Task)obj);}public void remove(Database.Row obj){Task.remove((Task)obj);}}};
+public static final int defaultInMemoryOnlyObjId = -1;
+public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(594, 2, 0, "Timer", new String[]{"id", "start", "end"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "DATETIME NOT NULL", "DATETIME NOT NULL"}){public Class<?> getTableClass(){return Timer.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Timer obj : Timer.get()) l.add(obj); return l;}public Database.Row get(Object id){return Timer.get((int) id);}public void update(Database.Row obj){Timer.update((Timer)obj);}public void add(Database.Row obj){Timer.add((Timer)obj);}public void remove(Database.Row obj){Timer.remove((Timer)obj);}}, new TableMetaData(598, 2, 0, "TimerTask", new String[]{"id", "timerId", "taskId", "percentageOfTimer", "changelog"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "INT NOT NULL", "INT NOT NULL", "DOUBLE NOT NULL", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return TimerTask.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(TimerTask obj : TimerTask.get()) l.add(obj); return l;}public Database.Row get(Object id){return TimerTask.get((int) id);}public void update(Database.Row obj){TimerTask.update((TimerTask)obj);}public void add(Database.Row obj){TimerTask.add((TimerTask)obj);}public void remove(Database.Row obj){TimerTask.remove((TimerTask)obj);}}, new TableMetaData(601, 2, 0, "Task", new String[]{"id", "name"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "TEXT DEFAULT 'New Task'"}){public Class<?> getTableClass(){return Task.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Task obj : Task.get()) l.add(obj); return l;}public Database.Row get(Object id){return Task.get((int) id);}public void update(Database.Row obj){Task.update((Task)obj);}public void add(Database.Row obj){Task.add((Task)obj);}public void remove(Database.Row obj){Task.remove((Task)obj);}}};
 
     static{initIntegratedMariaDB();create();} // Create database if not exists
 
@@ -192,8 +199,8 @@ public static void create() {
         }
     }
     public interface Row{
-        int getId();
-        void setId(int id);
+        Object getId();
+        void setId(Object id);
         void update();
         void add();
         void remove();
@@ -222,7 +229,7 @@ public static void create() {
 
         public Class<?> getTableClass(){throw new RuntimeException("Not implemented!");}
         public List<Database.Row> get(){throw new RuntimeException("Not implemented!");}
-        public Database.Row get(int i){throw new RuntimeException("Not implemented!");}
+        public Database.Row get(Object id){throw new RuntimeException("Not implemented!");}
         public void update(Database.Row obj){throw new RuntimeException("Not implemented!");}
         public void add(Database.Row obj){throw new RuntimeException("Not implemented!");}
         public void remove(Database.Row obj){throw new RuntimeException("Not implemented!");}
@@ -254,6 +261,68 @@ public static void initIntegratedMariaDB() {
         }));
     } catch (Exception e) {
         throw new RuntimeException(e);
+    }
+}
+public static class DefaultBlob implements Blob{
+    private byte[] data;
+
+    // Constructor that accepts a byte array
+    public DefaultBlob(byte[] data) {
+        this.data = data;
+    }
+    @Override
+    public long length() throws SQLException {
+        return data.length;
+    }
+
+    @Override
+    public byte[] getBytes(long pos, int length) throws SQLException {
+        return data;
+    }
+
+    @Override
+    public InputStream getBinaryStream() throws SQLException {
+        return new ByteArrayInputStream(data);
+    }
+
+    @Override
+    public long position(byte[] pattern, long start) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public long position(Blob pattern, long start) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int setBytes(long pos, byte[] bytes) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public OutputStream setBinaryStream(long pos) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public void truncate(long len) throws SQLException {
+
+    }
+
+    @Override
+    public void free() throws SQLException {
+
+    }
+
+    @Override
+    public InputStream getBinaryStream(long pos, long length) throws SQLException {
+        return new ByteArrayInputStream(data);
     }
 }
 }

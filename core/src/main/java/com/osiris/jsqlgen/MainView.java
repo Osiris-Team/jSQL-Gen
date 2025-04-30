@@ -113,6 +113,20 @@ public class MainView extends Vertical {
                 #listTables c {
                   flex-grow: unset;
                 }
+                .table-hover-item {
+                  transition: background-color 0.2s ease;
+                  background-color: white; /* or your default background */
+                }
+
+                .table-hover-item:hover {
+                  background-color: #c6c6c6; /* light hover background */
+                }
+
+                /* Optional: ensure text fields don't block the hover visual */
+                .table-hover-item * {
+                  background-color: transparent; /* prevents nested fields from breaking the visual */
+                  pointer-events: auto; /* allow interaction */
+                }
                 """;
             App.appendToGlobalCSS(styles);
         } catch (Exception e) {
@@ -585,6 +599,11 @@ public class MainView extends Vertical {
         }
     }
 
+    // TODO append this by default in sql connect url: ...?useUnicode=true&characterEncoding=utf8mb4&connectionCollation=utf8mb4_unicode_ci
+    // TODO how does this affect tables with regular TEXT definition without additional TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT ''
+    // TODO add simplified dropdown menu to select types from like: "Number", "Text", "Binary" etc.
+
+
 
     /**
      * Returns a list of files (.java) that were generated.
@@ -834,6 +853,7 @@ public class MainView extends Vertical {
         for (int i = 0; i < t.columns.size(); i++) {
             Column col = t.columns.get(i);
             Horizontal hl = new Horizontal().childGap(true).padding(false);
+            hl.addClass("table-hover-item");
             listColumns.add(hl);
             Button btnMoveUp = button("").add(Icon.solid_arrow_up()).secondary();
             hl.add(btnMoveUp);

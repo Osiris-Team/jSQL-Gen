@@ -8,13 +8,13 @@ public class TableChange {
     public String newTableName = "";
 
     // Column rename
-    public transient ArrayList<Long> oldColumnNamesIds = new ArrayList<>();
+    public ArrayList<Long> oldColumnNamesIds = new ArrayList<>();
     public ArrayList<String> oldColumnNames = new ArrayList<>();
     public ArrayList<String> newColumnNames = new ArrayList<>();
     public ArrayList<String> newColumnNames_Definitions = new ArrayList<>();
 
     // Column definition change
-    public transient ArrayList<Long> oldColumnDefinitionsIds = new ArrayList<>();
+    public ArrayList<Long> oldColumnDefinitionsIds = new ArrayList<>();
     public ArrayList<String> oldColumnDefinitions = new ArrayList<>();
     public ArrayList<String> newColumnDefinitions = new ArrayList<>();
     public ArrayList<String> newColumnDefinitions_Names = new ArrayList<>();
@@ -36,3 +36,27 @@ public class TableChange {
                 !addedColumnDefinitions.isEmpty();
     }
 }
+//
+// Lessons
+//
+// To prevent something like this:
+//               "oldColumnDefinitions": [
+//                "TEXT NOT NULL",
+//                "TEXT DEFAULT ''",
+//                "TEXT DEFAULT ''",
+// -> application restart happens here, thus resulting in transient oldColumnDefinitionsIds being cleared and causing additional unwanted entries:
+//                "TEXT NOT NULL CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+//                "TEXT DEFAULT '' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+//                "TEXT DEFAULT '' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+//              ],
+//              "newColumnDefinitions": [
+//                "TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL ",
+//                "TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT ''",
+//                "TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT ''"
+//              ],
+//              "newColumnDefinitions_Names": [
+//                "name",
+//                "address",
+//                "city"
+//              ],
+// => thus oldColumnDefinitionsIds cannot be transient

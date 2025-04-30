@@ -9,7 +9,7 @@
           "id": 595,
           "name": "id",
           "nameQuoted": "`id`",
-          "definition": "INT NOT NULL PRIMARY KEY"
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
         },
         {
           "id": 596,
@@ -51,6 +51,25 @@
             "DATETIME NOT NULL",
             "DATETIME NOT NULL"
           ]
+        },
+        {
+          "oldTableName": "Timer",
+          "newTableName": "Timer",
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitions": [
+            "INT NOT NULL PRIMARY KEY"
+          ],
+          "newColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+          ],
+          "newColumnDefinitions_Names": [
+            "id"
+          ],
+          "deletedColumnNames": [],
+          "addedColumnNames": [],
+          "addedColumnDefinitions": []
         }
       ],
       "currentChange": {
@@ -75,7 +94,7 @@
           "id": 599,
           "name": "id",
           "nameQuoted": "`id`",
-          "definition": "INT NOT NULL PRIMARY KEY"
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
         },
         {
           "id": 600,
@@ -135,6 +154,25 @@
             "DOUBLE NOT NULL",
             "TEXT DEFAULT \u0027\u0027"
           ]
+        },
+        {
+          "oldTableName": "TimerTask",
+          "newTableName": "TimerTask",
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitions": [
+            "INT NOT NULL PRIMARY KEY"
+          ],
+          "newColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+          ],
+          "newColumnDefinitions_Names": [
+            "id"
+          ],
+          "deletedColumnNames": [],
+          "addedColumnNames": [],
+          "addedColumnDefinitions": []
         }
       ],
       "currentChange": {
@@ -159,7 +197,7 @@
           "id": 602,
           "name": "id",
           "nameQuoted": "`id`",
-          "definition": "INT NOT NULL PRIMARY KEY"
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
         },
         {
           "id": 604,
@@ -192,6 +230,25 @@
             "INT NOT NULL PRIMARY KEY",
             "TEXT DEFAULT \u0027New Task\u0027"
           ]
+        },
+        {
+          "oldTableName": "Task",
+          "newTableName": "Task",
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitions": [
+            "INT NOT NULL PRIMARY KEY"
+          ],
+          "newColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+          ],
+          "newColumnDefinitions_Names": [
+            "id"
+          ],
+          "deletedColumnNames": [],
+          "addedColumnNames": [],
+          "addedColumnDefinitions": []
         }
       ],
       "currentChange": {
@@ -210,5 +267,6 @@
     }
   ],
   "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen\\core ;",
-  "isWithMariadb4j": true
+  "isWithMariadb4j": true,
+  "isVersioning": true
 }

@@ -1,4 +1,5 @@
 package com.osiris.jsqlgen.jsqlgen;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,9 +15,9 @@ import java.io.ByteArrayInputStream;
 import java.sql.SQLException;
 
 /**
-Table TimerTask with id 598 and 1 changes/version. <br>
+Table TimerTask with id 598 and 2 changes/version. <br>
 Structure (5 fields/columns): <br>
-- int id = INT NOT NULL PRIMARY KEY <br>
+- int id = INT AUTO_INCREMENT NOT NULL PRIMARY KEY <br>
 - int timerId = INT NOT NULL <br>
 - int taskId = INT NOT NULL <br>
 - double percentageOfTimer = DOUBLE NOT NULL <br>
@@ -36,87 +37,24 @@ Enabled modifiers: <br>
 <br>
 */
 public class TimerTask implements Database.Row{
-public static class DefaultBlob implements Blob{
-    private byte[] data;
-
-    // Constructor that accepts a byte array
-    public DefaultBlob(byte[] data) {
-        this.data = data;
-    }
-    @Override
-    public long length() throws SQLException {
-        return data.length;
-    }
-
-    @Override
-    public byte[] getBytes(long pos, int length) throws SQLException {
-        return data;
-    }
-
-    @Override
-    public InputStream getBinaryStream() throws SQLException {
-        return new ByteArrayInputStream(data);
-    }
-
-    @Override
-    public long position(byte[] pattern, long start) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public long position(Blob pattern, long start) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public int setBytes(long pos, byte[] bytes) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public OutputStream setBinaryStream(long pos) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public void truncate(long len) throws SQLException {
-
-    }
-
-    @Override
-    public void free() throws SQLException {
-
-    }
-
-    @Override
-    public InputStream getBinaryStream(long pos, long length) throws SQLException {
-        return new ByteArrayInputStream(data);
-    }
-}
 /** Limitation: Not executed in constructor, but only the create methods. */
 public static CopyOnWriteArrayList<Consumer<TimerTask>> onCreate = new CopyOnWriteArrayList<Consumer<TimerTask>>();
 public static CopyOnWriteArrayList<Consumer<TimerTask>> onAdd = new CopyOnWriteArrayList<Consumer<TimerTask>>();
 public static CopyOnWriteArrayList<Consumer<TimerTask>> onUpdate = new CopyOnWriteArrayList<Consumer<TimerTask>>();
 public static CopyOnWriteArrayList<Consumer<TimerTask>> onRemove = new CopyOnWriteArrayList<Consumer<TimerTask>>();
 
-private static boolean isEqual(TimerTask obj1, TimerTask obj2){ return obj1.equals(obj2) || obj1.id == obj2.id; }
-public static java.util.concurrent.atomic.AtomicInteger idCounter = new java.util.concurrent.atomic.AtomicInteger(0);
-public int getId(){return id;}
-public void setId(int id){this.id = id;}
+private static boolean isEqual(TimerTask obj1, TimerTask obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
+public Object getId(){return id;}
+public void setId(Object id){this.id = (int) id;}
 static {
 try{
 Connection con = Database.getCon();
 try{
 try (Statement s = con.createStatement()) {
 Database.TableMetaData t = Database.getTableMetaData(598);
-for (int i = t.version; i < 1; i++) {
+for (int i = t.version; i < 2; i++) {
 if(i == 0){
-if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `timertask` (`id` INT NOT NULL PRIMARY KEY)");
+if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `timertask` (`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY)");
 t.steps++; Database.updateTableMetaData(t);}
 if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `timertask` ADD COLUMN `timerId` INT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
@@ -129,19 +67,23 @@ t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
 }
+if(i == 1){
+if(t.steps < 1){t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 2){s.executeUpdate("ALTER TABLE `timertask` MODIFY COLUMN `id` INT AUTO_INCREMENT NOT NULL ");
+t.steps++; Database.updateTableMetaData(t);}
+t.steps = 0; t.version++;
+Database.updateTableMetaData(t);
+}
+}
 }
 
 }
-try (PreparedStatement ps = con.prepareStatement("SELECT id FROM `timertask` ORDER BY id DESC LIMIT 1")) {
-ResultSet rs = ps.executeQuery();
-if (rs.next()) idCounter.set(rs.getInt(1) + 1);
-}
-}
 catch(Exception e){ throw new RuntimeException(e); }
 finally {Database.freeCon(con);}
+
 }catch(Exception e){
 e.printStackTrace();
-System.err.println("Something went really wrong during table (TimerTask) initialisation, thus the program will exit!");System.exit(1);}
+System.err.println("Something went really wrong during table (TimerTask) initialisation, subsequent operations will fail!");}
 }
 
 /**
@@ -163,9 +105,15 @@ initDefaultFields();
 this.id = id;this.timerId = timerId;this.taskId = taskId;this.percentageOfTimer = percentageOfTimer;this.changelog = changelog;
 }
 /**
-Database field/value: INT NOT NULL PRIMARY KEY. <br>
+Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
 */
-public int id;
+public int id = Database.defaultInMemoryOnlyObjId;
+/**
+Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
+
+Convenience builder-like setter with method-chaining.
+*/
+public TimerTask id(int id){ this.id = id; return this;}
 /**
 Database field/value: INT NOT NULL. <br>
 
@@ -174,18 +122,46 @@ public int timerId;
 /**
 Database field/value: INT NOT NULL. <br>
 
+
+Convenience builder-like setter with method-chaining.
+*/
+public TimerTask timerId(int timerId){ this.timerId = timerId; return this;}
+/**
+Database field/value: INT NOT NULL. <br>
+
 */
 public int taskId;
+/**
+Database field/value: INT NOT NULL. <br>
+
+
+Convenience builder-like setter with method-chaining.
+*/
+public TimerTask taskId(int taskId){ this.taskId = taskId; return this;}
 /**
 Database field/value: DOUBLE NOT NULL. <br>
 0-100%
 */
 public double percentageOfTimer;
 /**
+Database field/value: DOUBLE NOT NULL. <br>
+0-100%
+
+Convenience builder-like setter with method-chaining.
+*/
+public TimerTask percentageOfTimer(double percentageOfTimer){ this.percentageOfTimer = percentageOfTimer; return this;}
+/**
 Database field/value: TEXT DEFAULT ''. <br>
 
 */
 public String changelog;
+/**
+Database field/value: TEXT DEFAULT ''. <br>
+
+
+Convenience builder-like setter with method-chaining.
+*/
+public TimerTask changelog(String changelog){ this.changelog = changelog; return this;}
 /**
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
@@ -194,54 +170,27 @@ this.changelog=""; return this;
 }
 
 /**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
+Creates and returns an object that can be added to this table. <br>
+The parameters of this method represent only the "NOT NULL" fields in the table and thus should not be null. <br>
+- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+- This method will NOT add the object to the table. <br>
+- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
 public static TimerTask create(int timerId, int taskId, double percentageOfTimer) {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 TimerTask obj = new TimerTask(id, timerId, taskId, percentageOfTimer);
 onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
 
 /**
-Creates and returns an object that can be added to this table.
-Increments the id (thread-safe) and sets it for this object (basically reserves a space in the database).
-Note that this method will NOT add the object to the table.
+Creates and returns an object that can be added to this table. <br>
+- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
+- This method will NOT add the object to the table. <br>
+- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
 public static TimerTask create(int timerId, int taskId, double percentageOfTimer, String changelog)  {
-int id = idCounter.getAndIncrement();
-TimerTask obj = new TimerTask();
-obj.id=id; obj.timerId=timerId; obj.taskId=taskId; obj.percentageOfTimer=percentageOfTimer; obj.changelog=changelog; 
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an in-memory object with -1 as id, that can be added to this table
-AFTER you manually did obj.id = idCounter.getAndIncrement().
-This is useful for objects that may never be added to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
-*/
-public static TimerTask createInMem(int timerId, int taskId, double percentageOfTimer) {
-int id = -1;
-TimerTask obj = new TimerTask(id, timerId, taskId, percentageOfTimer);
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an in-memory object with -1 as id, that can be added to this table
-AFTER you manually did obj.id = idCounter.getAndIncrement().
-This is useful for objects that may never be added to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
-Also note that this method will NOT add the object to the table.
-*/
-public static TimerTask createInMem(int timerId, int taskId, double percentageOfTimer, String changelog)  {
-int id = -1;
+int id = Database.defaultInMemoryOnlyObjId;
 TimerTask obj = new TimerTask();
 obj.id=id; obj.timerId=timerId; obj.taskId=taskId; obj.percentageOfTimer=percentageOfTimer; obj.changelog=changelog; 
 onCreate.forEach(code -> code.accept(obj));
@@ -250,10 +199,10 @@ return obj;
 
 /**
 Convenience method for creating and directly adding a new object to the table.
-Note that the parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
+The parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
 public static TimerTask createAndAdd(int timerId, int taskId, double percentageOfTimer)  {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 TimerTask obj = new TimerTask(id, timerId, taskId, percentageOfTimer);
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
@@ -264,7 +213,7 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 */
 public static TimerTask createAndAdd(int timerId, int taskId, double percentageOfTimer, String changelog)  {
-int id = idCounter.getAndIncrement();
+int id = Database.defaultInMemoryOnlyObjId;
 TimerTask obj = new TimerTask();
 obj.id=id; obj.timerId=timerId; obj.taskId=taskId; obj.percentageOfTimer=percentageOfTimer; obj.changelog=changelog; 
 onCreate.forEach(code -> code.accept(obj));
@@ -347,6 +296,8 @@ return list;
         return getLazy(onResultReceived, onFinish, limit, null);
     }
     /**
+     * Instead of using the SQL OFFSET keyword this function uses the primary key / id (must be numeric).
+     * We do NOT use OFFSET due to performance and require a numeric id . <br>
      * Loads results lazily in a new thread. <br>
      * Add {@link Thread#sleep(long)} at the end of your onResultReceived code, to sleep between fetches.
      * @param onResultReceived can NOT be null. Gets executed until there are no results left, thus the results list is never empty.
@@ -365,7 +316,7 @@ return list;
             while(true){
                 results = whereId().biggerThan(lastId).and(finalWhere).limit(limit).get();
                 if(results.isEmpty()) break;
-                lastId = results.get(results.size() - 1).id;
+                lastId = (int) results.get(results.size() - 1).getId();
                 count += results.size();
                 onResultReceived.accept(results);
             }
@@ -408,10 +359,19 @@ return list;
         return thread;
     }
 
-public static int count(){ return count(null, null); }
 
+/**
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
+We are using this approach because its universal to all databases. 
+*/
+public static int count(){ return count(null, (Object[]) null); }
+
+/**
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
+We are using this approach because its universal to all databases. 
+*/
 public static int count(String where, Object... whereValues)  {
-String sql = "SELECT COUNT(`id`) AS recordCount FROM `timertask`" +
+String sql = "SELECT COUNT(`id`) FROM `timertask`" +
 (where != null ? where : ""); 
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -421,7 +381,7 @@ Object val = whereValues[i];
 ps.setObject(i+1, val);
 }
 ResultSet rs = ps.executeQuery();
-if (rs.next()) return rs.getInt("recordCount");
+if (rs.next()) return rs.getInt(1);
 }catch(Exception e){throw new RuntimeException(e);}
 finally {Database.freeCon(con);
 }
@@ -434,7 +394,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(TimerTask obj)  {
-String sql = "UPDATE `timertask` SET `id`=?,`timerId`=?,`taskId`=?,`percentageOfTimer`=?,`changelog`=? WHERE id="+obj.id;
+String sql = "UPDATE `timertask` SET `id`=?,`timerId`=?,`taskId`=?,`percentageOfTimer`=?,`changelog`=? WHERE id="+obj.getId();
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
 ps.setInt(1, obj.id);
@@ -453,16 +413,22 @@ onUpdate.forEach(code -> code.accept(obj));
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(TimerTask obj)  {
-String sql = "INSERT INTO `timertask` (`id`,`timerId`,`taskId`,`percentageOfTimer`,`changelog`) VALUES (?,?,?,?,?)";
+String sql = "INSERT INTO `timertask` (`timerId`,`taskId`,`percentageOfTimer`,`changelog`) VALUES (?,?,?,?)";
 Connection con = Database.getCon();
-try (PreparedStatement ps = con.prepareStatement(sql)) {
-ps.setInt(1, obj.id);
-ps.setInt(2, obj.timerId);
-ps.setInt(3, obj.taskId);
-ps.setDouble(4, obj.percentageOfTimer);
-ps.setString(5, obj.changelog);
+try (PreparedStatement ps = con.prepareStatement(sql, new String[]{"id"})) {
+ps.setInt(1, obj.timerId);
+ps.setInt(2, obj.taskId);
+ps.setDouble(3, obj.percentageOfTimer);
+ps.setString(4, obj.changelog);
 ps.executeUpdate();
-}catch(Exception e){throw new RuntimeException(e);}
+    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { 
+        if (generatedKeys.next()) { // Retrieve the first auto-generated ID
+            int generatedId = generatedKeys.getInt(1);
+            obj.id = generatedId;
+        } else {
+            //System.out.println("No ID generated."); This should never happen...
+        }
+    }}catch(Exception e){throw new RuntimeException(e);}
 finally{Database.freeCon(con);
 onAdd.forEach(code -> code.accept(obj));
 }
@@ -483,7 +449,7 @@ remove(obj, true, Database.isRemoveRefs);
 public static void remove(TimerTask obj, boolean unsetRefs, boolean removeRefs)  {
 if(unsetRefs) unsetRefs(obj);
 if(removeRefs) removeRefs(obj);
-remove("WHERE id = "+obj.id);
+remove("WHERE id = "+obj.getId());
 onRemove.forEach(code -> code.accept(obj));
 }
 /**
@@ -548,7 +514,7 @@ public String toMinimalPrintString(){
 return ""+this.id+"; "+this.timerId+"; "+this.taskId+"; "+this.percentageOfTimer+"; "+this.changelog+"; "+"";
 }
 public boolean isOnlyInMemory(){
-return id < 0;
+return id == Database.defaultInMemoryOnlyObjId;
 }
 public static WHERE<Integer> whereId() {
 return new WHERE<Integer>("`id`");

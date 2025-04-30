@@ -1,5 +1,8 @@
 package com.osiris.jsqlgen.generator;
 
+import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfigurationBuilder;
+import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.model.*;
 import com.osiris.jsqlgen.utils.UString;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -7,6 +10,9 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import ru.lanwen.verbalregex.VerbalExpression;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.*;
 
 import static com.osiris.jsqlgen.utils.UString.*;
@@ -125,69 +131,41 @@ public class JavaCodeGenerator {
             }
         }
 
-        var validWordsInDefinition = Arrays.asList(sqlDefinitionWords);
-        for (Table t : db.tables) {
-            for (Column col : t.columns) {
-                // CHECK SQL
-                try{
-                    Alter sql = (Alter) CCJSqlParserUtil.parse("ALTER TABLE `table` ADD COLUMN `column` " + col.definition);
-                    // TODO compare each constraint with a list of all supported/valid constraints, since CCJSqlParserUtil does not do that
-                    // or instead launch a MySQL server for example and run the SQL to see if it works
-                    // to make this perfect, we would need to run other other servers like PostgreSQL too, if the user wants to use that instead
-                    VerbalExpression parenthesesRegex = VerbalExpression.regex()
-                        .find("(").anything().find(")")
-                        .build();
+        AL.info("[MySQL-Check] Checking SQL...");
+        DBConfigurationBuilder config = DBConfigurationBuilder.newBuilder();
+        config.setPort(0); // Random available port
+        config.setDeletingTemporaryBaseAndDataDirsOnShutdown(true);
+        DB dbInstance = DB.newEmbeddedDB(config.build());
+        dbInstance.start();
 
-                    VerbalExpression doubleQuotesRegex = VerbalExpression.regex()
-                        .find("\"").anything().find("\"")
-                        .build();
+        try (var conn = DriverManager.getConnection(config.getURL(""), "root", "");
+             var stm = conn.createStatement()){
+            stm.executeUpdate("CREATE DATABASE IF NOT EXISTS `"+db.name+"`");
+        } catch (Exception e) {
+            throw new RuntimeException("[MySQL-Check] Invalid SQL for database creation " , e);
+        }
 
-                    VerbalExpression singleQuotesRegex = VerbalExpression.regex()
-                        .find("'").anything().find("'")
-                        .build();
-
-                    VerbalExpression backticksRegex = VerbalExpression.regex()
-                        .find("`").anything().find("`")
-                        .build();
-
-                    VerbalExpression numbersRegex = VerbalExpression.regex()
-                        .maybe("-")          // Optional negative sign
-                        .digit()              // Matches digits
-                        .zeroOrMore()         // Matches any number of digits (integer part)
-                        .maybe(".")           // Matches the decimal point
-                        .digit().zeroOrMore() // Matches the decimal part if exists
-                        .build();
-
-                    // Test string
-                    String input = "Example text (remove this) and \"this too\" or `this one`, even 'this', plus -123.45 and 567 or -89 numbers.";
-
-                    // Test string
-                    //String example = "Example text (remove this) and \"this too\" or `this one`, even 'this', plus 123 numbers.";
-
-                    // Remove data types from def since this was already checked before
-                    // This also has the side-effect that only one data type is allowed in a definition
-                    String def = col.definition;
-                    var types = new ArrayList<>(Arrays.asList(col.type.inSQL));
-                    // Make sure longer types are always first to ensure CHAR for example is not before VARCHAR, because in that case we would remove CHAR first and stay with VAR left, not ideal...
-                    types.sort((s1, s2) -> Integer.compare(s2.length(), s1.length()));
-                    for (String s : types) {
-                        def = UString.replaceAllIgnoreCase(def, s, "");
+        try (Connection conn = DriverManager.getConnection(config.getURL(db.name), "root", "")) {
+            for (Table t : db.tables) {
+                try(Statement stmt = conn.createStatement()){
+                    // Create dummy table for testing column addition
+                    var idCol = t.columns.get(0);
+                    stmt.execute("CREATE TABLE `"+t.name+"` ("+idCol.nameQuoted+" "+idCol.definition+")");
+                    ArrayList<Column> columns = t.columns;
+                    for (int i = 1; i < columns.size(); i++) { // Skip id/first col
+                        Column col = columns.get(i);
+                        String sql = "ALTER TABLE `"+t.name+"` ADD COLUMN `" + col.name + "` " + col.definition;
+                        try {
+                            stmt.execute(sql); // Run it against real MariaDB
+                        } catch (Exception e) {
+                            throw new RuntimeException("[MySQL-Check] Invalid SQL for column " + t.name + "." + col.name + ", failed SQL: " + sql, e);
+                        }
                     }
-
-                    // Apply all regex replacements
-                    def = def.replaceAll(parenthesesRegex.toString(), "")
-                        .replaceAll(doubleQuotesRegex.toString(), "")
-                        .replaceAll(singleQuotesRegex.toString(), "")
-                        .replaceAll(backticksRegex.toString(), "")
-                        .replaceAll(numbersRegex.toString(), "");
-                    for (String word : def.split(" ")) {
-                        if(!validWordsInDefinition.contains(word.toUpperCase()))
-                            throw new Exception("'"+word+"' in '"+t.name+"."+col.name+"' is very likely an invalid SQL definition in '"+def+"'! If not create a pull request on GitHub.");
-                    }
-                } catch (Throwable e) {
-                    throw new RuntimeException("Invalid SQL found in "+db.name+"."+t.name+"."+col.name+": "+e.getMessage(), e);
                 }
             }
+            AL.info("[MySQL-Check] SQL is valid!");
+        } finally {
+            dbInstance.stop();
         }
 
     }

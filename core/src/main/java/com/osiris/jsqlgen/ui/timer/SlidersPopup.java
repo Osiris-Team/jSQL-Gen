@@ -32,7 +32,7 @@ public class SlidersPopup extends Popup {
         // Get recently used task
         Task task = null;
         for (TimerTask timerTask : TimerTask.whereId().biggestFirst().limit(50).get()) {
-            var t = Task.whereId().is(timerTask.getId()).getFirstOrNull();
+            var t = Task.whereId().is(timerTask.id).getFirstOrNull();
             if(t != null && t != Task.PAUSE && t != Task.WORK){
                 task = t;
                 break;
