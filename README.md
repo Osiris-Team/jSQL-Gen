@@ -35,8 +35,8 @@ the generated code into my project. Then I can do the following:</b></p>
 // and its columns (and missing columns) will be created if needed.
 
 // Inserting rows:
-Person john = Person.create("John", 34); // id, name, age (id gets automatically set and incremented inside create())
-Person.add(john); // Or: john.add();
+Person john = Person.create("John", 34);
+Person.add(john); // Or: john.add(); id gets automatically set after adding
 Person.createAndAdd("John", 34); // The shorter variant
 
 // Updating existing rows:
@@ -89,7 +89,7 @@ For conveniece if removing all rows with refs should be the default you can set 
 communicate with multiple clients/applications.
 
 ### ⚡️ Performance
-- No runtime overhead for class generation (unlike other ORMs).
+- No runtime overhead for class generation (unlike some ORMs).
 - Cached connection pool ensures optimal performance on small and huge databases.
   Besides that it provides protection against timed out connections.
 - (Optional) Cached results for ultra-fast data retrieval
@@ -115,6 +115,7 @@ to the database directly could result in issues.
 
 ### ✴️ Other
 - Simple UI to design databases within minutes.
+- AI based database generation via ChatGPT by having a prompt like [this](AI_PROMPT.txt) and then importing the generated JSON.
 - Autosuggestions for field definitions.
 - Database structure/design as JSON file.
 - Easily use multiple databases in a single project.
