@@ -121,7 +121,7 @@ public class LayoutSliders extends Component<LayoutSliders, Timer> {
                 if(App.isInDepthDebugging) AL.debug(comp.getClass(), comp.toPrintString()+" getValue() returns from javascript value attribute = "+valueAsString);
                 TimerTask value = null;
                 try {
-                    value = Value.stringToVal(valueAsString, comp);
+                    value = (TimerTask) Value.stringToVal(valueAsString, comp);
                 } catch (Exception e) {
                     AL.warn(e);
                 }

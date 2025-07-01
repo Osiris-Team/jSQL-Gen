@@ -328,6 +328,8 @@ public class JavaCodeGenerator {
                     val = "null";
                     fieldsBuilder.append(objName + "." + col.name + "=" + val + "; ");
                 }
+                else if(col.type.isBitOrBoolean())
+                    fieldsBuilder.append(objName + "." + col.name + "=" + val.toLowerCase() + "; ");
                 else if (col.type.isEnum())
                     fieldsBuilder.append(objName + "." + col.name + "=" + col.type.inJava + "." + val + "; ");
                 else if (col.type.isText()) {

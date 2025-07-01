@@ -80,9 +80,19 @@ public class GenStaticTableConstructor {
                     String oldColDef = change.oldColumnDefinitions.get(j);
                     String newColDef = change.newColumnDefinitions.get(j);
                     String newColName = change.newColumnDefinitions_Names.get(j);
-                    if(UString.containsIgnoreCase(newColDef, "PRIMARY KEY")) // fix issues with primary key updating, now we detect that case and remove the primary key constraint before updating to avoid issues
+                    boolean isNewPrimaryKey = UString.containsIgnoreCase(newColDef, "PRIMARY KEY");
+                    boolean isNewAutoIncrement = UString.containsIgnoreCase(newColDef, "AUTO_INCREMENT");
+                    if(isNewPrimaryKey) // fix issues with primary key updating, now we detect that case and remove the primary key constraint before updating to avoid issues
                         newColDef = UString.replaceAllIgnoreCase(newColDef, "PRIMARY KEY", "");
+                    if(isNewAutoIncrement){
+                        // To fix issues where the data might use legacy indexing starting at 0, we need to temporarily allow that
+                        // to avoid: java.sql.SQLIntegrityConstraintViolationException: ALTER TABLE causes auto_increment resequencing, resulting in duplicate entry '1' for key 'PRIMARY'
+                        s.append("s.execute(\"SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';\");\n");
+                    }
                     s.append("s.executeUpdate(\"ALTER TABLE " + tNameNewQuoted + " MODIFY COLUMN `" + newColName + "` " + newColDef + "\");\n");
+                    if(isNewAutoIncrement){
+                        s.append("s.execute(\"SET SESSION sql_mode='';\");\n");
+                    }
                     s.append("t.steps++; Database.updateTableMetaData(t);}\n"); // steps++ and update metadata and close if
                 }
 

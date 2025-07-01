@@ -51,22 +51,6 @@ import static com.osiris.jsqlgen.Data.*;
 import static com.osiris.desku.Statics.*;
 
 public class MainView extends Vertical {
-    public static AsyncReader asyncIn;
-    public static AsyncReader asyncInErr;
-
-    static {
-        try {
-            // DUPLICATE SYSTEM.OUT AND ASYNC-READ FROM PIPE
-            File mirrorOut = new File(System.getProperty("user.dir")+"/logs/mirror-out.log");
-            File mirrorErr = new File(System.getProperty("user.dir")+"/logs/mirror-err.log");
-            InputStream is = Files.newInputStream(mirrorOut.toPath(), StandardOpenOption.READ);
-            asyncIn = new AsyncReader(is, 1000);
-            InputStream isErr = Files.newInputStream(mirrorErr.toPath(), StandardOpenOption.READ);
-            asyncInErr = new AsyncReader(isErr, 1000);
-        } catch (IOException e) {
-            AL.warn(e);
-        }
-    }
 
     public static Vertical vertical(){
         return com.osiris.desku.Statics.vertical().childGap(true).padding(true);
@@ -188,33 +172,38 @@ public class MainView extends Vertical {
         this.add(tabs);
 
         tabs.addTabAndPage("Home", new Vertical().add(lyHome, lyDatabase).padding(false).grow(1));
-        tabs.addTabAndPage("Timer", new LayoutTimer().grow(1));
+        try{
+            tabs.addTabAndPage("Timer", new LayoutTimer().grow(1));
+        } catch (Exception e) {
+            AL.warn(e);
+        }
 
         if(!App.isInDepthDebugging){
-            MainView.asyncIn.listeners.add(line -> {
+            Main.asyncIn.listeners.add(line -> {
                 ui.access(() -> {
-                    var comp = horizontal().padding(false);
                     try {
+                        var comp = horizontal().padding(false);
                         txtLogs.add(comp);
+                        // TODO sometimes warnings are not visible in UI... specifically the mysql sytanx check error warnings
                         comp.executeJS("comp.innerHTML = `" + new UtilsAnsiHtml().convertAnsiToHtml(line)
                             .replace("\\", "\\\\") +"`");
                         txtLogs.scrollToBottom();
-                    } catch (IOException e) {
-                        AL.warn(e);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 });
             });
 
-            MainView.asyncInErr.listeners.add(line -> {
+            Main.asyncInErr.listeners.add(line -> {
                 ui.access(() -> {
-                    var comp = horizontal().padding(false);
                     try {
+                        var comp = horizontal().padding(false);
                         txtLogs.add(comp);
                         comp.executeJS("comp.innerHTML = `[!] " + new UtilsAnsiHtml().convertAnsiToHtml(line)
                             .replace("\\", "\\\\")+"`");
                         txtLogs.scrollToBottom();
-                    } catch (IOException e) {
-                        AL.warn(e);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 });
             });
@@ -595,7 +584,7 @@ public class MainView extends Vertical {
                 tabsCode.addTabAndPage(f.getName(), textarea("", Files.readString(f.toPath())).width("100%").height("70vh"));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            AL.warn(e);
         }
     }
 
@@ -995,7 +984,7 @@ public class MainView extends Vertical {
         Column col = Data.findColumn(t.columns, columnName);
         Objects.requireNonNull(col);
 
-        t.removeCol(col);
+        t.removeCol(t, col);
 
         Data.save();
         updateColumnsList(listColumns, dbName, tableName);

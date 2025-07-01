@@ -2,6 +2,7 @@ package com.osiris.jsqlgen;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Rectangle;
 import com.osiris.jsqlgen.model.Table;
@@ -23,7 +24,7 @@ class DataJsonTest {
         Database db = new Database();
         databases.add(db);
         db.name = "mydatabase";
-        db.tables.add(new Table().addIdColumn());
+        db.tables.add(new Table().addIdColumn().addCol(new Column("Jährlich")));
 
         // Java -> Json
         DataJson dataJson = new DataJson();
@@ -41,5 +42,6 @@ class DataJsonTest {
         assertNotNull(dataJson.databases);
         assertTrue(dataJson.window.x == 10);
         assertTrue(dataJson.window.y == 10);
+        assertTrue(dataJson.databases.get(0).tables.get(0).columns.get(1).name.equals("Jährlich"));
     }
 }

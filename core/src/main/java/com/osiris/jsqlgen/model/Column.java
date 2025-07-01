@@ -7,7 +7,7 @@ import java.util.Objects;
 public class Column {
     public long id = 0; // Gson always sets to 0 if field doesn't exist yet, no matter what we write here
     public String name;
-    public String nameQuoted;
+    public transient String nameQuoted;
     public String definition;
     public String comment;
     public transient ColumnType type;
@@ -39,8 +39,12 @@ public class Column {
         String val = definition.substring(definition.indexOf("DEFAULT"));
         val = val.substring(val.indexOf(" ") + 1);
 
-        if(type.isText())
-            return Objects.requireNonNull(UString.getContentWithinQuotes(val));
+        if(type.isText()){
+            if(val.equalsIgnoreCase("NULL")) return val;
+            String content = UString.getContentWithinQuotes(val);
+            if(content == null) throw new NullPointerException(name+": Failed to find valid quotes to extract default value from: "+val);
+            return content;
+        }
 
         if(val.contains(" ")) val = val.substring(0, val.indexOf(" "));
         return UString.removeOuterQuotes(val);

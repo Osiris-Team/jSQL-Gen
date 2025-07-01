@@ -9,12 +9,20 @@ import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.model.TableChange;
 import com.osiris.jsqlgen.generator.GetTableChange;
+import com.osiris.jsqlgen.utils.AsyncReader;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
+    public static AsyncReader asyncIn;
+    public static AsyncReader asyncInErr;
+
     public static File dir = new File(System.getProperty("user.home") + "/jSQL-Gen");
     public static File generatedDir = new File(Main.dir + "/generated");
     public static AtomicInteger idCounter = new AtomicInteger(new Config().idCounter.asInt());
@@ -29,6 +37,21 @@ public class Main {
             loggerParams.debug = true;
             App.isInDepthDebugging = true;
         }
+
+        try {
+            // DUPLICATE SYSTEM.OUT AND ASYNC-READ FROM PIPE
+            File mirrorOut = new File(System.getProperty("user.dir")+"/logs/mirror-out.log");
+            File mirrorErr = new File(System.getProperty("user.dir")+"/logs/mirror-err.log");
+            InputStream is = Files.newInputStream(mirrorOut.toPath(), StandardOpenOption.READ);
+            asyncIn = new AsyncReader(is, 1000);
+            InputStream isErr = Files.newInputStream(mirrorErr.toPath(), StandardOpenOption.READ);
+            asyncInErr = new AsyncReader(isErr, 1000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // TODO fix escaping of ä,ö,ü and other characters, probably desku issue
+
         App.init(null, loggerParams);
         AL.info("DB initialized at: "+com.osiris.jsqlgen.jsqlgen.Database.url); // Init DB by static constructor
 

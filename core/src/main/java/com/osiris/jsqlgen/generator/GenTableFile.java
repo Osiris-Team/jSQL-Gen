@@ -112,15 +112,23 @@ public class GenTableFile {
                 "     */\n" +
                 "    private static String minimalStackString(){\n" +
                 "        StackTraceElement[] stack = new Exception().getStackTrace();\n" +
-                "        String s = \"\";\n" +
+                "        String first = \"\", last = \"\";\n" +
                 "        for (int i = stack.length - 1; i >= 1; i--) {\n" +
                 "            StackTraceElement el = stack[i];\n" +
-                "            if(el.getClassName().startsWith(\"java.\") || " +
-                "            el.getClassName().startsWith(\"com.osiris.jsqlgen\")) continue;\n" +
-                "            s = el.toString();\n" +
+                "            if(el.getClassName().startsWith(\"java.\") || el.getClassName().startsWith(\"com.osiris.jsqlgen\")) continue;\n" +
+                "            first = el.toString();\n" +
                 "            break;\n" +
                 "        }\n" +
-                "        return s +\"...\"+ stack[1].toString(); //stack[0] == current method, gets ignored\n" +
+                "        for (int i = 0; i < stack.length; i++) {\n" +
+                "            StackTraceElement el = stack[i];\n" +
+                "            if(el.getClassName().startsWith(\"java.\") || el.getClassName().startsWith(\"com.osiris.jsqlgen\")) continue;\n" +
+                "            last = el.toString();\n" +
+                "            break;\n" +
+                "        }\n" +
+                "        if(first.isEmpty()) first = stack[stack.length - 1].toString();\n" +
+                "        if(last.isEmpty()) last = stack[1].toString(); //stack[0] == current method, gets ignored\n" +
+                "\n" +
+                "        return first +\"...\"+ last;\n" +
                 "    }\n");
         classContentBuilder.append(
             "public Object getId(){return "+idCol.name+";}\n" +

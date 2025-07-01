@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.model;
 
+import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.Main;
 
 import java.util.ArrayList;
@@ -90,8 +91,23 @@ public class Table {
         return this;
     }
 
-    public Table removeCol(Column col){
+    public Table removeCol(Table t, Column col){
         columns.remove(col);
+
+        // dont create a remove change if it never existed
+        boolean isCreatedOnce = false;
+        for (TableChange change : t.changes) {
+            // TODO note that we only check the name (is this enough?) or do we need an id? however addedColumnNames has no list of ids sadly :/
+            if(change.addedColumnNames.contains(col.name) || change.newColumnNames.contains(col.name)){
+                isCreatedOnce = true;
+                break;
+            }
+        }
+
+        if(!isCreatedOnce){
+            AL.info("No 'remove' change created since column name '"+col.name+"' never existed in previous changes.");
+            return this;
+        }
 
         // Update current change
         if(!currentChange.deletedColumnNames.contains(col.name)){
