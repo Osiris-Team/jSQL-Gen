@@ -88,7 +88,8 @@ public class GenTableFile {
                 "<br>\n");
         classContentBuilder.append(
             "*/\n" +
-                "public class " + t.name + " implements Database.Row{\n"); // Open class
+                "public class " + t.name + " implements Database.Row{\n" +
+                "  public static final int TABLE_ID = "+t.id+";\n"); // Open class
 
         // Append public inner enum classes
         for (String generatedEnumClass : generatedEnumClasses) {

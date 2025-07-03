@@ -67,6 +67,14 @@ public class GenDatabaseFile {
                     +"\"");
                 if(j != t.columns.size() - 1) s.append(", ");
             }
+            s.append("}, new String[]{");
+            for (int j = 0; j < t.columns.size(); j++) {
+                String comment = t.columns.get(j).comment;
+                s.append("\""+
+                    (comment == null ? "" : comment).replace("\"", "\\\"") // Escape quotes
+                    +"\"");
+                if(j != t.columns.size() - 1) s.append(", ");
+            }
             s.append("})");
 
             // Create overriding methods
@@ -271,14 +279,16 @@ public class GenDatabaseFile {
                 "        public String name;\n" +
                 "        public String[] columns;\n" +
                 "        public String[] definitions;\n" +
+                "        public String[] comments;\n" +
                 "\n" +
-                "        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions) {\n" +
+                "        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions, String[] comments) {\n" +
                 "            this.id = id;\n" +
                 "            this.version = version;\n" +
                 "            this.steps = steps;\n" +
                 "            this.name = name;\n" +
                 "            this.columns = columns;\n" +
                 "            this.definitions = definitions;\n" +
+                "            this.comments = comments;\n" +
                 "        }\n" +
                 "\n" +
                 "        // Implementations for the following methods are provided in the array initialisation of 'tables'\n" +
@@ -317,6 +327,7 @@ public class GenDatabaseFile {
             DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
             configBuilder.setPort(0); // OR, default: setPort(0); => autom. detect free port
             configBuilder.setDataDir(new File(System.getProperty("user.dir") + "/db").getAbsolutePath());
+            configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false);
             mariaDB = DB.newEmbeddedDB(configBuilder.build());
             mariaDB.start();
             String port = url.substring(url.lastIndexOf(":"), url.lastIndexOf("/"));

@@ -187,6 +187,7 @@ public class GenVaadinFlow {
                 "            // Add fields\n" +
                 "            addAndExpand(form);\n" +
                 "            form.setWidthFull();\n");
+
         for (Column col : t.columns) {
             if (col.type.isBlob()) {
                 continue; // TODO currently not supported
@@ -195,7 +196,18 @@ public class GenVaadinFlow {
             String fieldName = extraInfo.fieldName;
             s.append("            form.add(" + fieldName + ");\n");
         }
-        s.append("\n" +
+
+        s.append(
+            "\n\n"+
+            "            // Tooltips\n" +
+            "            Database.TableMetaData t = Database.getTableMetaData("+t.id+");\n");
+        for (int i = 0; i < t.columns.size(); i++) {
+            var col = t.columns.get(i);
+            ExtraInfo extraInfo = mapExtraInfo.get(col);
+            s.append("            "+extraInfo.fieldName+".setTooltipText(t.comments["+i+"]);\n");
+        }
+
+        s.append("\n\n"+
                 "            // Add buttons\n" +
                 "            add(hlButtons);\n" +
                 "            hlButtons.setPadding(false);\n" +
@@ -220,6 +232,8 @@ public class GenVaadinFlow {
                 s.append("            " + fieldName + ".setValue(data." + col.name + " != -1 ? "+extra.refTable.name+".get(data." + col.name + ") : null);\n");
             else if (!col.type.isBitOrBoolean() && col.type.isNumber())
                 s.append("            " + fieldName + ".setValue(0.0 + data." + col.name + ");\n");
+            else if(col.type.isBigDecimal())
+                s.append("            " + fieldName + ".setValue(data."+col.name+" == null ? null : data." + col.name + ".doubleValue());\n");
             else if (col.type.isDate()) {
                 s.append("            " + fieldName + ".setValue(data."+col.name+" == null ? null : data." + col.name + ".toLocalDate());\n");
             } else if (col.type.isTime()) {
@@ -239,6 +253,8 @@ public class GenVaadinFlow {
             String fieldName = extra.fieldName;
             if(extra.isColumnRef)
                 s.append("            data." + col.name + " = " + fieldName + ".getValue() != null ? " + fieldName + ".getValue().id : -1;\n");
+            else if (col.type.isBigDecimal()) // Must be done before the below
+                s.append("            data." + col.name + " = (" + col.type.inJava + ") BigDecimal.valueOf(" + fieldName + ".getValue());\n");
             else if (!col.type.isBitOrBoolean() && (col.type.isNumber() || col.type.isDecimalNumber()))
                 s.append("            data." + col.name + " = (" + col.type.inJava + ") " + fieldName + ".getValue().doubleValue();\n");
             else if (col.type.isDate()) {

@@ -83,6 +83,9 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
     private final Button btnMergeDatabasesFromDir = new Button("Merge from Projects");
     private final Button btnShowData = new Button("Open data folder");
     private final Div txtLogs = new Div(); // Vaadin Div for logs
+    {
+        txtLogs.setId("log-container");
+    }
     // Database panel
     private final Select<String> dbSelector = new Select<>(); // Vaadin Select for dropdown
     private final VerticalLayout listTables = new VerticalLayout();
@@ -169,34 +172,50 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
         UI ui = UI.getCurrent();
         ui.getPushConfiguration().setPushMode(PushMode.AUTOMATIC);
         if (!Main.isInDepthDebugging) {
-            Main.asyncIn.listeners.add(line -> {
-                ui.access(() -> {
-                    Div lineDiv = new Div();
-                    try {
-                        lineDiv.getElement().setProperty("innerHTML", new UtilsAnsiHtml().convertAnsiToHtml(line));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    txtLogs.add(lineDiv);
-                    txtLogs.getElement().executeJs("this.scrollTop = this.scrollHeight;"); // Scroll to bottom
-                    ui.push();
-                });
-            });
+            String fn = """
+                window.appendLogLine = function (html) {
+                    const logContainer = document.querySelector('#log-container');
+                    if (!logContainer) return;
 
-            Main.asyncInErr.listeners.add(line -> {
-                ui.access(() -> {
-                    Div lineDiv = new Div();
+                    const div = document.createElement('div');
+                    div.innerHTML = html;
+                    logContainer.appendChild(div);
+
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                };
+                """;
+            var listener = new Consumer<String>() {
+                @Override
+                public void accept(String line) {
+                    if(ui.isClosing()) {
+                        Main.asyncIn.listeners.remove((Consumer<String>) this);
+                        Main.asyncInErr.listeners.remove((Consumer<String>) this);
+                        return;
+                    }
+                    String htmlLine = "<div></div>";
                     try {
-                        lineDiv.getElement().setProperty("innerHTML", "[!] " + new UtilsAnsiHtml().convertAnsiToHtml(line));
+                        htmlLine = new UtilsAnsiHtml().convertAnsiToHtml(line)
+                            .replace("\"", "\\\"") // Escape quotes
+                            .replace("\n", "")
+                            .replace("\r", "");
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-                    txtLogs.add(lineDiv);
-                    txtLogs.getElement().executeJs("this.scrollTop = this.scrollHeight;"); // Scroll to bottom
-                    ui.push();
-                });
-            });
-            AL.info("Registered log listener.");
+
+                    String finalHtmlLine = htmlLine;
+                    ui.access(() -> {
+                        ui.getPage().executeJs(
+                            fn+
+                                "console.log('WOW');\n"+
+                                "\nwindow.appendLogLine && window.appendLogLine(\"" + finalHtmlLine + "\");\n" +
+                                "document.querySelector('#log-container').scrollTop = document.querySelector('#log-container').scrollHeight;"
+                        );
+                    });
+                };
+            };
+            Main.asyncIn.listeners.add(listener);
+            Main.asyncInErr.listeners.add(listener);
+            AL.info("Registered log listeners.");
         }
         AL.info("Initialised jSQL-Gen Window successfully!");
 
