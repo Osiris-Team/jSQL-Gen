@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 import java.sql.SQLException;
+import java.sql.Date;
 
 /**
 Table Timer with id 594 and 2 changes/version. <br>
@@ -36,6 +37,7 @@ Enabled modifiers: <br>
 <br>
 */
 public class Timer implements Database.Row{
+  public static final int TABLE_ID = 594;
 /** Limitation: Not executed in constructor, but only the create methods. */
 public static CopyOnWriteArrayList<Consumer<Timer>> onCreate = new CopyOnWriteArrayList<Consumer<Timer>>();
 public static CopyOnWriteArrayList<Consumer<Timer>> onAdd = new CopyOnWriteArrayList<Consumer<Timer>>();
@@ -45,6 +47,7 @@ public static CopyOnWriteArrayList<Consumer<Timer>> onRemove = new CopyOnWriteAr
 private static boolean isEqual(Timer obj1, Timer obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
 public Object getId(){return id;}
 public void setId(Object id){this.id = (int) id;}
+public static volatile boolean isSimpleMinimalPrintString = false;
 static {
 try{
 Connection con = Database.getCon();
@@ -64,7 +67,9 @@ Database.updateTableMetaData(t);
 }
 if(i == 1){
 if(t.steps < 1){t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 2){s.executeUpdate("ALTER TABLE `timer` MODIFY COLUMN `id` INT AUTO_INCREMENT NOT NULL ");
+if(t.steps < 2){s.execute("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';");
+s.executeUpdate("ALTER TABLE `timer` MODIFY COLUMN `id` INT AUTO_INCREMENT NOT NULL ");
+s.execute("SET SESSION sql_mode='';");
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
@@ -171,6 +176,17 @@ return get("WHERE id = "+id).get(0);
 }catch(IndexOutOfBoundsException ignored){}
 catch(Exception e){throw new RuntimeException(e);}
 return null;
+}
+/**
+@return object with the provided id or empty optional if there is no object with the provided id in this table.
+@throws Exception on SQL issues.
+*/
+public static java.util.Optional<Timer> getOptional(int id)  {
+try{
+return java.util.Optional.of(get("WHERE id = "+id).get(0));
+}catch(IndexOutOfBoundsException ignored){}
+catch(Exception e){throw new RuntimeException(e);}
+return java.util.Optional.empty();
 }
 /**
 Example: <br>
@@ -450,7 +466,9 @@ Timer.remove(this, unsetRefs, removeRefs);
 public String toPrintString(){
 return  ""+"id="+this.id+" "+"start="+this.start+" "+"end="+this.end+" ";
 }
-public String toMinimalPrintString(){
+public String toMinimalPrintString(){ return toMinimalPrintString(true); }
+public String toMinimalPrintString(boolean isFirstFieldOnly){
+if(isFirstFieldOnly) return "" + this.start;
 return ""+this.id+"; "+"";
 }
 public boolean isOnlyInMemory(){
@@ -509,6 +527,16 @@ public static class WHERE<T> {
             List<Timer> results = get();
             if(results.isEmpty()) return null;
             else return results.get(0);
+        }
+
+        /**
+         * Executes the generated SQL statement
+         * and returns the first object matching the query or empty optional if none.
+         */
+        public java.util.Optional<Timer> getOptional()  {
+            List<Timer> results = get();
+            if(results.isEmpty()) return java.util.Optional.empty();
+            else return java.util.Optional.of(results.get(0));
         }
 
         /**

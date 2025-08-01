@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
@@ -62,12 +63,32 @@ public class Main {
             }
         }
 
+        var ids = new HashSet<Long>();
         for (Database db : Data.instance.databases) {
             // If there are missing ids set them
             for (Table t : db.tables) {
                 if(t.id == 0) t.id = idCounter.getAndIncrement();
                 for (Column c : t.columns) {
                     if(c.id == 0) c.id = idCounter.getAndIncrement();
+                }
+            }
+
+            // If there are duplicate ids, set them to a new id
+            for (Table table : db.tables) {
+                if(ids.contains((long) table.id)){
+                    table.id = Main.idCounter.getAndIncrement();
+                    AL.info("Found duplicate id, for table "+ table.name+", updated to id: "+table.id);
+                } else{
+                    ids.add((long) table.id); // TODO make sure table.id is also long
+                }
+
+                for (Column column : table.columns) {
+                    if(ids.contains(column.id)){
+                        column.id = Main.idCounter.getAndIncrement();
+                        AL.info("Found duplicate id, for column "+ table.name +"."+ column.name+", updated to id: "+column.id);
+                    } else{
+                        ids.add(column.id);
+                    }
                 }
             }
 

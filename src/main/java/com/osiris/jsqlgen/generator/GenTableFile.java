@@ -58,7 +58,7 @@ public class GenTableFile {
         classContentBuilder.append("Table "+t.name+" with id "+t.id+" and "+t.changes.size()+" changes/version. <br>\n" +
             "Structure (" + t.columns.size() + " fields/columns): <br>\n");
         for (Column col : t.columns) {
-            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition + " <br>\n");
+            classContentBuilder.append("- " + col.type.inJava + " " + col.name + " = " + col.definition.replace("*/", "*\\/") + " <br>\n");
         }
         classContentBuilder.append("\n");
         classContentBuilder.append(
@@ -194,14 +194,14 @@ public class GenTableFile {
             Column col = columns.get(i);
             boolean notNull = containsIgnoreCase(col.definition, "NOT NULL");
             classContentBuilder.append("/**\n" +
-                "Database field/value: " + col.definition + ". <br>\n" +
-                (col.comment != null ? (col.comment + "\n") : "") +
+                "Database field/value: " + col.definition.replace("*/", "*\\/") + ". <br>\n" +
+                (col.comment != null ? (col.comment.replace("*/", "*\\/") + "\n") : "") +
                 "*/\n" +
                 "public " + col.type.inJava + " " + col.name + (i == 0 ? " = Database.defaultInMemoryOnlyObjId;\n" : ";\n")); // Set -1 as default for id
             classContentBuilder.append("" +
                 "/**\n" +
-                "Database field/value: " + col.definition + ". <br>\n" +
-                (col.comment != null ? (col.comment + "\n") : "") + "\n" +
+                "Database field/value: " + col.definition.replace("*/", "*\\/") + ". <br>\n" +
+                (col.comment != null ? (col.comment.replace("*/", "*\\/") + "\n") : "") + "\n" +
                 "Convenience builder-like setter with method-chaining.\n" +
                 "*/\n" +
                 "public " + t.name + " " + col.name + "(" + col.type.inJava + " " + col.name + "){ this." + col.name + " = " + col.name + "; return this;}\n");
@@ -394,7 +394,11 @@ public class GenTableFile {
         classContentBuilder.substring(0, classContentBuilder.length() - 1);
         classContentBuilder.append(";\n}\n");
 
-        classContentBuilder.append("public String toMinimalPrintString(){\n");
+        classContentBuilder.append("public String toMinimalPrintString(){ return toMinimalPrintString(true); }\n");
+
+        var firstActualField = t.columns.get(1);
+        classContentBuilder.append("public String toMinimalPrintString(boolean isFirstFieldOnly){\n" +
+            "if(isFirstFieldOnly) return \"\" + this."+firstActualField.name+";\n");
         String valAsString = "\"\"+";
         for (Column refCol : t.columns) {
             if (refCol.type.isBlob() || refCol.type.isDateOrTime()) continue;

@@ -8,20 +8,17 @@
         {
           "id": 595,
           "name": "id",
-          "nameQuoted": "`id`",
           "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
         },
         {
           "id": 596,
           "name": "start",
-          "nameQuoted": "`start`",
           "definition": "DATETIME NOT NULL",
           "comment": ""
         },
         {
           "id": 597,
           "name": "end",
-          "nameQuoted": "`end`",
           "definition": "DATETIME NOT NULL",
           "comment": ""
         }
@@ -34,9 +31,11 @@
         {
           "oldTableName": "Timer",
           "newTableName": "Timer",
+          "oldColumnNamesIds": [],
           "oldColumnNames": [],
           "newColumnNames": [],
           "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
           "oldColumnDefinitions": [],
           "newColumnDefinitions": [],
           "newColumnDefinitions_Names": [],
@@ -55,9 +54,11 @@
         {
           "oldTableName": "Timer",
           "newTableName": "Timer",
+          "oldColumnNamesIds": [],
           "oldColumnNames": [],
           "newColumnNames": [],
           "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
           "oldColumnDefinitions": [
             "INT NOT NULL PRIMARY KEY"
           ],
@@ -75,9 +76,11 @@
       "currentChange": {
         "oldTableName": "",
         "newTableName": "",
+        "oldColumnNamesIds": [],
         "oldColumnNames": [],
         "newColumnNames": [],
         "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
         "oldColumnDefinitions": [],
         "newColumnDefinitions": [],
         "newColumnDefinitions_Names": [],
@@ -93,34 +96,29 @@
         {
           "id": 599,
           "name": "id",
-          "nameQuoted": "`id`",
           "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
         },
         {
           "id": 600,
           "name": "timerId",
-          "nameQuoted": "`timerId`",
           "definition": "INT NOT NULL",
           "comment": ""
         },
         {
           "id": 603,
           "name": "taskId",
-          "nameQuoted": "`taskId`",
           "definition": "INT NOT NULL",
           "comment": ""
         },
         {
           "id": 606,
           "name": "percentageOfTimer",
-          "nameQuoted": "`percentageOfTimer`",
           "definition": "DOUBLE NOT NULL",
           "comment": "0-100%"
         },
         {
           "id": 605,
           "name": "changelog",
-          "nameQuoted": "`changelog`",
           "definition": "TEXT DEFAULT \u0027\u0027",
           "comment": ""
         }
@@ -133,9 +131,11 @@
         {
           "oldTableName": "TimerTask",
           "newTableName": "TimerTask",
+          "oldColumnNamesIds": [],
           "oldColumnNames": [],
           "newColumnNames": [],
           "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
           "oldColumnDefinitions": [],
           "newColumnDefinitions": [],
           "newColumnDefinitions_Names": [],
@@ -158,9 +158,11 @@
         {
           "oldTableName": "TimerTask",
           "newTableName": "TimerTask",
+          "oldColumnNamesIds": [],
           "oldColumnNames": [],
           "newColumnNames": [],
           "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
           "oldColumnDefinitions": [
             "INT NOT NULL PRIMARY KEY"
           ],
@@ -178,9 +180,11 @@
       "currentChange": {
         "oldTableName": "",
         "newTableName": "",
+        "oldColumnNamesIds": [],
         "oldColumnNames": [],
         "newColumnNames": [],
         "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
         "oldColumnDefinitions": [],
         "newColumnDefinitions": [],
         "newColumnDefinitions_Names": [],
@@ -196,13 +200,11 @@
         {
           "id": 602,
           "name": "id",
-          "nameQuoted": "`id`",
           "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
         },
         {
           "id": 604,
           "name": "name",
-          "nameQuoted": "`name`",
           "definition": "TEXT DEFAULT \u0027New Task\u0027",
           "comment": ""
         }
@@ -215,9 +217,11 @@
         {
           "oldTableName": "Task",
           "newTableName": "Task",
+          "oldColumnNamesIds": [],
           "oldColumnNames": [],
           "newColumnNames": [],
           "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
           "oldColumnDefinitions": [],
           "newColumnDefinitions": [],
           "newColumnDefinitions_Names": [],
@@ -234,9 +238,11 @@
         {
           "oldTableName": "Task",
           "newTableName": "Task",
+          "oldColumnNamesIds": [],
           "oldColumnNames": [],
           "newColumnNames": [],
           "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
           "oldColumnDefinitions": [
             "INT NOT NULL PRIMARY KEY"
           ],
@@ -254,9 +260,186 @@
       "currentChange": {
         "oldTableName": "",
         "newTableName": "",
+        "oldColumnNamesIds": [],
         "oldColumnNames": [],
         "newColumnNames": [],
         "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
+    },
+    {
+      "id": 377336,
+      "name": "FakeFile",
+      "columns": [
+        {
+          "id": 377337,
+          "name": "id",
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 377338,
+          "name": "parentFakeFileId",
+          "definition": "INT DEFAULT -1",
+          "comment": ""
+        },
+        {
+          "id": 377339,
+          "name": "hours",
+          "definition": "INT DEFAULT 0",
+          "comment": ""
+        },
+        {
+          "id": 377340,
+          "name": "name",
+          "definition": "LONGTEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        },
+        {
+          "id": 377341,
+          "name": "commitSha",
+          "definition": "TEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": true,
+      "changes": [
+        {
+          "oldTableName": "FakeFile",
+          "newTableName": "FakeFile",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "parentFakeFileId",
+            "hours",
+            "name",
+            "commitSha"
+          ],
+          "addedColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY",
+            "INT DEFAULT -1",
+            "INT DEFAULT 0",
+            "LONGTEXT DEFAULT \u0027\u0027",
+            "TEXT DEFAULT \u0027\u0027"
+          ]
+        }
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNamesIds": [],
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
+    },
+    {
+      "id": 379877,
+      "name": "Global",
+      "columns": [
+        {
+          "id": 379878,
+          "name": "id",
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 379879,
+          "name": "githubToken",
+          "definition": "TEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        },
+        {
+          "id": 379880,
+          "name": "lastRepo",
+          "definition": "TEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        },
+        {
+          "id": 381907,
+          "name": "isTotalCountRecursive",
+          "definition": "BOOLEAN DEFAULT TRUE",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": true,
+      "changes": [
+        {
+          "oldTableName": "Global",
+          "newTableName": "Global",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "githubToken",
+            "lastRepo"
+          ],
+          "addedColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY",
+            "TEXT DEFAULT \u0027\u0027",
+            "TEXT DEFAULT \u0027\u0027"
+          ]
+        },
+        {
+          "oldTableName": "Global",
+          "newTableName": "Global",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "isTotalCountRecursive"
+          ],
+          "addedColumnDefinitions": [
+            "BOOLEAN DEFAULT TRUE"
+          ]
+        }
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNamesIds": [],
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
         "oldColumnDefinitions": [],
         "newColumnDefinitions": [],
         "newColumnDefinitions_Names": [],
@@ -266,7 +449,7 @@
       }
     }
   ],
-  "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen\\core ;",
+  "javaProjectDir": "C:\\Users\\arman\\jSQL-Gen ;D:\\Coding\\JAVA\\jSQL-Gen ;",
   "isWithMariadb4j": true,
   "isVersioning": true
 }

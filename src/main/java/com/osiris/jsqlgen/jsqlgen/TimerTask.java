@@ -37,6 +37,7 @@ Enabled modifiers: <br>
 <br>
 */
 public class TimerTask implements Database.Row{
+  public static final int TABLE_ID = 598;
 /** Limitation: Not executed in constructor, but only the create methods. */
 public static CopyOnWriteArrayList<Consumer<TimerTask>> onCreate = new CopyOnWriteArrayList<Consumer<TimerTask>>();
 public static CopyOnWriteArrayList<Consumer<TimerTask>> onAdd = new CopyOnWriteArrayList<Consumer<TimerTask>>();
@@ -46,6 +47,7 @@ public static CopyOnWriteArrayList<Consumer<TimerTask>> onRemove = new CopyOnWri
 private static boolean isEqual(TimerTask obj1, TimerTask obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
 public Object getId(){return id;}
 public void setId(Object id){this.id = (int) id;}
+public static volatile boolean isSimpleMinimalPrintString = false;
 static {
 try{
 Connection con = Database.getCon();
@@ -69,7 +71,9 @@ Database.updateTableMetaData(t);
 }
 if(i == 1){
 if(t.steps < 1){t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 2){s.executeUpdate("ALTER TABLE `timertask` MODIFY COLUMN `id` INT AUTO_INCREMENT NOT NULL ");
+if(t.steps < 2){s.execute("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';");
+s.executeUpdate("ALTER TABLE `timertask` MODIFY COLUMN `id` INT AUTO_INCREMENT NOT NULL ");
+s.execute("SET SESSION sql_mode='';");
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
@@ -235,6 +239,17 @@ return get("WHERE id = "+id).get(0);
 }catch(IndexOutOfBoundsException ignored){}
 catch(Exception e){throw new RuntimeException(e);}
 return null;
+}
+/**
+@return object with the provided id or empty optional if there is no object with the provided id in this table.
+@throws Exception on SQL issues.
+*/
+public static java.util.Optional<TimerTask> getOptional(int id)  {
+try{
+return java.util.Optional.of(get("WHERE id = "+id).get(0));
+}catch(IndexOutOfBoundsException ignored){}
+catch(Exception e){throw new RuntimeException(e);}
+return java.util.Optional.empty();
 }
 /**
 Example: <br>
@@ -510,7 +525,9 @@ TimerTask.remove(this, unsetRefs, removeRefs);
 public String toPrintString(){
 return  ""+"id="+this.id+" "+"timerId="+this.timerId+" "+"taskId="+this.taskId+" "+"percentageOfTimer="+this.percentageOfTimer+" "+"changelog="+this.changelog+" ";
 }
-public String toMinimalPrintString(){
+public String toMinimalPrintString(){ return toMinimalPrintString(true); }
+public String toMinimalPrintString(boolean isFirstFieldOnly){
+if(isFirstFieldOnly) return "" + this.timerId;
 return ""+this.id+"; "+this.timerId+"; "+this.taskId+"; "+this.percentageOfTimer+"; "+this.changelog+"; "+"";
 }
 public boolean isOnlyInMemory(){
@@ -575,6 +592,16 @@ public static class WHERE<T> {
             List<TimerTask> results = get();
             if(results.isEmpty()) return null;
             else return results.get(0);
+        }
+
+        /**
+         * Executes the generated SQL statement
+         * and returns the first object matching the query or empty optional if none.
+         */
+        public java.util.Optional<TimerTask> getOptional()  {
+            List<TimerTask> results = get();
+            if(results.isEmpty()) return java.util.Optional.empty();
+            else return java.util.Optional.of(results.get(0));
         }
 
         /**

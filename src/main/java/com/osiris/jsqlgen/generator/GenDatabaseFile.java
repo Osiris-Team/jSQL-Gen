@@ -1,7 +1,10 @@
 package com.osiris.jsqlgen.generator;
 
+import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.utils.UString;
+import org.apache.commons.collections4.map.LinkedMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,15 +14,18 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.osiris.jsqlgen.generator.GenReferences.getRefTable;
+import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
+
 public class GenDatabaseFile {
     public static void s(Database db, File databaseFile, String rawUrl, String url, String name, String username, String password) throws IOException {
         databaseFile.getParentFile().mkdirs();
         databaseFile.createNewFile();
 
-        LinkedHashSet<String> imports = new LinkedHashSet<>();
-        imports.add("import java.sql.*;");
-        imports.add("import java.util.*;");
-        imports.add("import java.io.File;");
+        LinkedHashSet<String> importsList = new LinkedHashSet<>();
+        importsList.add("import java.sql.*;");
+        importsList.add("import java.util.*;");
+        importsList.add("import java.io.File;");
 
         StringBuilder s = new StringBuilder(
                 "/**\n" +
@@ -84,6 +90,24 @@ public class GenDatabaseFile {
             s.append("public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for("+t.name+" obj : "+t.name+".get()) l.add(obj); return l;}");
             s.append("public Database.Row get(Object id){return "+t.name+".get(("+idCol.type.inJava+") id);}");
             s.append("public void update(Database.Row obj){"+t.name+".update(("+ t.name +")obj);}");
+
+            String initialValues = "";
+            ArrayList<Column> columns = t.columns;
+            for (int j = 1; j < columns.size(); j++) { // skip id column, since we are trying to create params for the minimal create method
+                Column col = columns.get(j);
+                if (containsIgnoreCase(col.definition, "NOT NULL")) {
+                    if (col.type.isNumber() || col.type.isDecimalNumber()) { // Potential id field with ref to another table
+                        var refTable = getRefTable(db, col.name);
+                        if (refTable != null) initialValues += "defaultInMemoryOnlyObjId, ";
+                        else initialValues += "0, ";
+                    } else {
+                        initialValues += "null, ";
+                    }
+                }
+            }
+            initialValues = UString.replaceLast(initialValues, ", ", "");
+
+            s.append("public Database.Row createWithNulls(){ return "+t.name+".create("+initialValues+");}");
             s.append("public void add(Database.Row obj){"+t.name+".add(("+ t.name +")obj);}");
             s.append("public void remove(Database.Row obj){"+t.name+".remove(("+ t.name +")obj);}");
             s.append("}");
@@ -298,6 +322,8 @@ public class GenDatabaseFile {
                 "        public Database.Row get(Object id){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void update(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void add(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "/** Creates a row object for this table by initialising default fields if any present. Note that NOT NULL fields without default values will be initialised as null or defaultInMemoryOnlyObjId if an id field or with 0 if simply a number/decimal. */\n"+
+                "        public Database.Row createWithNulls(){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void remove(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "    }\n");
         for (Table t : tables) {
@@ -312,6 +338,34 @@ public class GenDatabaseFile {
                                 }""");
                 break;
             }
+        }
+
+        var isOneTableVaadin = false;
+        for (Table table : tables) {
+            if(table.isVaadinFlowUI){
+                isOneTableVaadin = true;
+                break;
+            }
+        }
+        if(isOneTableVaadin){
+            importsList.add("import com.vaadin.flow.component.button.Button;");
+            importsList.add("import com.vaadin.flow.component.formlayout.FormLayout;");
+            importsList.add("import com.vaadin.flow.component.orderedlayout.HorizontalLayout;");
+            importsList.add("import com.vaadin.flow.component.orderedlayout.VerticalLayout;");
+
+            s.append("""
+                public static abstract class RowCRUDVaadinComponent<ROW> extends VerticalLayout{
+                  public ROW data;
+                  public FormLayout form = new FormLayout();
+                  public HorizontalLayout hlButtons = new HorizontalLayout();
+                  public Button btnAdd = new Button("Add");
+                  public Button btnSave = new Button("Save");
+                  public Button btnDelete = new Button("Delete");
+
+                  public abstract void updateFields();
+                  public abstract void updateData();
+                }
+                """);
         }
 
         if(db.isWithMariadb4j){
@@ -350,7 +404,7 @@ public class GenDatabaseFile {
         }
 
         // Add other dependencies
-        s.append(GenDefBlobClass.s(imports));
+        s.append(GenDefBlobClass.s(importsList));
 
         s.append("}\n");
 
@@ -364,7 +418,7 @@ public class GenDatabaseFile {
                 "import ch.vorburger.mariadb4j.DB;\n" +
                 "import ch.vorburger.mariadb4j.DBConfigurationBuilder;\n" : "")+
             "\n";
-        for (String anImport : imports) {
+        for (String anImport : importsList) {
             finalS += anImport+"\n";
         }
         finalS += sNoImports;

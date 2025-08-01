@@ -1,7 +1,9 @@
 package com.osiris.jsqlgen.model;
 
 import com.osiris.jlib.logger.AL;
+import com.osiris.jsqlgen.Data;
 import com.osiris.jsqlgen.Main;
+import com.osiris.jsqlgen.generator.GetTableChange;
 
 import java.util.ArrayList;
 
@@ -20,6 +22,16 @@ public class Table {
      */
     public TableChange currentChange = new TableChange();
 
+    public Table() {
+    }
+
+    public static Table create(){
+        var t = new Table();
+        t.id = Main.idCounter.getAndIncrement();
+        t.addIdColumn();
+        return t;
+    }
+
     public Table addIdColumn(){
         Column idColumn = new Column("id");
         idColumn.id = Main.idCounter.getAndIncrement();
@@ -28,20 +40,38 @@ public class Table {
         return this;
     }
 
+    public Table insertCol(Column colNew, Column col){
+        int i = columns.indexOf(col);
+        if(i < 0) throw new IllegalArgumentException();
+        columns.add(i + 1, colNew);
+        performAddChange(colNew);
+        return this;
+    }
+
     public Table addCol(Column col){
         columns.add(col);
+        performAddChange(col);
+        return this;
+    }
 
+    private void performAddChange(Column col) {
         // Update current change
         if(!currentChange.addedColumnNames.contains(col.name)){
             currentChange.addedColumnNames.add(col.name);
             currentChange.addedColumnDefinitions.add(col.definition);
             currentChange.deletedColumnNames.remove(col.name);
         }
-
-        return this;
     }
 
     public Table updateCol(Column col, String oldName, String newName, String newDefinition, String newComment){
+        boolean isNameChange = !oldName.equals(newName);
+        boolean isDefChange = !newDefinition.equals(col.definition);
+        boolean isCommentChange = !newComment.equals(col.comment);
+        if(!isNameChange && !isDefChange && !isCommentChange)
+        {
+            AL.info("No change detected for column name, definition or comment, thus nothing changed.");
+            return this;
+        }
 
         col.updateName(newName);
         String oldDefinition = col.definition;
@@ -49,6 +79,9 @@ public class Table {
         col.comment = newComment;
 
         // Update current change
+        if(!isNameChange && !isDefChange && isCommentChange){
+            return this; // Do not perform change logic if only comment changed
+        }
         if(currentChange.addedColumnNames.contains(oldName)){ // brand new column
             int i = currentChange.addedColumnNames.indexOf(oldName);
             currentChange.addedColumnNames.set(i, newName);
@@ -123,7 +156,8 @@ public class Table {
 
     public Table duplicate() {
         Table t = new Table();
-        t.id = id;
+        t.id = Main.idCounter.getAndIncrement();
+        //t.addIdColumn();
         t.name = name;
         for (Column c : columns) {
             t.columns.add(c.duplicate());
@@ -133,7 +167,7 @@ public class Table {
         t.isCache = isCache;
         t.isVaadinFlowUI = isVaadinFlowUI;
         t.changes.clear();
-        t.changes.addAll(changes); // TODO is proper duplicate function required for this?
+        t.changes.addAll(changes);
         t.currentChange = currentChange;
         return t;
     }

@@ -3,6 +3,7 @@ package com.osiris.jsqlgen.generator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.utils.UString;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -43,6 +44,7 @@ public class GenVaadinFlow {
         importsList.add("import java.time.LocalDateTime;");
         importsList.add("import java.time.OffsetDateTime;");
         importsList.add("import com.vaadin.flow.component.combobox.ComboBox;");
+        importsList.add("import com.vaadin.flow.component.combobox.MultiSelectComboBox;");
         importsList.add("import com.vaadin.flow.component.html.Div;");
         importsList.add("import com.vaadin.flow.data.renderer.ComponentRenderer;");
         importsList.add("import com.vaadin.flow.component.button.ButtonVariant;");
@@ -99,10 +101,10 @@ public class GenVaadinFlow {
                 "\n\n");
 
         // Create static, table related components
-        s.append("public static ComboBox<"+t.name+"> newTableComboBox(){\n");
-        s.append(getComboBoxWithTableContent(t, "comboBox", t.name).replaceFirst("public", ""));
-        s.append("return comboBox;\n" +
-                "}\n\n");
+        s.append(getComboBoxWithTableContent(db, t, "comboBox", t.name));
+        s.append(getComboBoxWithTableContent(db, t, "multiSelect", t.name)
+            .replace("newTableComboBox", "newTableMultiSelect")
+            .replace("ComboBox", "MultiSelectComboBox"));
         // Static new methods for comp creation of each column / data field
         for (Column col : t.columns) {
             if (col.type.isBlob()) {
@@ -129,13 +131,11 @@ public class GenVaadinFlow {
 
 
         // Create the class first
-        s.append("    public static class Comp extends VerticalLayout{\n" +
+        s.append("    public static class Comp extends Database.RowCRUDVaadinComponent<"+t.name+">{\n" +
                 "\n" +
                 "        public " + t.name + " data"+t.name+";\n" +
-                "        public " + t.name + " data;\n" +
                 "\n" +
-                "        // Form and fields\n" +
-                "        public FormLayout form = new FormLayout();\n");
+                "        // Form and fields\n");
         Map<Column, ExtraInfo> mapExtraInfo = new HashMap<>();
         for (Column col : t.columns) {
             if (col.type.isBlob()) {
@@ -147,8 +147,7 @@ public class GenVaadinFlow {
         }
 
         s.append("        // Buttons\n" +
-                "        public HorizontalLayout hlButtons = new HorizontalLayout();\n" +
-                "        public Button btnAdd = new Button(\"Add\");\n" +
+                "\n" +
                 "        {btnAdd.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {\n" +
                 "                btnAdd.setEnabled(false);\n" +
@@ -157,7 +156,7 @@ public class GenVaadinFlow {
                 "                e.unregisterListener(); // Make sure it gets only executed once\n" +
                 "                updateButtons();\n" +
                 "};\n" +
-                "        public Button btnSave = new Button(\"Save\");\n" +
+                "        \n" +
                 "        {btnSave.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {\n" +
                 "                btnSave.setEnabled(false);\n" +
@@ -166,7 +165,7 @@ public class GenVaadinFlow {
                 "                btnSave.setEnabled(true);\n" +
                 "                updateButtons();\n" +
                 "};\n" +
-                "        public Button btnDelete = new Button(\"Delete\");\n" +
+                "        \n" +
                 "        {btnDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);}\n" +
                 "        public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {\n" +
                 "                btnDelete.setEnabled(false);\n" +
@@ -349,7 +348,8 @@ public class GenVaadinFlow {
                 colName = colName.substring(0, colName.toLowerCase().lastIndexOf("id"));
                 fieldName = "cb" + colName;
                 compType = "ComboBox<" + refTable.name + ">";
-                s.append(getComboBoxWithTableContent(refTable, fieldName, colName));
+                s.append("        public "+compType+" "+ fieldName+" = "+refTable.name+".newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */\n" +
+                         "        { "+fieldName+".setLabel(\""+colName+"\"); }\n");
             } else{
                 fieldName = "nf" + colName;
                 compType = "NumberField";
@@ -363,18 +363,63 @@ public class GenVaadinFlow {
     private record Result(String generatedCode, String compType, String fieldName, boolean isColumnRef, Table refTable) {
     }
 
-    private static String getComboBoxWithTableContent(Table t, String fieldName, String colName) {
+    /**
+     * A reference to an object/row in another table. <br>
+     * <br>
+     * If the referenced table only contains references too, we add additional code to fetch those referenced objects and add them to the string.
+     */
+    private static String getComboBoxWithTableContent(Database db, Table t, String fieldName, String colName) {
+        var refTables = new LinkedHashMap<Column, Table>();
+        ArrayList<Column> columns = t.columns;
+        for (int i = 1; i < columns.size(); i++) { // Skip id
+            Column col = columns.get(i); // This loop might be pretty cpu intensive, fix with global caching, clear cache after finishing code generation
+            var refTable = getRefTable(db, col.name);
+            if(refTable == null) continue; // Regular field, no reference
+            if(refTable.id == t.id) continue; // Skip circular references
+            refTables.put(col, refTable);
+        }
+        boolean isIncludeReferencesAsMinimalString = (!refTables.isEmpty() &&
+            (t.columns.size() - 1 == refTables.size() // All columns of t (without id col) are references to other tables
+                || t.columns.size() <= 6)); // Or it's a small table with only 6 total fields
+
+        String sObj = "obj.toMinimalPrintString()";
+        String refsBooleansMethodArgs = "boolean isIncluded_SelfID, "; // boolean isIncluded_name, isIncluded_age, etc..
+        String refsBooleanDefValues = "false, "; // true, true, true, etc...
+        if(isIncludeReferencesAsMinimalString){
+            sObj = "(isIncluded_SelfID ? obj.id + \"; \" : \"\")";
+            for (Map.Entry<Column, Table> e : refTables.entrySet()) {
+                var col = e.getKey();
+                var t2 = e.getValue();
+                String refBoolean = "isIncluded_"+col.name;
+                refsBooleansMethodArgs += "boolean "+ refBoolean+", ";
+                refsBooleanDefValues += "true, ";
+                sObj += " + (IS_INCLUDED ? TABLE.getOptional(obj.COL_NAME).map(TABLE::toMinimalPrintString).orElse(\"null\") : \"\")"
+                    .replace("IS_INCLUDED", refBoolean)
+                    .replace("TABLE", t2.name).replace("COL_NAME", col.name);
+            }
+        } else
+            sObj += "/* This columns table must contain only references too if you want to fetch their minimal string content */";
+
+        refsBooleansMethodArgs = UString.replaceLast(refsBooleansMethodArgs, ", ", "");
+        refsBooleanDefValues = UString.replaceLast(refsBooleanDefValues, ", ", "");
+
         StringBuilder s = new StringBuilder();
-        s.append("        public ComboBox<"+ t.name+"> " + fieldName + " = new ComboBox<"+ t.name+">(\"" + colName + "\");\n");
+
+        // Create extra method with no arguments where all strings are included by default
+        s.append("public static ComboBox<"+t.name+"> newTableComboBox(){ return newTableComboBox("+refsBooleanDefValues+"); }\n");
+        s.append("public static ComboBox<"+t.name+"> newTableComboBox("+refsBooleansMethodArgs+"){\n");
+        s.append("        ComboBox<"+ t.name+"> " + fieldName + " = new ComboBox<"+ t.name+">(\"" + colName + "\");\n");
         s.append("        {"+ fieldName +".setItems("+ t.name+".get());\n" +
                 "            "+ fieldName +".setRenderer(new ComponentRenderer<>(obj -> {\n" +
                 "                Div div = new Div();\n"+
-                "                div.setText(obj.toMinimalPrintString());\n" +
+                "                div.setText("+sObj+");\n" +
                 "            return div;}));\n" +
                 "            "+ fieldName +".setItemLabelGenerator(obj -> {\n" +
-                "                return obj.toMinimalPrintString();\n" +
+                "                return "+sObj+";\n" +
                 "            });\n" +
                 "        }\n");
+        s.append("return "+fieldName+";\n" +
+            "}\n\n");
         return s.toString();
     }
 

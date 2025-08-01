@@ -92,6 +92,17 @@ public class GenCreateMethods {
                 (t.isNoExceptions ? "catch(Exception e){throw new RuntimeException(e);}\n" : "") + // Close try/catch
                 "return null;\n" + // Close tr
                 "}\n" +
+            "/**\n" +
+            "@return object with the provided id or empty optional if there is no object with the provided id in this table.\n" +
+            "@throws Exception on SQL issues.\n" +
+            "*/\n" +
+            "public static java.util.Optional<" + t.name + "> getOptional("+idCol.type.inJava+" id) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+            "try{\n" +
+            "return java.util.Optional.of(get(\"WHERE "+idCol.name+" = \"+id).get(0));\n" +
+            "}catch(IndexOutOfBoundsException ignored){}\n" +
+            (t.isNoExceptions ? "catch(Exception e){throw new RuntimeException(e);}\n" : "") + // Close try/catch
+            "return java.util.Optional.empty();\n" + // Close tr
+            "}\n" +
                 "/**\n" +
                 "Example: <br>\n" +
                 "get(\"WHERE username=? AND age=?\", \"Peter\", 33);  <br>\n" +

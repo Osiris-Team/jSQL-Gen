@@ -6,6 +6,10 @@ import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import java.sql.*;
 import java.util.*;
 import java.io.File;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
@@ -35,7 +39,7 @@ public static boolean isRemoveRefs = false;
 */
 public static final List<Connection> availableConnections = new ArrayList<>();
 public static final int defaultInMemoryOnlyObjId = -1;
-public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(594, 2, 0, "Timer", new String[]{"id", "start", "end"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "DATETIME NOT NULL", "DATETIME NOT NULL"}){public Class<?> getTableClass(){return Timer.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Timer obj : Timer.get()) l.add(obj); return l;}public Database.Row get(Object id){return Timer.get((int) id);}public void update(Database.Row obj){Timer.update((Timer)obj);}public void add(Database.Row obj){Timer.add((Timer)obj);}public void remove(Database.Row obj){Timer.remove((Timer)obj);}}, new TableMetaData(598, 2, 0, "TimerTask", new String[]{"id", "timerId", "taskId", "percentageOfTimer", "changelog"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "INT NOT NULL", "INT NOT NULL", "DOUBLE NOT NULL", "TEXT DEFAULT ''"}){public Class<?> getTableClass(){return TimerTask.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(TimerTask obj : TimerTask.get()) l.add(obj); return l;}public Database.Row get(Object id){return TimerTask.get((int) id);}public void update(Database.Row obj){TimerTask.update((TimerTask)obj);}public void add(Database.Row obj){TimerTask.add((TimerTask)obj);}public void remove(Database.Row obj){TimerTask.remove((TimerTask)obj);}}, new TableMetaData(601, 2, 0, "Task", new String[]{"id", "name"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "TEXT DEFAULT 'New Task'"}){public Class<?> getTableClass(){return Task.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Task obj : Task.get()) l.add(obj); return l;}public Database.Row get(Object id){return Task.get((int) id);}public void update(Database.Row obj){Task.update((Task)obj);}public void add(Database.Row obj){Task.add((Task)obj);}public void remove(Database.Row obj){Task.remove((Task)obj);}}};
+public static final TableMetaData[] tables = new TableMetaData[]{new TableMetaData(594, 2, 0, "Timer", new String[]{"id", "start", "end"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "DATETIME NOT NULL", "DATETIME NOT NULL"}, new String[]{"", "", ""}){public Class<?> getTableClass(){return Timer.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Timer obj : Timer.get()) l.add(obj); return l;}public Database.Row get(Object id){return Timer.get((int) id);}public void update(Database.Row obj){Timer.update((Timer)obj);}public Database.Row createWithNulls(){ return Timer.create(null, null);}public void add(Database.Row obj){Timer.add((Timer)obj);}public void remove(Database.Row obj){Timer.remove((Timer)obj);}}, new TableMetaData(598, 2, 0, "TimerTask", new String[]{"id", "timerId", "taskId", "percentageOfTimer", "changelog"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "INT NOT NULL", "INT NOT NULL", "DOUBLE NOT NULL", "TEXT DEFAULT ''"}, new String[]{"", "", "", "0-100%", ""}){public Class<?> getTableClass(){return TimerTask.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(TimerTask obj : TimerTask.get()) l.add(obj); return l;}public Database.Row get(Object id){return TimerTask.get((int) id);}public void update(Database.Row obj){TimerTask.update((TimerTask)obj);}public Database.Row createWithNulls(){ return TimerTask.create(defaultInMemoryOnlyObjId, defaultInMemoryOnlyObjId, 0);}public void add(Database.Row obj){TimerTask.add((TimerTask)obj);}public void remove(Database.Row obj){TimerTask.remove((TimerTask)obj);}}, new TableMetaData(601, 2, 0, "Task", new String[]{"id", "name"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "TEXT DEFAULT 'New Task'"}, new String[]{"", ""}){public Class<?> getTableClass(){return Task.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Task obj : Task.get()) l.add(obj); return l;}public Database.Row get(Object id){return Task.get((int) id);}public void update(Database.Row obj){Task.update((Task)obj);}public Database.Row createWithNulls(){ return Task.create();}public void add(Database.Row obj){Task.add((Task)obj);}public void remove(Database.Row obj){Task.remove((Task)obj);}}, new TableMetaData(377336, 1, 0, "FakeFile", new String[]{"id", "parentFakeFileId", "hours", "name", "commitSha"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "INT DEFAULT -1", "INT DEFAULT 0", "LONGTEXT DEFAULT ''", "TEXT DEFAULT ''"}, new String[]{"", "", "", "", ""}){public Class<?> getTableClass(){return FakeFile.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(FakeFile obj : FakeFile.get()) l.add(obj); return l;}public Database.Row get(Object id){return FakeFile.get((int) id);}public void update(Database.Row obj){FakeFile.update((FakeFile)obj);}public Database.Row createWithNulls(){ return FakeFile.create();}public void add(Database.Row obj){FakeFile.add((FakeFile)obj);}public void remove(Database.Row obj){FakeFile.remove((FakeFile)obj);}}, new TableMetaData(379877, 2, 0, "Global", new String[]{"id", "githubToken", "lastRepo", "isTotalCountRecursive"}, new String[]{"INT AUTO_INCREMENT NOT NULL PRIMARY KEY", "TEXT DEFAULT ''", "TEXT DEFAULT ''", "BOOLEAN DEFAULT TRUE"}, new String[]{"", "", "", ""}){public Class<?> getTableClass(){return Global.class;}public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for(Global obj : Global.get()) l.add(obj); return l;}public Database.Row get(Object id){return Global.get((int) id);}public void update(Database.Row obj){Global.update((Global)obj);}public Database.Row createWithNulls(){ return Global.create();}public void add(Database.Row obj){Global.add((Global)obj);}public void remove(Database.Row obj){Global.remove((Global)obj);}}};
 
     static{initIntegratedMariaDB();create();} // Create database if not exists
 
@@ -215,14 +219,16 @@ public static void create() {
         public String name;
         public String[] columns;
         public String[] definitions;
+        public String[] comments;
 
-        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions) {
+        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions, String[] comments) {
             this.id = id;
             this.version = version;
             this.steps = steps;
             this.name = name;
             this.columns = columns;
             this.definitions = definitions;
+            this.comments = comments;
         }
 
         // Implementations for the following methods are provided in the array initialisation of 'tables'
@@ -232,8 +238,21 @@ public static void create() {
         public Database.Row get(Object id){throw new RuntimeException("Not implemented!");}
         public void update(Database.Row obj){throw new RuntimeException("Not implemented!");}
         public void add(Database.Row obj){throw new RuntimeException("Not implemented!");}
+/** Creates a row object for this table by initialising default fields if any present. Note that NOT NULL fields without default values will be initialised as null or defaultInMemoryOnlyObjId if an id field or with 0 if simply a number/decimal. */
+        public Database.Row createWithNulls(){throw new RuntimeException("Not implemented!");}
         public void remove(Database.Row obj){throw new RuntimeException("Not implemented!");}
     }
+public static abstract class RowCRUDVaadinComponent<ROW> extends VerticalLayout{
+  public ROW data;
+  public FormLayout form = new FormLayout();
+  public HorizontalLayout hlButtons = new HorizontalLayout();
+  public Button btnAdd = new Button("Add");
+  public Button btnSave = new Button("Save");
+  public Button btnDelete = new Button("Delete");
+
+  public abstract void updateFields();
+  public abstract void updateData();
+}
 public static DB mariaDB;
 /**
  * Creates or uses the database inside ./db and runs it via MariaDB4j on a random available port. <br>
@@ -245,6 +264,7 @@ public static void initIntegratedMariaDB() {
         DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
         configBuilder.setPort(0); // OR, default: setPort(0); => autom. detect free port
         configBuilder.setDataDir(new File(System.getProperty("user.dir") + "/db").getAbsolutePath());
+        configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false);
         mariaDB = DB.newEmbeddedDB(configBuilder.build());
         mariaDB.start();
         String port = url.substring(url.lastIndexOf(":"), url.lastIndexOf("/"));

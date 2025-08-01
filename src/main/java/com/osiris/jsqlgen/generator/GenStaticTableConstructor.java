@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.generator;
 
+import com.osiris.jsqlgen.Data;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.model.TableChange;
@@ -11,6 +12,7 @@ public class GenStaticTableConstructor {
     public static String s(Database db, Table t, String tCurrentNameQuoted) {
         StringBuilder s = new StringBuilder();
         if(t.isDebug) s.append("public static volatile boolean hasChanges = false;\n");
+        s.append("public static volatile boolean isSimpleMinimalPrintString = false;\n");
         s.append("static {\n" +
                 "try{\n" + // Without this additional try/catch that encapsulates the complete code inside static constructor
                 // we somehow get problems like class not found exception
@@ -56,21 +58,25 @@ public class GenStaticTableConstructor {
 
                 // Rename columns
                 for (int j = jStart; j < change.oldColumnNames.size(); j++) {
-                    stepsToComplete++;
-                    s.append("if(t.steps < "+stepsToComplete+"){");
-                    String oldColName = change.oldColumnNames.get(j);
-                    String newColName = change.newColumnNames.get(j);
-                    String newColDef = change.newColumnNames_Definitions.get(j);
-                    // MySQL / MariaDB / PostgreSQL / Oracle SQL:
-                    s.append("try{s.executeUpdate(\"ALTER TABLE "+ tNameNewQuoted +" RENAME COLUMN `"+oldColName+"` TO `"+newColName+"`\");} catch (Exception e1){\n" +
-                        // Older MySQL/MariaDB versions:
-                        "try{s.executeUpdate(\"ALTER TABLE "+ tNameNewQuoted +" CHANGE `"+oldColName+"` `"+newColName+"` "+newColDef+"\");} catch (Exception e2){\n" +
-                        // SQL server: :
-                        "try{s.executeUpdate(\"EXEC sp_rename `"+change.newTableName.toLowerCase()+"."+oldColName+"`, `"+newColName+"`, `COLUMN`\");} catch (Exception e3){" +
-                        "e1.printStackTrace();e2.printStackTrace();e3.printStackTrace(); throw new Exception(\"Failed to rename this column." +
-                        " Your specific SQL database might not be supported, in this case create a PR on Github for jSQL-Gen and rename this column manually for now.\");\n" +
-                        "}}}");
-                    s.append("t.steps++; Database.updateTableMetaData(t);}\n"); // steps++ and update metadata and close if
+                    try{
+                        stepsToComplete++;
+                        s.append("if(t.steps < "+stepsToComplete+"){");
+                        String oldColName = change.oldColumnNames.get(j);
+                        String newColName = change.newColumnNames.get(j);
+                        String newColDef = change.newColumnNames_Definitions.get(j);
+                        // MySQL / MariaDB / PostgreSQL / Oracle SQL:
+                        s.append("try{s.executeUpdate(\"ALTER TABLE "+ tNameNewQuoted +" RENAME COLUMN `"+oldColName+"` TO `"+newColName+"`\");} catch (Exception e1){\n" +
+                            // Older MySQL/MariaDB versions:
+                            "try{s.executeUpdate(\"ALTER TABLE "+ tNameNewQuoted +" CHANGE `"+oldColName+"` `"+newColName+"` "+newColDef+"\");} catch (Exception e2){\n" +
+                            // SQL server: :
+                            "try{s.executeUpdate(\"EXEC sp_rename `"+change.newTableName.toLowerCase()+"."+oldColName+"`, `"+newColName+"`, `COLUMN`\");} catch (Exception e3){" +
+                            "e1.printStackTrace();e2.printStackTrace();e3.printStackTrace(); throw new Exception(\"Failed to rename this column." +
+                            " Your specific SQL database might not be supported, in this case create a PR on Github for jSQL-Gen and rename this column manually for now.\");\n" +
+                            "}}}");
+                        s.append("t.steps++; Database.updateTableMetaData(t);}\n"); // steps++ and update metadata and close if
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to generate 'rename columns' step for "+t.name+" with change: \n"+ Data.parser.toJson(change), e);
+                    }
                 }
 
                 // Change columns definitions

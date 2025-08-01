@@ -126,4 +126,33 @@ public class UString {
 
         return original.substring(0, position) + toInsert + original.substring(position);
     }
+
+    /**
+     * Replaces only the last occurrence of a specified target substring with a replacement string.
+     *
+     * @param str The original string.
+     * @param target The substring to be replaced.
+     * @param replacement The string to replace the target with.
+     * @return The string after the last occurrence has been replaced, or the original string if the target is not found or inputs are invalid.
+     */
+    public static String replaceLast(String str, String target, String replacement) {
+        if (str == null || target == null || replacement == null) {
+            return str; // Return original if any input is null
+        }
+        if (target.isEmpty()) {
+            return str; // Cannot replace an empty target
+        }
+
+        int lastIndex = str.lastIndexOf(target);
+
+        if (lastIndex == -1) {
+            return str; // Target not found
+        }
+
+        // Construct the new string by taking:
+        // 1. The part of the string before the last occurrence of target.
+        // 2. The replacement string.
+        // 3. The part of the string after the last occurrence of target.
+        return str.substring(0, lastIndex) + replacement + str.substring(lastIndex + target.length());
+    }
 }

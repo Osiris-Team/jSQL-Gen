@@ -9,15 +9,19 @@ import com.github.javaparser.ast.expr.Expression;
 import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.generator.GenDatabaseFile;
 import com.osiris.jsqlgen.generator.GenTableFile;
+import com.osiris.jsqlgen.generator.GetTableChange;
 import com.osiris.jsqlgen.generator.JavaCodeGenerator;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
+import com.osiris.jsqlgen.model.TableChange;
 import com.osiris.jsqlgen.ui.LayoutDatabaseOptions;
+import com.osiris.jsqlgen.ui.hours.HoursOrganizerView;
 import com.osiris.jsqlgen.ui.timer.LayoutButtonsTasks;
 import com.osiris.jsqlgen.ui.timer.LayoutSliders;
 import com.osiris.jsqlgen.ui.timer.LayoutTimer;
 import com.osiris.jsqlgen.utils.UFile;
+import com.osiris.osiris_vaadin_utils.ui.popups.Popup;
 import com.osiris.osiris_vaadin_utils.ui.tabs.LayoutTabs;
 import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
@@ -46,6 +50,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -75,7 +80,10 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
 
     // Home panel
     private final VerticalLayout lyHome = new VerticalLayout();
-    private final TextField dbName = new TextField("Enter database name");
+    private final TextField dbName = new TextField();
+    {
+        dbName.setPlaceholder("Enter database name");
+    }
     private final Button btnCreateDatabase = new Button("Create");
     private final Button btnDeleteDatabase = new Button("Delete");
     private final Button btnImportDatabase = new Button("Import");
@@ -156,6 +164,7 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
         LayoutTabs mainTabs = new LayoutTabs();
         mainTabs.addTabAndPage("Home", lyHome);
         mainTabs.addTabAndPage("Timer", layoutTimer);
+        mainTabs.addTabAndPage("Hours", new HoursOrganizerView());
         add(mainTabs); // Put all content in a div and control visibility
 
         // Configure layouts
@@ -313,8 +322,9 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
 
         // Buttons row 2
         HorizontalLayout dbRow2 = new HorizontalLayout();
-        dbRow2.addAndExpand(dbName);
+        dbRow2.setAlignItems(Alignment.END);
         dbRow2.add(btnCreateDatabase, btnDeleteDatabase);
+        dbRow2.addAndExpand(dbName);
         dbRow2.setSpacing(true);
         btnCreateDatabase.addClickListener(e -> {
             try {
@@ -762,7 +772,7 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
 
             // Action Select
             Select<String> choiceAction = new Select<>();
-            choiceAction.setItems("Delete", "Duplicate");
+            choiceAction.setItems("Delete", "Duplicate", "Insert above", "Insert below");
             choiceAction.setPlaceholder("Actions");
             choiceAction.setWidth("100px"); // Adjust width as needed
             int finalI = i;
@@ -774,11 +784,44 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
                         deleteTable(dbName, t.name);
                     } else if ("Duplicate".equals(command)) {
                         Table newT = t.duplicate();
-                        newT.name = "COPY_" + t.name;
+                        var p = new Popup();
+                        var tf = new TextField("", "Enter Table Name");
+                        tf.setWidthFull();
+                        tf.setValue("COPY_" + t.name);
+                        p.setContent(tf);
+                        var btn = new Button("Create");
+                        btn.addClickListener(e -> {
+                            p.close();
+                            newT.name = tf.getValue();
+                            newT.changes.clear();
+                            TableChange currentTableChange = GetTableChange.get(newT, Data.instance.databases);
+                            newT.changes.add(currentTableChange);
+                            newT.currentChange = new TableChange(); // Reset too, since actual table object always has latest data
+                            db.tables.add(finalI, newT);
+                            try {
+                                updateTablesList(dbName);
+                            } catch (IOException ex) {
+                                AL.warn(ex);
+                            }
+                            Data.save();
+                        });
+                        p.setYesBtn(btn);
+                        p.buildAndOpen();
+                    }
+                    else if("Insert above".equals(command)){
+                        Table newT = Table.create();
+                        newT.name = "NEW_TABLE_" + t.id;
                         db.tables.add(finalI, newT);
                         updateTablesList(dbName);
                         Data.save();
-                    } else {
+                    } else if("Insert below".equals(command)){
+                        Table newT = Table.create();
+                        newT.name = "NEW_TABLE_" + t.id;
+                        db.tables.add(finalI + 1, newT);
+                        updateTablesList(dbName);
+                        Data.save();
+                    }
+                    else {
                         throw new Exception("Unknown command '" + command + "' to modify table!");
                     }
                 } catch (Exception e) {
@@ -796,7 +839,7 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
             tableName.setTooltipText("The table name. Changes are auto-saved.");
             tableName.addValueChangeListener(e -> {
                 try {
-                    renameTable(dbName, e.getOldValue(), e.getValue());
+                    renameTable(dbName, t.name, e.getValue());
                 } catch (Exception ex) {
                     AL.warn("Failed to rename table.", ex);
                 }
@@ -842,7 +885,7 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
 
             VerticalLayout listColumns = new VerticalLayout();
             listColumns.setPadding(false); // No internal padding
-            listColumns.setSpacing(true); // Spacing between columns
+            listColumns.setSpacing(false); // Spacing between columns
             listColumns.getStyle().set("padding-left", "50px"); // Indent columns
             wrapperTable.add(listColumns);
 
@@ -891,6 +934,7 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
         t.name = newName;
 
         // Update current change
+        t.currentChange.oldTableName = oldName;
         t.currentChange.newTableName = newName;
 
         Data.save();
@@ -1037,36 +1081,48 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
             });
             hl.add(colComment);
             listColumns.add(hl);
+
+            // Add New Column section
+            HorizontalLayout addNewColLayout = new HorizontalLayout();
+            addNewColLayout.setSpacing(true);
+            addNewColLayout.setWidthFull();
+            addNewColLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
+
+            Button btnAddNewCol = new Button("Add");
+            TextField newColNameField = new TextField("New column name", "");
+            TextField newColDefField = new TextField("New column definition", "");
+            TextField newColCommentField = new TextField("New column comment", "");
+
+            btnAddNewCol.addClickListener(event -> {
+                try {
+                    Column col2 = new Column(newColNameField.getValue());
+                    col2.definition = newColDefField.getValue();
+                    col2.comment = newColCommentField.getValue();
+                    addNewColumn(listColumns, dbName, t.name, col2, col);
+                    newColNameField.clear();
+                    newColDefField.clear();
+                    newColCommentField.clear();
+                } catch (Exception e) {
+                    AL.warn("Failed to add new column.", e);
+                }
+            });
+
+            addNewColLayout.add(newColNameField, newColDefField, newColCommentField);
+            addNewColLayout.setFlexGrow(1, newColNameField, newColDefField, newColCommentField); // Make textfields grow
+
+            var btnOpenPopup = new Button("+");
+            btnOpenPopup.setMaxHeight("10px");
+            btnOpenPopup.addClickListener(e -> {
+                var p = new Popup();
+                p.setMinWidth("50vw");
+                p.setContent(addNewColLayout);
+                p.setYesBtn(btnAddNewCol);
+                btnAddNewCol.addClickListener(e1 -> p.close());
+                p.buildAndOpen();
+            });
+            listColumns.setFlexGrow(1, btnOpenPopup);
+            listColumns.add(btnOpenPopup);
         }
-
-        // Add New Column section
-        HorizontalLayout addNewColLayout = new HorizontalLayout();
-        addNewColLayout.setSpacing(true);
-        addNewColLayout.setWidthFull();
-        addNewColLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
-
-        Button btnAddNewCol = new Button("Add");
-        TextField newColNameField = new TextField("New column name", "");
-        TextField newColDefField = new TextField("New column definition", "");
-        TextField newColCommentField = new TextField("New column comment", "");
-
-        btnAddNewCol.addClickListener(event -> {
-            try {
-                Column col = new Column(newColNameField.getValue());
-                col.definition = newColDefField.getValue();
-                col.comment = newColCommentField.getValue();
-                addNewColumn(listColumns, dbName, t.name, col);
-                newColNameField.clear();
-                newColDefField.clear();
-                newColCommentField.clear();
-            } catch (Exception e) {
-                AL.warn("Failed to add new column.", e);
-            }
-        });
-
-        addNewColLayout.add(btnAddNewCol, newColNameField, newColDefField, newColCommentField);
-        addNewColLayout.setFlexGrow(1, newColNameField, newColDefField, newColCommentField); // Make textfields grow
-        listColumns.add(addNewColLayout);
     }
 
     private void updateColumn(VerticalLayout listColumns, String dbName, String tableName, String oldName, String newName, String newDefinition, String newComment) throws IOException {
@@ -1085,21 +1141,21 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
         if (!colOld.definition.equals(newDefinition))
             AL.info("Updated column definition " + colOld.definition + " -> " + newDefinition);
         if (!colOld.comment.equals(newComment))
-            AL.info("Updated column name " + colOld.comment + " -> " + newComment);
+            AL.info("Updated column comment " + colOld.comment + " -> " + newComment);
         Data.save();
-        AL.info("OK!");
         // Refresh the columns list if needed, particularly if order or count changes
         // For simple updates, the text field itself is updated by Vaadin.
         // If the update involves a structural change that affects other columns or order, re-render.
         // updateColumnsList(listColumns, dbName, tableName); // Uncomment if a full re-render is desired for any change.
     }
 
-    private void addNewColumn(VerticalLayout listColumns, String dbName, String tableName, Column col) throws IOException {
+    private void addNewColumn(VerticalLayout listColumns, String dbName, String tableName, Column col, Column colAnker) throws IOException {
         Database db = Data.getDatabase(dbName);
         Table t = Data.findTable(db.tables, tableName);
         Objects.requireNonNull(t);
         col.id = Main.idCounter.getAndIncrement();
-        t.addCol(col);
+        if(colAnker != null) t.insertCol(col, colAnker);
+        else t.addCol(col);
 
         Data.save();
         updateColumnsList(listColumns, dbName, tableName);
@@ -1123,7 +1179,7 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
     // Helper for Vaadin FileChooser (simplified for this migration)
     // In a real Vaadin app, you'd use FileUpload or client-side JavaScript for full file system access.
     // This is a placeholder for `filechooser` from Desku.
-    public static class FileChooserVaadin extends HorizontalLayout {
+    public class FileChooserVaadin extends HorizontalLayout {
         private final TextField selectedFilesTextField;
         private final Button selectButton;
         private Consumer<FileSelectionEvent> fileSelectedListener;
@@ -1174,19 +1230,18 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
             // and process the path on the server via an upload component,
             // or for desktop-like behavior, a custom integration.
             Dialog fileSelectDialog = new Dialog();
-            fileSelectDialog.setHeaderTitle("Select Directory (Simulation)");
 
             TextField pathInput = new TextField("Enter directory path (e.g., C:\\Projects\\MyJavaProject)");
             pathInput.setWidthFull();
 
-            Button confirmButton = new Button("Confirm", e -> {
+            Button confirmButton = new Button("Add Directory", e -> {
                 String path = pathInput.getValue();
                 if (path != null && !path.trim().isEmpty()) {
                     File selectedFile = new File(path);
                     if (fileSelectedListener != null) {
                         fileSelectedListener.accept(new FileSelectionEvent(selectedFile, selectedFile.isDirectory()));
                     }
-                    selectedFilesTextField.setValue(selectedFile.getAbsolutePath());
+                    updateChooserJavaProjectDir();
                 }
                 fileSelectDialog.close();
             });

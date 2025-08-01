@@ -83,6 +83,7 @@ public class LayoutDatabaseOptions extends FlexLayout { // Changed from Desku Co
             try{
                 for (Table t : db.tables) {
                     t.changes.clear();
+                    t.currentChange = new TableChange(); // Reset too, since actual table object always has latest data
                     TableChange currentTableChange = GetTableChange.get(t, Data.instance.databases);
                     t.changes.add(currentTableChange);
                 }

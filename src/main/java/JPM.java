@@ -62,6 +62,8 @@ class ThisProject extends JPM.Project {
         implementation("net.java.dev.jna:jna-platform:5.14.0");
         implementation("ru.lanwen.verbalregex:java-verbal-expressions:1.8");
         implementation("org.mariadb.jdbc:mariadb-java-client:3.5.0");
+        // https://mvnrepository.com/artifact/org.kohsuke/github-api
+        implementation("org.kohsuke:github-api:1.329");
 
         forceImplementation("org.checkerframework:checker-qual:3.43.0");
         forceImplementation("org.apache.commons:commons-lang3:3.14.0");

@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.model;
 
+import com.osiris.jsqlgen.Main;
 import com.osiris.jsqlgen.utils.UString;
 
 import java.util.Objects;
@@ -28,7 +29,7 @@ public class Column {
 
     public Column duplicate() {
         Column col = new Column(name);
-        col.id = id;
+        col.id = Main.idCounter.getAndIncrement();
         col.definition = definition;
         col.comment = comment;
         col.type = type;
