@@ -295,6 +295,12 @@
           "comment": ""
         },
         {
+          "id": 389479,
+          "name": "maxHours",
+          "definition": "INT DEFAULT 0",
+          "comment": ""
+        },
+        {
           "id": 377340,
           "name": "name",
           "definition": "LONGTEXT DEFAULT \u0027\u0027",
@@ -337,6 +343,25 @@
             "INT DEFAULT 0",
             "LONGTEXT DEFAULT \u0027\u0027",
             "TEXT DEFAULT \u0027\u0027"
+          ]
+        },
+        {
+          "oldTableName": "FakeFile",
+          "newTableName": "FakeFile",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "maxHours"
+          ],
+          "addedColumnDefinitions": [
+            "INT DEFAULT 0"
           ]
         }
       ],
@@ -430,6 +455,178 @@
           "addedColumnDefinitions": [
             "BOOLEAN DEFAULT TRUE"
           ]
+        }
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNamesIds": [],
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
+    },
+    {
+      "id": 384785,
+      "name": "Tag",
+      "columns": [
+        {
+          "id": 384786,
+          "name": "id",
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 384787,
+          "name": "name",
+          "definition": "TEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        },
+        {
+          "id": 384788,
+          "name": "cssColor",
+          "definition": "TEXT DEFAULT \u0027\u0027",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": true,
+      "changes": [
+        {
+          "oldTableName": "FakeFileTag",
+          "newTableName": "FakeFileTag",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "name",
+            "cssColor"
+          ],
+          "addedColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY",
+            "TEXT DEFAULT \u0027\u0027",
+            "TEXT DEFAULT \u0027\u0027"
+          ]
+        },
+        {
+          "oldTableName": "FakeFileTag",
+          "newTableName": "Tag",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [],
+          "addedColumnDefinitions": []
+        }
+      ],
+      "currentChange": {
+        "oldTableName": "",
+        "newTableName": "",
+        "oldColumnNamesIds": [],
+        "oldColumnNames": [],
+        "newColumnNames": [],
+        "newColumnNames_Definitions": [],
+        "oldColumnDefinitionsIds": [],
+        "oldColumnDefinitions": [],
+        "newColumnDefinitions": [],
+        "newColumnDefinitions_Names": [],
+        "deletedColumnNames": [],
+        "addedColumnNames": [],
+        "addedColumnDefinitions": []
+      }
+    },
+    {
+      "id": 384789,
+      "name": "TagEntry",
+      "columns": [
+        {
+          "id": 384790,
+          "name": "id",
+          "definition": "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+        },
+        {
+          "id": 384791,
+          "name": "fakeFileId",
+          "definition": "INT NOT NULL",
+          "comment": ""
+        },
+        {
+          "id": 384792,
+          "name": "tagId",
+          "definition": "INT NOT NULL",
+          "comment": ""
+        }
+      ],
+      "isDebug": false,
+      "isNoExceptions": true,
+      "isCache": false,
+      "isVaadinFlowUI": true,
+      "changes": [
+        {
+          "oldTableName": "FakeFileTagEntry",
+          "newTableName": "FakeFileTagEntry",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "id",
+            "fakeFileId",
+            "fakeFileTagId"
+          ],
+          "addedColumnDefinitions": [
+            "INT AUTO_INCREMENT NOT NULL PRIMARY KEY",
+            "INT NOT NULL",
+            "INT NOT NULL"
+          ]
+        },
+        {
+          "oldTableName": "FakeFileTagEntry",
+          "newTableName": "TagEntry",
+          "oldColumnNamesIds": [
+            384792
+          ],
+          "oldColumnNames": [
+            "fakeFileTagId"
+          ],
+          "newColumnNames": [
+            "tagId"
+          ],
+          "newColumnNames_Definitions": [
+            "INT NOT NULL"
+          ],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [],
+          "addedColumnDefinitions": []
         }
       ],
       "currentChange": {

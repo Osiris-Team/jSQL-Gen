@@ -32,17 +32,14 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Span;
 
 /**
-Table FakeFile with id 377336 and 2 changes/version. <br>
-Structure (6 fields/columns): <br>
+Table TagEntry with id 384789 and 2 changes/version. <br>
+Structure (3 fields/columns): <br>
 - int id = INT AUTO_INCREMENT NOT NULL PRIMARY KEY <br>
-- int parentFakeFileId = INT DEFAULT -1 <br>
-- int hours = INT DEFAULT 0 <br>
-- int maxHours = INT DEFAULT 0 <br>
-- String name = LONGTEXT DEFAULT '' <br>
-- String commitSha = TEXT DEFAULT '' <br>
+- int fakeFileId = INT NOT NULL <br>
+- int tagId = INT NOT NULL <br>
 
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
-that contains static methods for fetching/updating data from the `fakefile` table.
+that contains static methods for fetching/updating data from the `tagentry` table.
 A single object/instance of this class represents a single row in the table
 and data can be accessed via its public fields. <br>
 <br>
@@ -56,15 +53,15 @@ Enabled modifiers: <br>
 will be generated that returns a Vaadin Flow UI Form representation that allows creating/updating/deleting a row/object. <br>
 <br>
 */
-public class FakeFile implements Database.Row{
-  public static final int TABLE_ID = 377336;
+public class TagEntry implements Database.Row{
+  public static final int TABLE_ID = 384789;
 /** Limitation: Not executed in constructor, but only the create methods. */
-public static CopyOnWriteArrayList<Consumer<FakeFile>> onCreate = new CopyOnWriteArrayList<Consumer<FakeFile>>();
-public static CopyOnWriteArrayList<Consumer<FakeFile>> onAdd = new CopyOnWriteArrayList<Consumer<FakeFile>>();
-public static CopyOnWriteArrayList<Consumer<FakeFile>> onUpdate = new CopyOnWriteArrayList<Consumer<FakeFile>>();
-public static CopyOnWriteArrayList<Consumer<FakeFile>> onRemove = new CopyOnWriteArrayList<Consumer<FakeFile>>();
+public static CopyOnWriteArrayList<Consumer<TagEntry>> onCreate = new CopyOnWriteArrayList<Consumer<TagEntry>>();
+public static CopyOnWriteArrayList<Consumer<TagEntry>> onAdd = new CopyOnWriteArrayList<Consumer<TagEntry>>();
+public static CopyOnWriteArrayList<Consumer<TagEntry>> onUpdate = new CopyOnWriteArrayList<Consumer<TagEntry>>();
+public static CopyOnWriteArrayList<Consumer<TagEntry>> onRemove = new CopyOnWriteArrayList<Consumer<TagEntry>>();
 
-private static boolean isEqual(FakeFile obj1, FakeFile obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
+private static boolean isEqual(TagEntry obj1, TagEntry obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }
 public Object getId(){return id;}
 public void setId(Object id){this.id = (int) id;}
 public static volatile boolean isSimpleMinimalPrintString = false;
@@ -73,26 +70,28 @@ try{
 Connection con = Database.getCon();
 try{
 try (Statement s = con.createStatement()) {
-Database.TableMetaData t = Database.getTableMetaData(377336);
+Database.TableMetaData t = Database.getTableMetaData(384789);
 for (int i = t.version; i < 2; i++) {
 if(i == 0){
-if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `fakefile` (`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY)");
+if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `fakefiletagentry` (`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY)");
 t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `parentFakeFileId` INT DEFAULT -1");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `fakefiletagentry` ADD COLUMN `fakeFileId` INT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `hours` INT DEFAULT 0");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 4){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `name` LONGTEXT DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 5){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `commitSha` TEXT DEFAULT ''");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+if(t.steps < 3){try{s.executeUpdate("ALTER TABLE `fakefiletagentry` ADD COLUMN `fakeFileTagId` INT NOT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
 }
 if(i == 1){
-if(t.steps < 1){t.steps++; Database.updateTableMetaData(t);}
-if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `maxHours` INT DEFAULT 0");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
-t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 1){try{s.executeUpdate("ALTER TABLE `fakefiletagentry` RENAME `tagentry`");} catch (Exception e1){
+try{s.executeUpdate("ALTER TABLE `fakefiletagentry` RENAME TO `tagentry`");} catch (Exception e2){try{s.executeUpdate("EXEC sp_rename `fakefiletagentry`, `tagentry`");} catch (Exception e3){
+try{s.executeUpdate("RENAME  `fakefiletagentry` TO `tagentry`");} catch (Exception e4){
+e1.printStackTrace();e2.printStackTrace();e3.printStackTrace();e4.printStackTrace(); throw new Exception("Failed to rename this table. Your specific SQL database might not be supported, in this case create a PR on Github for jSQL-Gen and rename this table manually for now.");
+}}}}t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `tagentry` RENAME COLUMN `fakeFileTagId` TO `tagId`");} catch (Exception e1){
+try{s.executeUpdate("ALTER TABLE `tagentry` CHANGE `fakeFileTagId` `tagId` INT NOT NULL");} catch (Exception e2){
+try{s.executeUpdate("EXEC sp_rename `tagentry.fakeFileTagId`, `tagId`, `COLUMN`");} catch (Exception e3){e1.printStackTrace();e2.printStackTrace();e3.printStackTrace(); throw new Exception("Failed to rename this column. Your specific SQL database might not be supported, in this case create a PR on Github for jSQL-Gen and rename this column manually for now.");
+}}}t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
 }
@@ -105,7 +104,7 @@ finally {Database.freeCon(con);}
 
 }catch(Exception e){
 e.printStackTrace();
-System.err.println("Something went really wrong during table (FakeFile) initialisation, subsequent operations will fail!");}
+System.err.println("Something went really wrong during table (TagEntry) initialisation, subsequent operations will fail!");}
 }
 
 /**
@@ -113,18 +112,9 @@ Use the static create method instead of this constructor,
 if you plan to add this object to the database in the future, since
 that method fetches and sets/reserves the {@link #id}.
 */
-public FakeFile (int id){
+public TagEntry (int id, int fakeFileId, int tagId){
 initDefaultFields();
-this.id = id;
-}
-/**
-Use the static create method instead of this constructor,
-if you plan to add this object to the database in the future, since
-that method fetches and sets/reserves the {@link #id}.
-*/
-public FakeFile (int id, int parentFakeFileId, int hours, int maxHours, String name, String commitSha){
-initDefaultFields();
-this.id = id;this.parentFakeFileId = parentFakeFileId;this.hours = hours;this.maxHours = maxHours;this.name = name;this.commitSha = commitSha;
+this.id = id;this.fakeFileId = fakeFileId;this.tagId = tagId;
 }
 /**
 Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
@@ -135,72 +125,36 @@ Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
 
 Convenience builder-like setter with method-chaining.
 */
-public FakeFile id(int id){ this.id = id; return this;}
+public TagEntry id(int id){ this.id = id; return this;}
 /**
-Database field/value: INT DEFAULT -1. <br>
+Database field/value: INT NOT NULL. <br>
 
 */
-public int parentFakeFileId;
+public int fakeFileId;
 /**
-Database field/value: INT DEFAULT -1. <br>
+Database field/value: INT NOT NULL. <br>
 
 
 Convenience builder-like setter with method-chaining.
 */
-public FakeFile parentFakeFileId(int parentFakeFileId){ this.parentFakeFileId = parentFakeFileId; return this;}
+public TagEntry fakeFileId(int fakeFileId){ this.fakeFileId = fakeFileId; return this;}
 /**
-Database field/value: INT DEFAULT 0. <br>
+Database field/value: INT NOT NULL. <br>
 
 */
-public int hours;
+public int tagId;
 /**
-Database field/value: INT DEFAULT 0. <br>
+Database field/value: INT NOT NULL. <br>
 
 
 Convenience builder-like setter with method-chaining.
 */
-public FakeFile hours(int hours){ this.hours = hours; return this;}
-/**
-Database field/value: INT DEFAULT 0. <br>
-
-*/
-public int maxHours;
-/**
-Database field/value: INT DEFAULT 0. <br>
-
-
-Convenience builder-like setter with method-chaining.
-*/
-public FakeFile maxHours(int maxHours){ this.maxHours = maxHours; return this;}
-/**
-Database field/value: LONGTEXT DEFAULT ''. <br>
-
-*/
-public String name;
-/**
-Database field/value: LONGTEXT DEFAULT ''. <br>
-
-
-Convenience builder-like setter with method-chaining.
-*/
-public FakeFile name(String name){ this.name = name; return this;}
-/**
-Database field/value: TEXT DEFAULT ''. <br>
-
-*/
-public String commitSha;
-/**
-Database field/value: TEXT DEFAULT ''. <br>
-
-
-Convenience builder-like setter with method-chaining.
-*/
-public FakeFile commitSha(String commitSha){ this.commitSha = commitSha; return this;}
+public TagEntry tagId(int tagId){ this.tagId = tagId; return this;}
 /**
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
-protected FakeFile initDefaultFields() {
-this.parentFakeFileId=-1; this.hours=0; this.maxHours=0; this.name=""; this.commitSha=""; return this;
+protected TagEntry initDefaultFields() {
+return this;
 }
 
 /**
@@ -210,23 +164,9 @@ The parameters of this method represent only the "NOT NULL" fields in the table 
 - This method will NOT add the object to the table. <br>
 - This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
-public static FakeFile create() {
+public static TagEntry create(int fakeFileId, int tagId) {
 int id = Database.defaultInMemoryOnlyObjId;
-FakeFile obj = new FakeFile(id);
-onCreate.forEach(code -> code.accept(obj));
-return obj;
-}
-
-/**
-Creates and returns an object that can be added to this table. <br>
-- Id is NOT incremented, this is handled by the database, thus id is only usable after add() / insertion. <br>
-- This method will NOT add the object to the table. <br>
-- This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
-*/
-public static FakeFile create(int parentFakeFileId, int hours, int maxHours, String name, String commitSha)  {
-int id = Database.defaultInMemoryOnlyObjId;
-FakeFile obj = new FakeFile();
-obj.id=id; obj.parentFakeFileId=parentFakeFileId; obj.hours=hours; obj.maxHours=maxHours; obj.name=name; obj.commitSha=commitSha; 
+TagEntry obj = new TagEntry(id, fakeFileId, tagId);
 onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
@@ -235,21 +175,9 @@ return obj;
 Convenience method for creating and directly adding a new object to the table.
 The parameters of this method represent "NOT NULL" fields in the table and thus should not be null.
 */
-public static FakeFile createAndAdd()  {
+public static TagEntry createAndAdd(int fakeFileId, int tagId)  {
 int id = Database.defaultInMemoryOnlyObjId;
-FakeFile obj = new FakeFile(id);
-onCreate.forEach(code -> code.accept(obj));
-add(obj);
-return obj;
-}
-
-/**
-Convenience method for creating and directly adding a new object to the table.
-*/
-public static FakeFile createAndAdd(int parentFakeFileId, int hours, int maxHours, String name, String commitSha)  {
-int id = Database.defaultInMemoryOnlyObjId;
-FakeFile obj = new FakeFile();
-obj.id=id; obj.parentFakeFileId=parentFakeFileId; obj.hours=hours; obj.maxHours=maxHours; obj.name=name; obj.commitSha=commitSha; 
+TagEntry obj = new TagEntry(id, fakeFileId, tagId);
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
@@ -258,12 +186,12 @@ return obj;
 /**
 @return a list containing all objects in this table.
 */
-public static List<FakeFile> get()  {return get(null);}
+public static List<TagEntry> get()  {return get(null);}
 /**
 @return object with the provided id or null if there is no object with the provided id in this table.
 @throws Exception on SQL issues.
 */
-public static FakeFile get(int id)  {
+public static TagEntry get(int id)  {
 try{
 return get("WHERE id = "+id).get(0);
 }catch(IndexOutOfBoundsException ignored){}
@@ -274,7 +202,7 @@ return null;
 @return object with the provided id or empty optional if there is no object with the provided id in this table.
 @throws Exception on SQL issues.
 */
-public static java.util.Optional<FakeFile> getOptional(int id)  {
+public static java.util.Optional<TagEntry> getOptional(int id)  {
 try{
 return java.util.Optional.of(get("WHERE id = "+id).get(0));
 }catch(IndexOutOfBoundsException ignored){}
@@ -289,11 +217,11 @@ get("WHERE username=? AND age=?", "Peter", 33);  <br>
 @return a list containing only objects that match the provided SQL WHERE statement (no matches = empty list).
 if that statement is null, returns all the contents of this table.
 */
-public static List<FakeFile> get(String where, Object... whereValues)  {
-String sql = "SELECT `id`,`parentFakeFileId`,`hours`,`maxHours`,`name`,`commitSha`" +
-" FROM `fakefile`" +
+public static List<TagEntry> get(String where, Object... whereValues)  {
+String sql = "SELECT `id`,`fakeFileId`,`tagId`" +
+" FROM `tagentry`" +
 (where != null ? where : "");
-List<FakeFile> list = new ArrayList<>();
+List<TagEntry> list = new ArrayList<>();
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
 if(where!=null && whereValues!=null)
@@ -303,14 +231,11 @@ ps.setObject(i+1, val);
 }
 ResultSet rs = ps.executeQuery();
 while (rs.next()) {
-FakeFile obj = new FakeFile();
+TagEntry obj = new TagEntry();
 list.add(obj);
 obj.id = rs.getInt(1);
-obj.parentFakeFileId = rs.getInt(2);
-obj.hours = rs.getInt(3);
-obj.maxHours = rs.getInt(4);
-obj.name = rs.getString(5);
-obj.commitSha = rs.getString(6);
+obj.fakeFileId = rs.getInt(2);
+obj.tagId = rs.getInt(3);
 }
 }catch(Exception e){throw new RuntimeException(e);}
 finally{Database.freeCon(con);}
@@ -320,25 +245,25 @@ return list;
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazy(Consumer<List<FakeFile>> onResultReceived){
+    public static Thread getLazy(Consumer<List<TagEntry>> onResultReceived){
         return getLazy(onResultReceived, null, 500, null);
     }
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazy(Consumer<List<FakeFile>> onResultReceived, int limit){
+    public static Thread getLazy(Consumer<List<TagEntry>> onResultReceived, int limit){
         return getLazy(onResultReceived, null, limit, null);
     }
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazy(Consumer<List<FakeFile>> onResultReceived, Consumer<Long> onFinish){
+    public static Thread getLazy(Consumer<List<TagEntry>> onResultReceived, Consumer<Long> onFinish){
         return getLazy(onResultReceived, onFinish, 500, null);
     }
     /**
      * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazy(Consumer<List<FakeFile>> onResultReceived, Consumer<Long> onFinish, int limit){
+    public static Thread getLazy(Consumer<List<TagEntry>> onResultReceived, Consumer<Long> onFinish, int limit){
         return getLazy(onResultReceived, onFinish, limit, null);
     }
     /**
@@ -351,12 +276,12 @@ return list;
      * @param limit the maximum amount of elements for each fetch.
      * @param where can be null. This WHERE is not allowed to contain LIMIT and should not contain order by id.
      */
-    public static Thread getLazy(Consumer<List<FakeFile>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
+    public static Thread getLazy(Consumer<List<TagEntry>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
         Thread thread = new Thread(() -> {
             WHERE finalWhere;
             if(where == null) finalWhere = new WHERE("");
             else finalWhere = where;
-            List<FakeFile> results;
+            List<TagEntry> results;
             int lastId = -1;
             long count = 0;
             while(true){
@@ -375,31 +300,31 @@ return list;
     /**
      * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazySync(Consumer<List<FakeFile>> onResultReceived){
+    public static Thread getLazySync(Consumer<List<TagEntry>> onResultReceived){
         return getLazySync(onResultReceived, null, 500, null);
     }
     /**
      * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazySync(Consumer<List<FakeFile>> onResultReceived, int limit){
+    public static Thread getLazySync(Consumer<List<TagEntry>> onResultReceived, int limit){
         return getLazySync(onResultReceived, null, limit, null);
     }
     /**
      * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazySync(Consumer<List<FakeFile>> onResultReceived, Consumer<Long> onFinish){
+    public static Thread getLazySync(Consumer<List<TagEntry>> onResultReceived, Consumer<Long> onFinish){
         return getLazySync(onResultReceived, onFinish, 500, null);
     }
     /**
      * See {@link #getLazySync(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazySync(Consumer<List<FakeFile>> onResultReceived, Consumer<Long> onFinish, int limit){
+    public static Thread getLazySync(Consumer<List<TagEntry>> onResultReceived, Consumer<Long> onFinish, int limit){
         return getLazySync(onResultReceived, onFinish, limit, null);
     }
     /**
      * Waits until finished, then returns. <br>     * See {@link #getLazy(Consumer, Consumer, int, WHERE)} for details.
      */
-    public static Thread getLazySync(Consumer<List<FakeFile>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
+    public static Thread getLazySync(Consumer<List<TagEntry>> onResultReceived, Consumer<Long> onFinish, int limit, WHERE where) {
         Thread thread = getLazy(onResultReceived, onFinish, limit, where);
         while(thread.isAlive()) Thread.yield();
         return thread;
@@ -417,7 +342,7 @@ Note that this literally counts the rows thus its extremely slow in larger table
 We are using this approach because its universal to all databases. 
 */
 public static int count(String where, Object... whereValues)  {
-String sql = "SELECT COUNT(`id`) FROM `fakefile`" +
+String sql = "SELECT COUNT(`id`) FROM `tagentry`" +
 (where != null ? where : ""); 
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -439,16 +364,13 @@ Searches the provided object in the database (by its id),
 and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
-public static void update(FakeFile obj)  {
-String sql = "UPDATE `fakefile` SET `id`=?,`parentFakeFileId`=?,`hours`=?,`maxHours`=?,`name`=?,`commitSha`=? WHERE id="+obj.getId();
+public static void update(TagEntry obj)  {
+String sql = "UPDATE `tagentry` SET `id`=?,`fakeFileId`=?,`tagId`=? WHERE id="+obj.getId();
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
 ps.setInt(1, obj.id);
-ps.setInt(2, obj.parentFakeFileId);
-ps.setInt(3, obj.hours);
-ps.setInt(4, obj.maxHours);
-ps.setString(5, obj.name);
-ps.setString(6, obj.commitSha);
+ps.setInt(2, obj.fakeFileId);
+ps.setInt(3, obj.tagId);
 ps.executeUpdate();
 }catch(Exception e){throw new RuntimeException(e);}
 finally{Database.freeCon(con);
@@ -459,15 +381,12 @@ onUpdate.forEach(code -> code.accept(obj));
 /**
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
-public static void add(FakeFile obj)  {
-String sql = "INSERT INTO `fakefile` (`parentFakeFileId`,`hours`,`maxHours`,`name`,`commitSha`) VALUES (?,?,?,?,?)";
+public static void add(TagEntry obj)  {
+String sql = "INSERT INTO `tagentry` (`fakeFileId`,`tagId`) VALUES (?,?)";
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql, new String[]{"id"})) {
-ps.setInt(1, obj.parentFakeFileId);
-ps.setInt(2, obj.hours);
-ps.setInt(3, obj.maxHours);
-ps.setString(4, obj.name);
-ps.setString(5, obj.commitSha);
+ps.setInt(1, obj.fakeFileId);
+ps.setInt(2, obj.tagId);
 ps.executeUpdate();
     try (ResultSet generatedKeys = ps.getGeneratedKeys()) { 
         if (generatedKeys.next()) { // Retrieve the first auto-generated ID
@@ -485,7 +404,7 @@ onAdd.forEach(code -> code.accept(obj));
 /**
 Unsets its references (sets them to -1/'') and deletes the provided object from the database.
 */
-public static void remove(FakeFile obj)  {
+public static void remove(TagEntry obj)  {
 remove(obj, true, Database.isRemoveRefs);
 }
 /**
@@ -494,9 +413,9 @@ remove(obj, true, Database.isRemoveRefs);
  * @param removeRefs !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!! If true removes the complete obj/row(s) in all tables that reference/contain this id.
  *                   This is recursive. It's highly recommended to call removeRefs() before instead, which allows to explicitly exclude some tables.
 */
-public static void remove(FakeFile obj, boolean unsetRefs, boolean removeRefs)  {
-if(unsetRefs) unsetRefs(obj, TagEntry.class, true);
-if(removeRefs) removeRefs(obj, TagEntry.class, true);
+public static void remove(TagEntry obj, boolean unsetRefs, boolean removeRefs)  {
+if(unsetRefs) unsetRefs(obj);
+if(removeRefs) removeRefs(obj);
 remove("WHERE id = "+obj.getId());
 onRemove.forEach(code -> code.accept(obj));
 }
@@ -509,7 +428,7 @@ Deletes the objects that are found by the provided SQL WHERE statement, from the
 */
 public static void remove(String where, Object... whereValues)  {
 java.util.Objects.requireNonNull(where);
-String sql = "DELETE FROM `fakefile` "+where;
+String sql = "DELETE FROM `tagentry` "+where;
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
 if(whereValues != null)
@@ -524,54 +443,44 @@ finally{Database.freeCon(con);
 }
 
 public static void removeAll()  {
-getLazySync(objs -> {for(FakeFile obj : objs) {obj.remove();}});
+getLazySync(objs -> {for(TagEntry obj : objs) {obj.remove();}});
     }
 
 /**
-     * @see #remove(FakeFile, boolean, boolean) 
+     * @see #remove(TagEntry, boolean, boolean) 
      */
-public static void unsetRefs(FakeFile obj, Class<TagEntry> fakeFileId_in_TagEntry, boolean remove_fakeFileId_in_TagEntry)  {
-if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> { 
-  for(TagEntry refObj : results) {refObj.fakeFileId = -1; refObj.update();};
-}, totalCount -> {}, 100, TagEntry.whereFakeFileId().is(obj.id));}
-
+public static void unsetRefs(TagEntry obj)  {
     }
 
 /** !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!!
-     * @see #remove(FakeFile, boolean, boolean) 
+     * @see #remove(TagEntry, boolean, boolean) 
      */
-public static void removeRefs(FakeFile obj, Class<TagEntry> fakeFileId_in_TagEntry, boolean remove_fakeFileId_in_TagEntry)  {
+public static void removeRefs(TagEntry obj)  {
 // Take care of direct refs and indirect refs
-if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> { 
-  for(TagEntry refObj : results) {TagEntry.removeRefs(refObj);refObj.remove();};
-}, totalCount -> {}, 100, TagEntry.whereFakeFileId().is(obj.id));}
-
-
-
     }
 
-public FakeFile clone(){
-return new FakeFile(this.id,this.parentFakeFileId,this.hours,this.maxHours,this.name,this.commitSha);
+public TagEntry clone(){
+return new TagEntry(this.id,this.fakeFileId,this.tagId);
 }
 public void add(){
-FakeFile.add(this);
+TagEntry.add(this);
 }
 public void update(){
-FakeFile.update(this);
+TagEntry.update(this);
 }
 public void remove(){
-FakeFile.remove(this);
+TagEntry.remove(this);
 }
 public void remove(boolean unsetRefs, boolean removeRefs){
-FakeFile.remove(this, unsetRefs, removeRefs);
+TagEntry.remove(this, unsetRefs, removeRefs);
 }
 public String toPrintString(){
-return  ""+"id="+this.id+" "+"parentFakeFileId="+this.parentFakeFileId+" "+"hours="+this.hours+" "+"maxHours="+this.maxHours+" "+"name="+this.name+" "+"commitSha="+this.commitSha+" ";
+return  ""+"id="+this.id+" "+"fakeFileId="+this.fakeFileId+" "+"tagId="+this.tagId+" ";
 }
 public String toMinimalPrintString(){ return toMinimalPrintString(true); }
 public String toMinimalPrintString(boolean isFirstFieldOnly){
-if(isFirstFieldOnly) return "" + this.parentFakeFileId;
-return ""+this.id+"; "+this.parentFakeFileId+"; "+this.hours+"; "+this.maxHours+"; "+this.name+"; "+this.commitSha+"; "+"";
+if(isFirstFieldOnly) return "" + this.fakeFileId;
+return ""+this.id+"; "+this.fakeFileId+"; "+this.tagId+"; "+"";
 }
 public static class BooleanSelect extends Select<Boolean> {
     public Span yes = genYesLabel();
@@ -612,66 +521,66 @@ public static class BooleanSelect extends Select<Boolean> {
         return txt;
     }
 }// Executed for all objects
-public static Consumer<FakeFile> onCreateV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onCreate.remove(code2);}); FakeFile.onCreate.add(code2); return code2;
+public static Consumer<TagEntry> onCreateV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onCreate.remove(code2);}); TagEntry.onCreate.add(code2); return code2;
 }
 // Executed for all objects
-public static Consumer<FakeFile> onAddV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onAdd.remove(code2);}); FakeFile.onAdd.add(code2); return code2;
+public static Consumer<TagEntry> onAddV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onAdd.remove(code2);}); TagEntry.onAdd.add(code2); return code2;
 }
 // Executed for all objects
-public static Consumer<FakeFile> onUpdateV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onUpdate.remove(code2);}); FakeFile.onUpdate.add(code2); return code2;
+public static Consumer<TagEntry> onUpdateV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onUpdate.remove(code2);}); TagEntry.onUpdate.add(code2); return code2;
 }
 // Executed for all objects
-public static Consumer<FakeFile> onRemoveV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onRemove.remove(code2);}); FakeFile.onRemove.add(code2); return code2;
+public static Consumer<TagEntry> onRemoveV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onRemove.remove(code2);}); TagEntry.onRemove.add(code2); return code2;
 }
 
 
 // Executed only for this object
-public Consumer<FakeFile> onCreateThisV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onCreate.remove(code2);}); FakeFile.onCreate.add(code2); return code2;
+public Consumer<TagEntry> onCreateThisV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onCreate.remove(code2);}); TagEntry.onCreate.add(code2); return code2;
 }
 // Executed only for this object
-public Consumer<FakeFile> onAddThisV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onAdd.remove(code2);}); FakeFile.onAdd.add(code2); return code2;
+public Consumer<TagEntry> onAddThisV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onAdd.remove(code2);}); TagEntry.onAdd.add(code2); return code2;
 }
 // Executed only for this object
-public Consumer<FakeFile> onUpdateThisV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onUpdate.remove(code2);}); FakeFile.onUpdate.add(code2); return code2;
+public Consumer<TagEntry> onUpdateThisV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onUpdate.remove(code2);}); TagEntry.onUpdate.add(code2); return code2;
 }
 // Executed only for this object
-public Consumer<FakeFile> onRemoveThisV(Consumer<FakeFile> code){
-UI ui = UI.getCurrent(); Consumer<FakeFile> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {FakeFile.onRemove.remove(code2);}); FakeFile.onRemove.add(code2); return code2;
+public Consumer<TagEntry> onRemoveThisV(Consumer<TagEntry> code){
+UI ui = UI.getCurrent(); Consumer<TagEntry> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});}; ui.addDetachListener(e -> {TagEntry.onRemove.remove(code2);}); TagEntry.onRemove.add(code2); return code2;
 }
 
 
-public static ComboBox<FakeFile> newTableComboBox(){ return newTableComboBox(false); }
-public static ComboBox<FakeFile> newTableComboBox(boolean isIncluded_SelfID){
-        ComboBox<FakeFile> comboBox = new ComboBox<FakeFile>("FakeFile");
-        {comboBox.setItems(FakeFile.get());
+public static ComboBox<TagEntry> newTableComboBox(){ return newTableComboBox(false, true, true); }
+public static ComboBox<TagEntry> newTableComboBox(boolean isIncluded_SelfID, boolean isIncluded_fakeFileId, boolean isIncluded_tagId){
+        ComboBox<TagEntry> comboBox = new ComboBox<TagEntry>("TagEntry");
+        {comboBox.setItems(TagEntry.get());
             comboBox.setRenderer(new ComponentRenderer<>(obj -> {
                 Div div = new Div();
-                div.setText(obj.toMinimalPrintString()/* This columns table must contain only references too if you want to fetch their minimal string content */);
+                div.setText((isIncluded_SelfID ? obj.id + "; " : "") + (isIncluded_fakeFileId ? FakeFile.getOptional(obj.fakeFileId).map(FakeFile::toMinimalPrintString).orElse("null") : "") + (isIncluded_tagId ? Tag.getOptional(obj.tagId).map(Tag::toMinimalPrintString).orElse("null") : ""));
             return div;}));
             comboBox.setItemLabelGenerator(obj -> {
-                return obj.toMinimalPrintString()/* This columns table must contain only references too if you want to fetch their minimal string content */;
+                return (isIncluded_SelfID ? obj.id + "; " : "") + (isIncluded_fakeFileId ? FakeFile.getOptional(obj.fakeFileId).map(FakeFile::toMinimalPrintString).orElse("null") : "") + (isIncluded_tagId ? Tag.getOptional(obj.tagId).map(Tag::toMinimalPrintString).orElse("null") : "");
             });
         }
 return comboBox;
 }
 
-public static MultiSelectComboBox<FakeFile> newTableMultiSelect(){ return newTableMultiSelect(false); }
-public static MultiSelectComboBox<FakeFile> newTableMultiSelect(boolean isIncluded_SelfID){
-        MultiSelectComboBox<FakeFile> multiSelect = new MultiSelectComboBox<FakeFile>("FakeFile");
-        {multiSelect.setItems(FakeFile.get());
+public static MultiSelectComboBox<TagEntry> newTableMultiSelect(){ return newTableMultiSelect(false, true, true); }
+public static MultiSelectComboBox<TagEntry> newTableMultiSelect(boolean isIncluded_SelfID, boolean isIncluded_fakeFileId, boolean isIncluded_tagId){
+        MultiSelectComboBox<TagEntry> multiSelect = new MultiSelectComboBox<TagEntry>("TagEntry");
+        {multiSelect.setItems(TagEntry.get());
             multiSelect.setRenderer(new ComponentRenderer<>(obj -> {
                 Div div = new Div();
-                div.setText(obj.toMinimalPrintString()/* This columns table must contain only references too if you want to fetch their minimal string content */);
+                div.setText((isIncluded_SelfID ? obj.id + "; " : "") + (isIncluded_fakeFileId ? FakeFile.getOptional(obj.fakeFileId).map(FakeFile::toMinimalPrintString).orElse("null") : "") + (isIncluded_tagId ? Tag.getOptional(obj.tagId).map(Tag::toMinimalPrintString).orElse("null") : ""));
             return div;}));
             multiSelect.setItemLabelGenerator(obj -> {
-                return obj.toMinimalPrintString()/* This columns table must contain only references too if you want to fetch their minimal string content */;
+                return (isIncluded_SelfID ? obj.id + "; " : "") + (isIncluded_fakeFileId ? FakeFile.getOptional(obj.fakeFileId).map(FakeFile::toMinimalPrintString).orElse("null") : "") + (isIncluded_tagId ? Tag.getOptional(obj.tagId).map(Tag::toMinimalPrintString).orElse("null") : "");
             });
         }
 return multiSelect;
@@ -682,59 +591,43 @@ public static NumberField newNfId(){
 return nfId;
 }
 
-public static ComboBox<FakeFile> newCbParentFakeFile(){
-         ComboBox<FakeFile> cbParentFakeFile = FakeFile.newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */
-        { cbParentFakeFile.setLabel("ParentFakeFile"); }
-return cbParentFakeFile;
+public static ComboBox<FakeFile> newCbFakeFile(){
+         ComboBox<FakeFile> cbFakeFile = FakeFile.newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */
+        { cbFakeFile.setLabel("FakeFile"); }
+return cbFakeFile;
 }
 
-public static NumberField newNfHours(){
-         NumberField nfHours = new NumberField("Hours");
-return nfHours;
-}
-
-public static NumberField newNfMaxHours(){
-         NumberField nfMaxHours = new NumberField("MaxHours");
-return nfMaxHours;
-}
-
-public static TextField newTfName(){
-         TextField tfName = new TextField("Name");
-return tfName;
-}
-
-public static TextField newTfCommitSha(){
-         TextField tfCommitSha = new TextField("CommitSha");
-return tfCommitSha;
+public static ComboBox<Tag> newCbTag(){
+         ComboBox<Tag> cbTag = Tag.newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */
+        { cbTag.setLabel("Tag"); }
+return cbTag;
 }
 
     /**
      * Gets executed later if {@link #isOnlyInMemory()}, otherwise provided
      * code gets executed directly.
-     */    public void whenReadyV(Consumer<FakeFile> code) {
+     */    public void whenReadyV(Consumer<TagEntry> code) {
         if(isOnlyInMemory()) onAddThisV(obj -> code.accept(obj));
         else code.accept(this);
     }
 
-    public static class Comp extends Database.RowCRUDVaadinComponent<FakeFile>{
+    public static class Comp extends Database.RowCRUDVaadinComponent<TagEntry>{
 
-        public FakeFile dataFakeFile;
+        public TagEntry dataTagEntry;
 
         // Form and fields
         public NumberField nfId = new NumberField("Id");
-        public ComboBox<FakeFile> cbParentFakeFile = FakeFile.newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */
-        { cbParentFakeFile.setLabel("ParentFakeFile"); }
-        public NumberField nfHours = new NumberField("Hours");
-        public NumberField nfMaxHours = new NumberField("MaxHours");
-        public TextField tfName = new TextField("Name");
-        public TextField tfCommitSha = new TextField("CommitSha");
+        public ComboBox<FakeFile> cbFakeFile = FakeFile.newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */
+        { cbFakeFile.setLabel("FakeFile"); }
+        public ComboBox<Tag> cbTag = Tag.newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */
+        { cbTag.setLabel("Tag"); }
         // Buttons
 
         {btnAdd.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}
         public Consumer<ClickEvent<Button>> onBtnAddClick = (e) -> {
                 btnAdd.setEnabled(false);
                 updateData();
-                FakeFile.add(data);
+                TagEntry.add(data);
                 e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
 };
@@ -743,7 +636,7 @@ return tfCommitSha;
         public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {
                 btnSave.setEnabled(false);
                 updateData();
-                FakeFile.update(data);
+                TagEntry.update(data);
                 btnSave.setEnabled(true);
                 updateButtons();
 };
@@ -751,14 +644,14 @@ return tfCommitSha;
         {btnDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);}
         public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {
                 btnDelete.setEnabled(false);
-                FakeFile.remove(data);
+                TagEntry.remove(data);
                 e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
 };
 
-        public Comp(FakeFile data) {
+        public Comp(TagEntry data) {
             this.data = data;
-            this.dataFakeFile = this.data;
+            this.dataTagEntry = this.data;
             setWidthFull();
             setPadding(false);
 
@@ -769,21 +662,15 @@ return tfCommitSha;
             addAndExpand(form);
             form.setWidthFull();
             form.add(nfId);
-            form.add(cbParentFakeFile);
-            form.add(nfHours);
-            form.add(nfMaxHours);
-            form.add(tfName);
-            form.add(tfCommitSha);
+            form.add(cbFakeFile);
+            form.add(cbTag);
 
 
             // Tooltips
-            Database.TableMetaData t = Database.getTableMetaData(377336);
+            Database.TableMetaData t = Database.getTableMetaData(384789);
             nfId.setTooltipText(t.comments[0]);
-            cbParentFakeFile.setTooltipText(t.comments[1]);
-            nfHours.setTooltipText(t.comments[2]);
-            nfMaxHours.setTooltipText(t.comments[3]);
-            tfName.setTooltipText(t.comments[4]);
-            tfCommitSha.setTooltipText(t.comments[5]);
+            cbFakeFile.setTooltipText(t.comments[1]);
+            cbTag.setTooltipText(t.comments[2]);
 
 
             // Add buttons
@@ -800,19 +687,13 @@ return tfCommitSha;
 
         public void updateFields(){
             nfId.setValue(0.0 + data.id);
-            cbParentFakeFile.setValue(data.parentFakeFileId != -1 ? FakeFile.get(data.parentFakeFileId) : null);
-            nfHours.setValue(0.0 + data.hours);
-            nfMaxHours.setValue(0.0 + data.maxHours);
-            tfName.setValue(data.name);
-            tfCommitSha.setValue(data.commitSha);
+            cbFakeFile.setValue(data.fakeFileId != -1 ? FakeFile.get(data.fakeFileId) : null);
+            cbTag.setValue(data.tagId != -1 ? Tag.get(data.tagId) : null);
         }
         public void updateData(){
             data.id = (int) nfId.getValue().doubleValue();
-            data.parentFakeFileId = cbParentFakeFile.getValue() != null ? cbParentFakeFile.getValue().id : -1;
-            data.hours = (int) nfHours.getValue().doubleValue();
-            data.maxHours = (int) nfMaxHours.getValue().doubleValue();
-            data.name = tfName.getValue();
-            data.commitSha = tfCommitSha.getValue();
+            data.fakeFileId = cbFakeFile.getValue() != null ? cbFakeFile.getValue().id : -1;
+            data.tagId = cbTag.getValue() != null ? cbTag.getValue().id : -1;
         }
 
         public void updateButtons(){
@@ -829,9 +710,9 @@ return tfCommitSha;
 
     }
 
-    public static volatile Function<FakeFile, FakeFile.Comp> global_fn_toComp = (obj) -> {return new FakeFile.Comp(obj);};
-    public volatile Function<Void, FakeFile.Comp> fn_toComp = (_null) -> {return global_fn_toComp.apply(this);};
-    public FakeFile.Comp toComp(){
+    public static volatile Function<TagEntry, TagEntry.Comp> global_fn_toComp = (obj) -> {return new TagEntry.Comp(obj);};
+    public volatile Function<Void, TagEntry.Comp> fn_toComp = (_null) -> {return global_fn_toComp.apply(this);};
+    public TagEntry.Comp toComp(){
         return fn_toComp.apply(null);
     }
 
@@ -841,20 +722,11 @@ return id == Database.defaultInMemoryOnlyObjId;
 public static WHERE<Integer> whereId() {
 return new WHERE<Integer>("`id`");
 }
-public static WHERE<Integer> whereParentFakeFileId() {
-return new WHERE<Integer>("`parentFakeFileId`");
+public static WHERE<Integer> whereFakeFileId() {
+return new WHERE<Integer>("`fakeFileId`");
 }
-public static WHERE<Integer> whereHours() {
-return new WHERE<Integer>("`hours`");
-}
-public static WHERE<Integer> whereMaxHours() {
-return new WHERE<Integer>("`maxHours`");
-}
-public static WHERE<String> whereName() {
-return new WHERE<String>("`name`");
-}
-public static WHERE<String> whereCommitSha() {
-return new WHERE<String>("`commitSha`");
+public static WHERE<Integer> whereTagId() {
+return new WHERE<Integer>("`tagId`");
 }
 public static class WHERE<T> {
         /**
@@ -881,23 +753,23 @@ public static class WHERE<T> {
          * Executes the generated SQL statement
          * and returns a list of objects matching the query.
          */
-        public List<FakeFile> get()  {
+        public List<TagEntry> get()  {
             String where = sqlBuilder.toString();
             if(!where.isEmpty()) where = " WHERE " + where;
             String orderBy = orderByBuilder.toString();
             if(!orderBy.isEmpty()) orderBy = " ORDER BY "+orderBy.substring(0, orderBy.length()-2)+" ";
             if(!whereObjects.isEmpty())
-                return FakeFile.get(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
+                return TagEntry.get(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
             else
-                return FakeFile.get(where+orderBy+limitBuilder.toString(), (T[]) null);
+                return TagEntry.get(where+orderBy+limitBuilder.toString(), (T[]) null);
         }
 
         /**
          * Executes the generated SQL statement
          * and returns the first object matching the query or null if none.
          */
-        public FakeFile getFirstOrNull()  {
-            List<FakeFile> results = get();
+        public TagEntry getFirstOrNull()  {
+            List<TagEntry> results = get();
             if(results.isEmpty()) return null;
             else return results.get(0);
         }
@@ -906,8 +778,8 @@ public static class WHERE<T> {
          * Executes the generated SQL statement
          * and returns the first object matching the query or empty optional if none.
          */
-        public java.util.Optional<FakeFile> getOptional()  {
-            List<FakeFile> results = get();
+        public java.util.Optional<TagEntry> getOptional()  {
+            List<TagEntry> results = get();
             if(results.isEmpty()) return java.util.Optional.empty();
             else return java.util.Optional.of(results.get(0));
         }
@@ -922,9 +794,9 @@ public static class WHERE<T> {
             String orderBy = orderByBuilder.toString();
             if(!orderBy.isEmpty()) orderBy = " ORDER BY "+orderBy.substring(0, orderBy.length()-2)+" ";
             if(!whereObjects.isEmpty())
-                return FakeFile.count(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
+                return TagEntry.count(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
             else
-                return FakeFile.count(where+orderBy+limitBuilder.toString(), (T[]) null);
+                return TagEntry.count(where+orderBy+limitBuilder.toString(), (T[]) null);
         }
 
         /**
@@ -937,9 +809,9 @@ public static class WHERE<T> {
             String orderBy = orderByBuilder.toString();
             if(!orderBy.isEmpty()) orderBy = " ORDER BY "+orderBy.substring(0, orderBy.length()-2)+" ";
             if(!whereObjects.isEmpty())
-                FakeFile.remove(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
+                TagEntry.remove(where+orderBy+limitBuilder.toString(), whereObjects.toArray());
             else
-                FakeFile.remove(where+orderBy+limitBuilder.toString(), (T[]) null);
+                TagEntry.remove(where+orderBy+limitBuilder.toString(), (T[]) null);
         }
 
         /**
@@ -1164,6 +1036,6 @@ public static class WHERE<T> {
     }
 // The code below will not be removed when re-generating this class.
 // Additional code start -> 
-    private FakeFile(){}
+    private TagEntry(){}
 // Additional code end <- 
 }

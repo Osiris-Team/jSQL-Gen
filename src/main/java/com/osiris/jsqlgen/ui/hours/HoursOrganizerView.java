@@ -1,20 +1,24 @@
 package com.osiris.jsqlgen.ui.hours;
 
-import com.osiris.jsqlgen.jsqlgen.Database;
-import com.osiris.jsqlgen.jsqlgen.FakeFile;
-import com.osiris.jsqlgen.jsqlgen.Global;
+import com.osiris.jsqlgen.jsqlgen.*;
 import com.osiris.osiris_vaadin_utils.ui.layouts.HLayout;
 import com.osiris.osiris_vaadin_utils.ui.notifications.Notify;
 import com.osiris.osiris_vaadin_utils.ui.popups.Popup;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import org.jetbrains.annotations.NotNull;
 import org.kohsuke.github.*;
@@ -47,17 +51,38 @@ public class HoursOrganizerView extends VerticalLayout {
         });
     }
     private Button importButton = new Button("Import Commits");
-    private Button createButton = new Button("+");
+    private Button createButton = new Button("+ Entry");
     {
         createButton.addClickListener(e -> {
-           var p = new Popup();
-           var obj = FakeFile.create();
-           var c = obj.toComp();
-           c.btnAdd.addClickListener(e_ -> {
-               refreshTree();
-           });
-           p.setContent(c);
-           p.buildAndOpen();
+            var p = new Popup();
+            var obj = FakeFile.create();
+            var c = obj.toComp();
+            c.cbParentFakeFile.setItemLabelGenerator(obj2 -> {
+                return obj2.name/* This columns table must contain only references too if you want to fetch their minimal string content */;
+            });;
+            c.cbParentFakeFile.setRenderer(new ComponentRenderer<>(obj2 -> {
+                Div div = new Div();
+                div.setText(obj2.name/* This columns table must contain only references too if you want to fetch their minimal string content */);
+                return div;}));
+            c.btnAdd.addClickListener(e_ -> {
+                refreshTree();
+            });
+            p.setContent(c);
+            p.buildAndOpen();
+        });
+    }
+
+    private Button createButtonTag = new Button("+ Tag");
+    {
+        createButtonTag.addClickListener(e -> {
+            var p = new Popup();
+            var obj = Tag.create("name", generateRandomColor());
+            var c = obj.toComp();
+            c.btnAdd.addClickListener(e_ -> {
+                refreshTree();
+            });
+            p.setContent(c);
+            p.buildAndOpen();
         });
     }
 
@@ -75,18 +100,19 @@ public class HoursOrganizerView extends VerticalLayout {
 
         var isTotalCountRecursive = Global.getFirst().toComp().bsIsTotalCountRecursive;
         isTotalCountRecursive.addValueChangeListener(e -> {
-           var g = Global.getFirst();
-           g.isTotalCountRecursive = e.getValue();
-           g.update();
+            var g = Global.getFirst();
+            g.isTotalCountRecursive = e.getValue();
+            g.update();
         });
 
-        add(hl, new HLayout(createButton, isTotalCountRecursive),
+        var hl2 = new HLayout(createButton, createButtonTag, isTotalCountRecursive);
+        hl2.setAlignItems(Alignment.END);
+        add(hl, hl2,
             new com.osiris.osiris_vaadin_utils.ui.texts.Text(
-            "Create entries/directories to organize your commits that contain hours like \"(4h) commit-message\", move via drag and drop."),
+                "Create entries/directories to organize your commits that contain hours like \"(4h) commit-message\", move via drag and drop."),
             treeGrid);
 
-
-        treeGrid.addHierarchyColumn(FakeFileNode::getDisplayName).setHeader("Hours");
+        treeGrid.addComponentHierarchyColumn(FakeFileNode::getDisplayComponent).setHeader("Hours");
         treeGrid.setDataProvider(dataProvider);
         treeGrid.setDropMode(ON_TOP);
         treeGrid.setRowsDraggable(true);
@@ -116,27 +142,23 @@ public class HoursOrganizerView extends VerticalLayout {
                 moveFakeFile(draggedNode.file, target.file); // Persist change
                 treeData.removeItem(draggedNode);
                 treeData.addItem(target, draggedNode);
-                dataProvider.refreshAll(); // Or use refreshItem(target) and refreshItem(draggedNode) for more fine-grained update, doesnt work...
+                dataProvider.refreshAll();
 
                 Notify.success("Moved successfully");
             }
         });
 
-        // Initial populate
         refreshTree();
     }
 
     private void refreshTree() {
         treeData.clear();
-
         List<FakeFile> roots = FakeFile.whereParentFakeFileId().is(Database.defaultInMemoryOnlyObjId).get();
-
         for (FakeFile root : roots) {
             FakeFileNode rootNode = new FakeFileNode(root);
             treeData.addItem(null, rootNode);
             addChildren(rootNode);
         }
-
         dataProvider.refreshAll();
     }
 
@@ -149,21 +171,20 @@ public class HoursOrganizerView extends VerticalLayout {
         }
     }
 
-
     public void importCommits(String token, String repoName) {
         try {
             GitHub github = new GitHubBuilder().withOAuthToken(token).build();
             GHRepository repo = github.getRepository(repoName);
             PagedIterable<GHCommit> commits = repo.listCommits();
 
-            var dir = FakeFile.createAndAdd(-1, 0, repo.getFullName(), "");
+            var dir = FakeFile.createAndAdd(-1, 0, 0, repo.getFullName(), "");
 
             for (GHCommit commit : commits) {
                 var sha1 = commit.getSHA1();
-                if(FakeFile.whereCommitSha().is(sha1).getFirstOrNull() != null) continue;
+                if (FakeFile.whereCommitSha().is(sha1).getFirstOrNull() != null) continue;
                 String message = commit.getCommitShortInfo().getMessage();
                 int hours = parseHours(message);
-                FakeFile.createAndAdd(dir.id, hours, message, sha1);
+                FakeFile file = FakeFile.createAndAdd(dir.id, hours, 0, message, sha1);
             }
 
         } catch (Exception ex) {
@@ -171,7 +192,6 @@ public class HoursOrganizerView extends VerticalLayout {
             add(new Text("Error: " + ex.getMessage()));
         }
     }
-
 
     public void moveFakeFile(FakeFile source, FakeFile newParent) {
         source.parentFakeFileId = newParent.id;
@@ -187,38 +207,95 @@ public class HoursOrganizerView extends VerticalLayout {
         return 0;
     }
 
-    // === Helper UI model ===
-
     public static class FakeFileNode {
+        public static Tag DELETED_TAG = Tag.create("deleted-tag", "black");
+
         public @NotNull FakeFile file;
 
         public FakeFileNode(@NotNull FakeFile file) {
             this.file = file;
         }
 
-        public String getDisplayName() {
-            var childCount = FakeFile.whereParentFakeFileId().is(file.id).get().size();
-            if (childCount > 0 ||
-                file.parentFakeFileId == Database.defaultInMemoryOnlyObjId) { // Is a dir
-                int totalHours = 0;
-                if(Global.getFirst().isTotalCountRecursive){
-                    totalHours = getSumHoursRecursive(file.id, new HashSet<>());
-                } else{
-                    totalHours = getSumHours();
+        public Component getDisplayComponent() {
+            HorizontalLayout layout = new HorizontalLayout();
+            layout.setSpacing(true);
+            layout.setAlignItems(Alignment.BASELINE);
+            layout.setWidthFull();
+
+            var msTags = Tag.newTableMultiSelect();
+            msTags.setLabel("");
+            msTags.setValue(TagEntry.whereFakeFileId().is(file.id).get()
+                .stream().map(entry -> Tag.whereId().is(entry.tagId).getOptional().orElse(DELETED_TAG))
+                .toList());
+            msTags.addSelectionListener(e -> {
+                for (Tag tag : e.getRemovedSelection()) {
+                    TagEntry.whereFakeFileId().is(file.id).and(
+                        TagEntry.whereTagId().is(tag.id)
+                    ).remove();
                 }
-                return "(" + totalHours + "h) " + file.name + (file.hours > 0 ? " (including self " + file.hours + "h)" : "");
+                for (Tag fakeFileTag : e.getAddedSelection()) {
+                    TagEntry.createAndAdd(file.id, fakeFileTag.id);
+                }
+            });
+            msTags.setWidth("100px");
+            msTags.getStyle()
+                .set("font-size", "12px")
+                .set("padding", "2px")
+                .set("margin", "0")
+                .set("height", "28px");
+
+            layout.add(msTags);
+
+            boolean isDir = isDirectory();
+            int totalHours = isDir ? (Global.getFirst().isTotalCountRecursive ? getSumHoursRecursive(file.id, new HashSet<>()) : getSumHours()) : file.hours;
+
+            String title = (isDir ? "(" + totalHours + "h) " : "• ") + file.name;
+            if (!isDir && file.hours > 0) title += " (" + file.hours + "h)";
+
+            Span titleSpan = new Span(title);
+            layout.add(titleSpan);
+            titleSpan.setMaxWidth("60vw");
+
+            Map<Integer, Integer> tagHours = new LinkedHashMap<>();
+            if (isDir) {
+                collectTagHoursRecursive(file.id, tagHours, new LinkedHashSet<>());
             } else {
-                return "• " + file.name + " (" + file.hours + "h)";
+                for (TagEntry tagE : TagEntry.whereFakeFileId().is(file.id).get()) {
+                    var tag = Tag.whereId().is(tagE.tagId).getFirstOrNull();
+                    if(tag == null) tag = DELETED_TAG;
+                    tagHours.put(tag.id, file.hours);
+                }
             }
+
+            for (Map.Entry<Integer, Integer> entry : tagHours.entrySet()) {
+                int tagId = entry.getKey();
+                int hours = entry.getValue();
+                var tag = Tag.whereId().is(tagId).getOptional().orElse(DELETED_TAG);
+                String color = tag.cssColor;
+                Span tagSpan = new Span(tag.name + " (" + hours + "h)");
+                tagSpan.getStyle()
+                    .set("background-color", color)
+                    .set("color", "white")
+                    .set("border-radius", "8px")
+                    .set("padding", "2px 6px")
+                    .set("font-size", "12px");
+                layout.add(tagSpan);
+            }
+
+            return layout;
+        }
+
+        private boolean isDirectory() {
+            int childCount = FakeFile.whereParentFakeFileId().is(file.id).get().size();
+            return childCount > 0 || file.parentFakeFileId == Database.defaultInMemoryOnlyObjId;
         }
 
         private int getSumHours() {
-            return FakeFile.whereParentFakeFileId().is(file.id).get()
-                .stream().mapToInt(c -> c.hours).sum();
+            return FakeFile.whereParentFakeFileId().is(file.id).get().stream().mapToInt(c -> c.hours).sum();
         }
 
         private int getSumHoursRecursive(int fileId, HashSet<Integer> visitedIds) {
-            if(visitedIds.contains(fileId)) return 0;
+            if (visitedIds.contains(fileId)) return 0;
             visitedIds.add(fileId);
 
             var children = FakeFile.whereParentFakeFileId().is(fileId).get();
@@ -228,32 +305,25 @@ public class HoursOrganizerView extends VerticalLayout {
             }
             return total;
         }
+
+        private void collectTagHoursRecursive(int fileId, Map<Integer, Integer> tagHours, Set<Integer> visited) {
+            if (visited.contains(fileId)) return;
+            visited.add(fileId);
+            for (FakeFile child : FakeFile.whereParentFakeFileId().is(fileId).get()) {
+                for (TagEntry tagE : TagEntry.whereFakeFileId().is(child.id).get()) {
+                    var tag = Tag.whereId().is(tagE.tagId).getFirstOrNull();
+                    if(tag == null) tag = DELETED_TAG;
+                    tagHours.put(tag.id, tagHours.getOrDefault(tag.id, 0) + child.hours);
+                }
+                collectTagHoursRecursive(child.id, tagHours, visited);
+            }
+        }
     }
 
-    // === SQL Simulation Summary ===
-    /*
-        CREATE TABLE directories (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(255),
-            parent_id BIGINT,
-            FOREIGN KEY (parent_id) REFERENCES directories(id)
-        );
-
-        CREATE TABLE commits (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            commit_sha VARCHAR(255),
-            message TEXT,
-            hours INT,
-            FakeFile_id BIGINT,
-            FOREIGN KEY (FakeFile_id) REFERENCES directories(id)
-        );
-
-        -- On commit import:
-        INSERT INTO directories (name, parent_id) VALUES ('repo', NULL);
-        INSERT INTO commits (commit_sha, message, hours, FakeFile_id) VALUES (...);
-
-        -- On drag & drop FakeFile move:
-        UPDATE directories SET parent_id = new_parent_id WHERE id = moved_id;
-    */
+    private static String generateRandomColor() {
+        int r = 50 + new Random().nextInt(180);
+        int g = 50 + new Random().nextInt(180);
+        int b = 50 + new Random().nextInt(180);
+        return String.format("rgb(%d,%d,%d)", r, g, b);
+    }
 }
-
