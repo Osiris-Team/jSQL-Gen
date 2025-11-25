@@ -12,6 +12,7 @@ import com.osiris.jsqlgen.model.TableChange;
 import com.osiris.jsqlgen.generator.GetTableChange;
 import com.osiris.jsqlgen.utils.AsyncFileTailReader;
 import com.osiris.jsqlgen.utils.AsyncReader;
+import com.osiris.jsqlgen.utils.MariaDB4jLogSilencer;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +48,7 @@ public class Main {
         File mirrorOut = new File(System.getProperty("user.dir")+"/logs/mirror-out.log");
         File mirrorErr = new File(System.getProperty("user.dir")+"/logs/mirror-err.log");
         AL.mirrorSystemStreams(mirrorOut, mirrorErr);
+        MariaDB4jLogSilencer.silenceMariaDB4jLogs();
 
         // DUPLICATE SYSTEM.OUT AND ASYNC-READ FROM PIPE
         asyncIn = new AsyncFileTailReader(mirrorOut, 1000);

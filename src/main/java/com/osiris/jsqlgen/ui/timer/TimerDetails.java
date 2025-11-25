@@ -5,7 +5,6 @@ import com.osiris.jsqlgen.jsqlgen.Timer;
 import com.osiris.jsqlgen.jsqlgen.TimerTask;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Pre;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -21,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static com.osiris.jsqlgen.ui.timer.TimeString.toSimpleString;
@@ -32,12 +32,12 @@ public class TimerDetails extends VerticalLayout { // Changed from Desku Compone
     private Timestamp currentDay; // Keep track of the current day
 
     // Dependencies injected by Spring
-    private final LayoutSliders layoutSliders;
-    private final LayoutButtonsTasks layoutButtonsTasks;
+    private final Sliders sliders;
+    private final ButtonsTasks buttonsTasks;
 
-    public TimerDetails(LayoutSliders layoutSliders, LayoutButtonsTasks layoutButtonsTasks) { // Inject dependencies
-        this.layoutSliders = layoutSliders;
-        this.layoutButtonsTasks = layoutButtonsTasks;
+    public TimerDetails(Sliders sliders, ButtonsTasks buttonsTasks) { // Inject dependencies
+        this.sliders = sliders;
+        this.buttonsTasks = buttonsTasks;
 
         setFlexGrow(1); // Equivalent to Desku's grow(1)
         setPadding(true);
@@ -95,10 +95,11 @@ public class TimerDetails extends VerticalLayout { // Changed from Desku Compone
         // Fetch timers within the day range
         List<Timer> timers = Timer.whereStart().between(Timestamp.valueOf(startOfDay), Timestamp.valueOf(endOfDay))
                 .or(Timer.whereEnd().between(Timestamp.valueOf(startOfDay), Timestamp.valueOf(endOfDay)))
+            .and(Timer.whereEnd().biggestFirst())
                 .get(); // Show latest timers first
-        Collections.reverse(timers);
+        //Collections.reverse(timers);
 
-        var timersAndTasks = new HashMap<Timer, List<TimerTask>>();
+        var timersAndTasks = new LinkedHashMap<Timer, List<TimerTask>>();
         for (Timer timer : timers) {
             timersAndTasks.put(timer, TimerTask.whereTimerId().is(timer.id).get());
         }
@@ -120,7 +121,7 @@ public class TimerDetails extends VerticalLayout { // Changed from Desku Compone
             settingsButton.addClickListener(e -> {
                 // Open SlidersPopup for this timer
                 // Need to pass the injected dependencies
-                add(new SlidersPopup(false, timer, layoutSliders, layoutButtonsTasks));
+                add(new SlidersPopup(false, timer, sliders, buttonsTasks));
             });
             timerEntryLayout.add(settingsButton);
 
@@ -128,7 +129,7 @@ public class TimerDetails extends VerticalLayout { // Changed from Desku Compone
             String end = timer.end == Timer.NULL ? "?" : df.format(timer.end.toLocalDateTime());
             String duration = timer.start == Timer.NULL || timer.end == Timer.NULL ? "?" :
                     toSimpleString(Duration.of(timer.end.getTime() - timer.start.getTime(), ChronoUnit.MILLIS));
-            String mainTask = tasks.isEmpty() ? "-" : Task.whereId().is(tasks.getFirst().id).getFirstOrNull().name;
+            String mainTask = tasks.isEmpty() ? "-" : Task.whereId().is(tasks.getFirst().taskId).getFirstOrNull().name;
 
             Pre timerText = new Pre(
                     "Timer from '" + start + "' to '" + end + "'" +

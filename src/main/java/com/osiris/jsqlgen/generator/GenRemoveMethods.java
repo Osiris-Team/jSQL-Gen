@@ -51,10 +51,10 @@ public class GenRemoveMethods {
         StringBuilder sb = new StringBuilder();
         sb.append(
                 "/**\n" +
-                        "Unsets its references (sets them to -1/'') and deletes the provided object from the database.\n" +
+                        "If using defaults: Unsets its references (sets them to -1/'') and deletes the provided object from the database.\n" +
                         "*/\n" +
                         "public static void remove(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                        "remove(obj, true, Database.isRemoveRefs);\n" +
+                        "remove(obj, Database.isUnsetRefs, Database.isRemoveRefs);\n" +
                         "}\n" +
                 "/**\n" +
                         " * Deletes the provided object from the database.\n" +
@@ -63,8 +63,8 @@ public class GenRemoveMethods {
                         " *                   This is recursive. It's highly recommended to call removeRefs() before instead, which allows to explicitly exclude some tables.\n" +
                         "*/\n" +
                 "public static void remove(" + t.name + " obj, boolean unsetRefs, boolean removeRefs) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
-                "if(unsetRefs) unsetRefs("+paramsInvokeDirect+");\n" +
                         "if(removeRefs) removeRefs("+paramsInvoke+");\n" +
+                        "if(unsetRefs) unsetRefs("+paramsInvokeDirect+");\n" +
                         "remove(\"WHERE "+idCol.name+" = \"+obj.getId());\n" +
                 "onRemove.forEach(code -> code.accept(obj));\n" +
                 "}\n" +
@@ -112,7 +112,7 @@ public class GenRemoveMethods {
         allDirectRefs.forEach((t1, columns) -> {
             for (Column refCol : columns) {
                 String param = getParamName(t1, refCol);
-                String s = "if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
+                String s = "if (remove_row_with_same_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
                         "  for("+t1.name+" refObj : results) {refObj."+refCol.name+" = " +
                         (refCol.type.isText() ? "\"\"" : "-1") +
                         "; refObj.update();};\n" +
@@ -139,7 +139,7 @@ public class GenRemoveMethods {
                         .replaceFirst("(obj)", "refObj")
                         .replaceAll("( boolean )", "");
                 //String paramsInvoke1 = genRefParamsInvoke(t1, allRefs1).replaceFirst("(obj)", "obj1");
-                String s = "if (remove_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
+                String s = "if (remove_row_with_same_"+ param + ") {"+t1.name+".getLazySync(results -> { \n" +
                         "  for("+t1.name+" refObj : results) {"+t1.name+".removeRefs("+params1.replaceAll("Class<[^>]+>", "")+");refObj.remove();};\n" +
                         "}, totalCount -> {}, 100, "+t1.name+".where"+firstToUpperCase(refCol.name)+"().is(obj."+idCol.name+"));}\n\n";
                 if(!refCol.type.equals(idCol.type)) s = "/* Possibly not a primary id, since types do not match, thus ignored! " +

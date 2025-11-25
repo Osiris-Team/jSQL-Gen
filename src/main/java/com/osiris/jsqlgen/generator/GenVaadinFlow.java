@@ -202,8 +202,11 @@ public class GenVaadinFlow {
             "            Database.TableMetaData t = Database.getTableMetaData("+t.id+");\n");
         for (int i = 0; i < t.columns.size(); i++) {
             var col = t.columns.get(i);
-            ExtraInfo extraInfo = mapExtraInfo.get(col);
-            s.append("            "+extraInfo.fieldName+".setTooltipText(t.comments["+i+"]);\n");
+            if(col.comment != null && !col.comment.isEmpty())
+            {
+                ExtraInfo extraInfo = mapExtraInfo.get(col);
+                s.append("            "+extraInfo.fieldName+".setTooltipText(\""+t("colComment"+col.id)+"\");\n");
+            }
         }
 
         s.append("\n\n"+
@@ -319,27 +322,27 @@ public class GenVaadinFlow {
             compType = "Select<" + t.name + "." + col.type.inJava + ">";
             s.append("        public "+compType+" " + fieldName +
                     " = new "+compType+"();\n" +
-                    "        {" + fieldName + ".setLabel(\"" + colName + "\"); " + fieldName + ".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
+                    "        {" + fieldName + ".setLabel(\"" + t("colName"+col.id) + "\"); " + fieldName + ".setItems(" + t.name + "." + col.type.inJava + ".values()); }\n");
         } else if (col.type.inJava.equals("String")) {
             fieldName = "tf" + colName;
             compType = "TextField";
-            s.append("        public TextField " + fieldName + " = new TextField(\"" + colName + "\");\n");
+            s.append("        public TextField " + fieldName + " = new TextField(\"" + t("colName"+col.id) + "\");\n");
         } else if (col.type.isDate()) {
             fieldName = "df" + colName;
             compType = "DatePicker";
-            s.append("        public DatePicker " + fieldName + " = new DatePicker(\"" + colName + "\");\n");
+            s.append("        public DatePicker " + fieldName + " = new DatePicker(\"" + t("colName"+col.id) + "\");\n");
         } else if (col.type.isTime()) {
             fieldName = "df" + colName;
             compType = "DateTimePicker";
-            s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+            s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + t("colName"+col.id) + "\");\n");
         } else if (col.type.isTimestamp()) {
             fieldName = "df" + colName;
             compType = "DateTimePicker";
-            s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + colName + "\");\n");
+            s.append("        public DateTimePicker " + fieldName + " = new DateTimePicker(\"" + t("colName"+col.id) + "\");\n");
         } else if (col.type.isBitOrBoolean()) {
             fieldName = "bs" + colName;
             compType = "BooleanSelect";
-            s.append("        public BooleanSelect " + fieldName + " = new BooleanSelect(\"" + colName + "\", false);\n");
+            s.append("        public BooleanSelect " + fieldName + " = new BooleanSelect(\"" + t("colName"+col.id) + "\", false);\n");
         } else {
             // This might be an id / reference to another table
             refTable = getRefTable(db, colName);
@@ -349,15 +352,19 @@ public class GenVaadinFlow {
                 fieldName = "cb" + colName;
                 compType = "ComboBox<" + refTable.name + ">";
                 s.append("        public "+compType+" "+ fieldName+" = "+refTable.name+".newTableComboBox(); /* If not compiling, enable Vaadin-Flow for this table too! */\n" +
-                         "        { "+fieldName+".setLabel(\""+colName+"\"); }\n");
+                         "        { "+fieldName+".setLabel(\""+t("colName"+col.id)+"\"); }\n");
             } else{
                 fieldName = "nf" + colName;
                 compType = "NumberField";
-                s.append("        public NumberField " + fieldName + " = new NumberField(\"" + colName + "\");\n");
+                s.append("        public NumberField " + fieldName + " = new NumberField(\"" + t("colName"+col.id) + "\");\n");
             }
         }
         Result result = new Result(s.toString(), compType, fieldName, isColumnRef, refTable);
         return result;
+    }
+
+    private static String t(String colName) {
+        return "\"+Database.TranslationBase.tByFieldName(\""+colName+"\")+\"";
     }
 
     private record Result(String generatedCode, String compType, String fieldName, boolean isColumnRef, Table refTable) {

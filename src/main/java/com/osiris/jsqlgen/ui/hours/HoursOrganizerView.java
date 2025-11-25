@@ -7,9 +7,13 @@ import com.osiris.osiris_vaadin_utils.ui.popups.Popup;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -21,8 +25,10 @@ import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.kohsuke.github.*;
 
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,22 +60,34 @@ public class HoursOrganizerView extends VerticalLayout {
     private Button createButton = new Button("+ Entry");
     {
         createButton.addClickListener(e -> {
-            var p = new Popup();
-            var obj = FakeFile.create();
-            var c = obj.toComp();
-            c.cbParentFakeFile.setItemLabelGenerator(obj2 -> {
-                return obj2.name/* This columns table must contain only references too if you want to fetch their minimal string content */;
-            });;
-            c.cbParentFakeFile.setRenderer(new ComponentRenderer<>(obj2 -> {
-                Div div = new Div();
-                div.setText(obj2.name/* This columns table must contain only references too if you want to fetch their minimal string content */);
-                return div;}));
-            c.btnAdd.addClickListener(e_ -> {
-                refreshTree();
-            });
-            p.setContent(c);
-            p.buildAndOpen();
+            openPopup(this, FakeFile.create());
         });
+    }
+
+    private static void openPopup(HoursOrganizerView view, FakeFile obj) {
+        var p = new Popup();
+        var c = obj.toComp();
+        c.cbParentFakeFile.setItemLabelGenerator(obj2 -> {
+            return obj2.name/* This columns table must contain only references too if you want to fetch their minimal string content */;
+        });
+        ;
+        c.cbParentFakeFile.setRenderer(new ComponentRenderer<>(obj2 -> {
+            Div div = new Div();
+            div.setText(obj2.name/* This columns table must contain only references too if you want to fetch their minimal string content */);
+            return div;}));
+        c.btnAdd.addClickListener(e_ -> {
+            view.refreshTree();
+        });
+        c.btnSave.addClickListener(e_ -> {
+            Notify.info("Refresh the page to view changes.");
+            //view.refreshTree();
+        });
+        c.btnDelete.addClickListener(e_ -> {
+            Notify.info("Refresh the page to view changes.");
+            //view.refreshTree();
+        });
+        p.setContent(c);
+        p.buildAndOpen();
     }
 
     private Button createButtonTag = new Button("+ Tag");
@@ -127,26 +145,59 @@ public class HoursOrganizerView extends VerticalLayout {
         });
 
         treeGrid.addDragStartListener(event -> {
-            draggedNode = event.getDraggedItems().stream().findFirst().orElse(null);
-        });
-
-        treeGrid.addDropListener(event -> {
-            FakeFileNode target = event.getDropTargetItem().orElse(null);
-
-            if (draggedNode != null && target != null && draggedNode.file != null && target.file != null) {
-                if (draggedNode.file.id == (target.file.id)) {
-                    Notify.error("Cannot move into itself.");
-                    return;
-                }
-
-                moveFakeFile(draggedNode.file, target.file); // Persist change
-                treeData.removeItem(draggedNode);
-                treeData.addItem(target, draggedNode);
-                dataProvider.refreshAll();
-
-                Notify.success("Moved successfully");
+            List<FakeFileNode> selectedNodes = new ArrayList<>(treeGrid.getSelectedItems());
+            if (selectedNodes.isEmpty()) {
+                draggedNode = event.getDraggedItems().stream().findFirst().orElse(null);
+                selectedNodes.add(draggedNode);
             }
         });
+
+        treeGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        treeGrid.addDropListener(event -> {
+            FakeFileNode target = event.getDropTargetItem().orElse(null);
+            List<FakeFileNode> nodesToMove = new ArrayList<>(treeGrid.getSelectedItems());
+            if(draggedNode != null && !nodesToMove.contains(draggedNode))
+                nodesToMove.add(draggedNode);
+
+            if (target == null || nodesToMove.isEmpty()) return;
+
+            for (FakeFileNode node : nodesToMove) {
+                if (node.equals(target)) {
+                    Notify.error("Cannot move a node into itself.");
+                    continue;
+                }
+
+                if (node.file != null && target.file != null) {
+                    moveFakeFile(node.file, target.file); // Persist
+                    treeData.removeItem(node);
+                    treeData.addItem(target, node);
+                    refreshItemAndAllParents(node); // TODO add caching to avoid duplicate refresh
+                }
+            }
+
+            refreshItemAndAllParents(target);
+            treeGrid.deselectAll();
+            draggedNode = null;
+            Notify.success("Moved " + nodesToMove.size() + " item(s).");
+        });
+
+        UI.getCurrent().getElement().executeJs(
+            "if (!document.getElementById('hover-expand-style')) {" +
+                "const style = document.createElement('style');" +
+                "style.id = 'hover-expand-style';" +
+                "style.innerHTML = `" +
+                ".hover-expand {" +
+                "  transition: min-width 0.3s ease;" +
+                "  width: 20px;" +
+                "  min-width: 20px;" +
+                "  overflow: hidden;" +
+                "}" +
+                ".hover-expand:hover {" +
+                "  min-width: 150px !important;" +
+                "}`;" +
+                "document.head.appendChild(style);" +
+                "}"
+        );
 
         refreshTree();
     }
@@ -155,19 +206,62 @@ public class HoursOrganizerView extends VerticalLayout {
         treeData.clear();
         List<FakeFile> roots = FakeFile.whereParentFakeFileId().is(Database.defaultInMemoryOnlyObjId).get();
         for (FakeFile root : roots) {
-            FakeFileNode rootNode = new FakeFileNode(root);
+            FakeFileNode rootNode = new FakeFileNode(null, this, root);
             treeData.addItem(null, rootNode);
             addChildren(rootNode);
         }
+
+        for (FakeFile fakeFile : FakeFile.whereParentFakeFileId().isNot(Database.defaultInMemoryOnlyObjId).get()) {
+            if(FakeFile.whereId().is(fakeFile.parentFakeFileId).getFirstOrNull() != null) continue;
+            fakeFile.parentFakeFileId = FakeFile.DELETED_PARENT_ID;
+            fakeFile.update();
+        }
+
         dataProvider.refreshAll();
     }
 
     private void addChildren(FakeFileNode parentNode) {
         var children = FakeFile.whereParentFakeFileId().is(parentNode.file.id).get();
         for (FakeFile child : children) {
-            FakeFileNode childNode = new FakeFileNode(child);
+            FakeFileNode childNode = new FakeFileNode(parentNode, this, child);
             treeData.addItem(parentNode, childNode);
             addChildren(childNode);
+        }
+    }
+
+    /**
+     * Refreshes data without collapsing or changing the scroll state of the UI.
+     */
+    private void refreshItemAndAllParents(@NotNull FakeFileNode node) {
+        FakeFile rootFile = node.file;
+        var parentFiles = new LinkedHashSet<FakeFile>();
+        while (true) { // Find root parent in database
+            parentFiles.add(rootFile);
+            FakeFile parentFile = FakeFile.whereId().is(rootFile.parentFakeFileId).getFirstOrNull();
+            if (parentFile == null) break;
+            rootFile = parentFile;
+        }
+
+        FakeFileNode root = node;
+        var parents = new LinkedHashSet<FakeFileNode>();
+        while (true) { // Find root parent in current UI
+            parents.add(root);
+            if (root.parent == null) break;
+            root = root.parent;
+        }
+
+        if(root.file.id != rootFile.id){ // root parent changed in database and is now invalid in UI
+            var newRoot = new FakeFileNode(null, this, rootFile);
+            treeData.addItem(null, newRoot);
+            treeData.moveAfterSibling(root, newRoot);
+            treeData.removeItem(root);
+            addChildren(newRoot);
+            dataProvider.refreshAll();
+        } else{
+            for (FakeFileNode parent : parents) {
+                // Only refreshes direct children, thus this loop
+                dataProvider.refreshItem(parent, true);
+            }
         }
     }
 
@@ -177,14 +271,19 @@ public class HoursOrganizerView extends VerticalLayout {
             GHRepository repo = github.getRepository(repoName);
             PagedIterable<GHCommit> commits = repo.listCommits();
 
-            var dir = FakeFile.createAndAdd(-1, 0, 0, repo.getFullName(), "");
+            var dir = FakeFile.whereName().is(repo.getFullName()).getFirstOrNull();
+            if(dir == null) dir = FakeFile.createAndAdd(-1, 0, 0, repo.getFullName(), "", null);
 
+            // Note: This assumes commits are returned in reverse chronological order (most recent first), which GitHub’s API does.
+            // If you want to be more defensive, verify order using getCommitDate().
             for (GHCommit commit : commits) {
                 var sha1 = commit.getSHA1();
-                if (FakeFile.whereCommitSha().is(sha1).getFirstOrNull() != null) continue;
+                if (FakeFile.whereCommitSha().is(sha1).getFirstOrNull() != null) {
+                    break; // Already in DB, stop further import
+                }
                 String message = commit.getCommitShortInfo().getMessage();
                 int hours = parseHours(message);
-                FakeFile file = FakeFile.createAndAdd(dir.id, hours, 0, message, sha1);
+                FakeFile file = FakeFile.createAndAdd(dir.id, hours, 0, message, sha1, new Timestamp(commit.getCommitDate().getTime()));
             }
 
         } catch (Exception ex) {
@@ -210,10 +309,14 @@ public class HoursOrganizerView extends VerticalLayout {
     public static class FakeFileNode {
         public static Tag DELETED_TAG = Tag.create("deleted-tag", "black");
 
+        public @Nullable FakeFileNode parent;
         public @NotNull FakeFile file;
+        public @NotNull HoursOrganizerView view;
 
-        public FakeFileNode(@NotNull FakeFile file) {
+        public FakeFileNode(@Nullable FakeFileNode parent, @NotNull HoursOrganizerView view, @NotNull FakeFile file) {
+            this.parent = parent;
             this.file = file;
+            this.view = view;
         }
 
         public Component getDisplayComponent() {
@@ -236,21 +339,31 @@ public class HoursOrganizerView extends VerticalLayout {
                 for (Tag fakeFileTag : e.getAddedSelection()) {
                     TagEntry.createAndAdd(file.id, fakeFileTag.id);
                 }
+                if(parent == null) view.refreshTree();
+                else view.refreshItemAndAllParents(parent);
             });
-            msTags.setWidth("100px");
+            msTags.setMinWidth("20px");
             msTags.getStyle()
                 .set("font-size", "12px")
                 .set("padding", "2px")
                 .set("margin", "0")
                 .set("height", "28px");
+            msTags.addClassName("hover-expand");
 
             layout.add(msTags);
 
             boolean isDir = isDirectory();
             int totalHours = isDir ? (Global.getFirst().isTotalCountRecursive ? getSumHoursRecursive(file.id, new HashSet<>()) : getSumHours()) : file.hours;
 
-            String title = (isDir ? "(" + totalHours + "h) " : "• ") + file.name;
+            String title = (isDir ? "(" + totalHours + (file.maxHours > 0 ? "/"+file.maxHours : "") + "h) " : "") + file.name;
             if (!isDir && file.hours > 0) title += " (" + file.hours + "h)";
+
+            var btn = new Button(VaadinIcon.COG.create());
+            btn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+            layout.add(btn);
+            btn.addClickListener(e -> {
+                openPopup(view, file);
+            });
 
             Span titleSpan = new Span(title);
             layout.add(titleSpan);

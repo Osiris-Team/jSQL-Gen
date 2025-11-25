@@ -1,12 +1,10 @@
 package com.osiris.jsqlgen.ui.timer;
 
-import com.osiris.jsqlgen.jsqlgen.Timer;
 import com.osiris.jsqlgen.ui.Refreshable;
 import com.osiris.jlib.logger.AL;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -17,8 +15,8 @@ import java.sql.Timestamp;
 import java.util.Objects;
 
 
-public class LayoutTimer extends VerticalLayout implements Refreshable { // Changed from Desku Vertical to Vaadin VerticalLayout
-    public volatile Timer existingTimer = null;
+public class Timer extends VerticalLayout implements Refreshable { // Changed from Desku Vertical to Vaadin VerticalLayout
+    public volatile com.osiris.jsqlgen.jsqlgen.Timer existingTimer = null;
     public volatile Timestamp day = new Timestamp(System.currentTimeMillis());
     public static final long DAY_AS_MILLIS = 86400000;
     public static final long WEEK_AS_MILLIS = DAY_AS_MILLIS * 7;
@@ -31,10 +29,12 @@ public class LayoutTimer extends VerticalLayout implements Refreshable { // Chan
     private TimerSummary txtSummary; // Vaadin Component
     private TimerDetails lyTimerDetails; // Vaadin Component
 
-    private LayoutSliders layoutSliders;
-    private LayoutButtonsTasks layoutButtonsTasks;
+    private Sliders sliders;
+    private ButtonsTasks buttonsTasks;
 
-    public LayoutTimer(LayoutSliders layoutSliders, LayoutButtonsTasks layoutButtonsTasks) {
+    public Timer(Sliders sliders, ButtonsTasks buttonsTasks) {
+        this.sliders = sliders;
+        this.buttonsTasks = buttonsTasks;
         setPadding(true);
         setSpacing(true); // Equivalent to Desku's childGap
         setWidthFull();
@@ -44,15 +44,15 @@ public class LayoutTimer extends VerticalLayout implements Refreshable { // Chan
         // Initialize components
         btnStartStop = new Button();
         txtSummary = new TimerSummary(day);
-        lyTimerDetails = new TimerDetails(layoutSliders, layoutButtonsTasks);
+        lyTimerDetails = new TimerDetails(sliders, buttonsTasks);
         lyTimerDetails.setValue(day);
 
         // AFK Detector integration with Vaadin UI.getCurrent().access()
         afk.onAFK = (msLastActivity) -> {
             UI.getCurrent().access(() -> {
                 // Force stop latest timer, and restart onBack
-                for (Timer timer : Timer.whereId().biggestFirst().limit(1).get()) {
-                    if(timer.end.equals(Timer.NULL)){
+                for (com.osiris.jsqlgen.jsqlgen.Timer timer : com.osiris.jsqlgen.jsqlgen.Timer.whereId().biggestFirst().limit(1).get()) {
+                    if(timer.end.equals(com.osiris.jsqlgen.jsqlgen.Timer.NULL)){
                         timer.end = new Timestamp(msLastActivity);
                         timer.update();
                         isPendingAFKPopup = true;
@@ -72,20 +72,42 @@ public class LayoutTimer extends VerticalLayout implements Refreshable { // Chan
                 // which is outside the control of server-side Vaadin.
                 AL.info("Returning from AFK. (DesktopUI maximize/focus skipped for Vaadin Web)");
 
-                Timer timer = Timer.whereId().biggestFirst().limit(1).getFirstOrNull();
+                com.osiris.jsqlgen.jsqlgen.Timer timer = com.osiris.jsqlgen.jsqlgen.Timer.whereId().biggestFirst().limit(1).getFirstOrNull();
                 Objects.requireNonNull(timer);
                 if(msLastActivity <= 0) throw new RuntimeException("msLastActivity="+msLastActivity+" for timer="+timer.toPrintString());
-                if(timer.end == Timer.NULL){
+                if(timer.end == com.osiris.jsqlgen.jsqlgen.Timer.NULL){
                     timer.end = new Timestamp(msLastActivity);
                     timer.update();
                 }
                 // Open the popup to determine the previous actual work timer work amount
-                add(new SlidersPopup(true, timer, layoutSliders, layoutButtonsTasks)); // Add popup to the current layout
+                add(new SlidersPopup(true, timer, sliders, buttonsTasks)); // Add popup to the current layout
                 // Create a timer for the AFK portion
-                timer = Timer.createAndAdd(new Timestamp(msLastActivity), new Timestamp(System.currentTimeMillis()));
-                add(new SlidersPopup(true, timer, layoutSliders, layoutButtonsTasks)); // Add another popup for AFK duration
+                timer = com.osiris.jsqlgen.jsqlgen.Timer.createAndAdd(new Timestamp(msLastActivity), new Timestamp(System.currentTimeMillis()));
+                add(new SlidersPopup(true, timer, sliders, buttonsTasks)); // Add another popup for AFK duration
             });
         };
+
+        btnStartStop.addClickListener(e -> { // Vaadin click listener
+            if(e.isFromClient()) AL.info("From client!");
+            if(existingTimer == null){
+                existingTimer = com.osiris.jsqlgen.jsqlgen.Timer.createAndAdd(new Timestamp(System.currentTimeMillis()), com.osiris.jsqlgen.jsqlgen.Timer.NULL);
+                var txt = "Started at "+existingTimer.start+", click to stop.";
+                btnStartStop.setText(txt);
+                AL.info(txt);
+            } else {
+                // Expect a running timer, thus stop it
+                if(existingTimer.end.equals(com.osiris.jsqlgen.jsqlgen.Timer.NULL)){
+                    existingTimer.end = new Timestamp(System.currentTimeMillis());
+                    existingTimer.update();
+                    AL.info("Stopped at "+ existingTimer.end);
+                    btnStartStop.setText("Start");
+                    add(new SlidersPopup(false, existingTimer, sliders, buttonsTasks)); // Add popup to the current layout
+                }
+            }
+            afk.startActivityMonitorIfNeeded();
+            AL.info("Started Timer with activity monitor!");
+        });
+
         refresh();
     }
 
@@ -102,14 +124,14 @@ public class LayoutTimer extends VerticalLayout implements Refreshable { // Chan
 
         // Check db if the last timer is still running
         String btnStartStopLabel = "Start";
-        for (Timer timer : Timer.whereId().biggestFirst().limit(1).get()) {
-            if(timer.start.equals(Timer.NULL)){
+        for (com.osiris.jsqlgen.jsqlgen.Timer timer : com.osiris.jsqlgen.jsqlgen.Timer.whereId().biggestFirst().limit(1).get()) {
+            if(timer.start.equals(com.osiris.jsqlgen.jsqlgen.Timer.NULL)){
                 // Not started
                 timer.start = new Timestamp(System.currentTimeMillis());
                 timer.update();
                 existingTimer = timer;
             }
-            if(timer.end.equals(Timer.NULL)){
+            if(timer.end.equals(com.osiris.jsqlgen.jsqlgen.Timer.NULL)){
                 // Not ended
                 existingTimer = timer;
                 btnStartStopLabel = "Started at "+existingTimer.start+", click to stop.";
@@ -117,21 +139,7 @@ public class LayoutTimer extends VerticalLayout implements Refreshable { // Chan
         }
 
         btnStartStop.setText(btnStartStopLabel); // Set button text
-        btnStartStop.addClickListener(e -> { // Vaadin click listener
-            if(existingTimer == null){
-                existingTimer = Timer.createAndAdd(new Timestamp(System.currentTimeMillis()), Timer.NULL);
-                btnStartStop.setText("Started at "+existingTimer.start+", click to stop.");
-            } else {
-                // Expect a running timer, thus stop it
-                if(existingTimer.end.equals(Timer.NULL)){
-                    existingTimer.end = new Timestamp(System.currentTimeMillis());
-                    existingTimer.update();
-                    btnStartStop.setText("Start");
-                    add(new SlidersPopup(false, existingTimer, layoutSliders, layoutButtonsTasks)); // Add popup to the current layout
-                }
-            }
-            afk.startActivityMonitorIfNeeded();
-        });
+
 
         if(existingTimer != null) afk.startActivityMonitorIfNeeded();
 

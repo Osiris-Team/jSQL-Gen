@@ -1,5 +1,6 @@
 package com.osiris.jsqlgen.jsqlgen;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+
+import com.osiris.jsqlgen.ui.hours.HoursOrganizerView;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -32,14 +35,15 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Span;
 
 /**
-Table FakeFile with id 377336 and 2 changes/version. <br>
-Structure (6 fields/columns): <br>
+Table FakeFile with id 377336 and 3 changes/version. <br>
+Structure (7 fields/columns): <br>
 - int id = INT AUTO_INCREMENT NOT NULL PRIMARY KEY <br>
 - int parentFakeFileId = INT DEFAULT -1 <br>
 - int hours = INT DEFAULT 0 <br>
 - int maxHours = INT DEFAULT 0 <br>
 - String name = LONGTEXT DEFAULT '' <br>
 - String commitSha = TEXT DEFAULT '' <br>
+- Timestamp commitTime = DATETIME DEFAULT NULL <br>
 
 Generated class by <a href="https://github.com/Osiris-Team/jSQL-Gen">jSQL-Gen</a>
 that contains static methods for fetching/updating data from the `fakefile` table.
@@ -74,7 +78,7 @@ Connection con = Database.getCon();
 try{
 try (Statement s = con.createStatement()) {
 Database.TableMetaData t = Database.getTableMetaData(377336);
-for (int i = t.version; i < 2; i++) {
+for (int i = t.version; i < 3; i++) {
 if(i == 0){
 if(t.steps < 1){s.executeUpdate("CREATE TABLE IF NOT EXISTS `fakefile` (`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY)");
 t.steps++; Database.updateTableMetaData(t);}
@@ -92,6 +96,13 @@ Database.updateTableMetaData(t);
 if(i == 1){
 if(t.steps < 1){t.steps++; Database.updateTableMetaData(t);}
 if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `maxHours` INT DEFAULT 0");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
+t.steps++; Database.updateTableMetaData(t);}
+t.steps = 0; t.version++;
+Database.updateTableMetaData(t);
+}
+if(i == 2){
+if(t.steps < 1){t.steps++; Database.updateTableMetaData(t);}
+if(t.steps < 2){try{s.executeUpdate("ALTER TABLE `fakefile` ADD COLUMN `commitTime` DATETIME DEFAULT NULL");}catch(Exception exAdd){if(!exAdd.getMessage().toLowerCase().contains("duplicate column")) throw exAdd;}
 t.steps++; Database.updateTableMetaData(t);}
 t.steps = 0; t.version++;
 Database.updateTableMetaData(t);
@@ -122,9 +133,9 @@ Use the static create method instead of this constructor,
 if you plan to add this object to the database in the future, since
 that method fetches and sets/reserves the {@link #id}.
 */
-public FakeFile (int id, int parentFakeFileId, int hours, int maxHours, String name, String commitSha){
+public FakeFile (int id, int parentFakeFileId, int hours, int maxHours, String name, String commitSha, Timestamp commitTime){
 initDefaultFields();
-this.id = id;this.parentFakeFileId = parentFakeFileId;this.hours = hours;this.maxHours = maxHours;this.name = name;this.commitSha = commitSha;
+this.id = id;this.parentFakeFileId = parentFakeFileId;this.hours = hours;this.maxHours = maxHours;this.name = name;this.commitSha = commitSha;this.commitTime = commitTime;
 }
 /**
 Database field/value: INT AUTO_INCREMENT NOT NULL PRIMARY KEY. <br>
@@ -197,10 +208,22 @@ Convenience builder-like setter with method-chaining.
 */
 public FakeFile commitSha(String commitSha){ this.commitSha = commitSha; return this;}
 /**
+Database field/value: DATETIME DEFAULT NULL. <br>
+
+*/
+public Timestamp commitTime;
+/**
+Database field/value: DATETIME DEFAULT NULL. <br>
+
+
+Convenience builder-like setter with method-chaining.
+*/
+public FakeFile commitTime(Timestamp commitTime){ this.commitTime = commitTime; return this;}
+/**
 Initialises the DEFAULT fields with the provided default values mentioned in the columns definition.
 */
 protected FakeFile initDefaultFields() {
-this.parentFakeFileId=-1; this.hours=0; this.maxHours=0; this.name=""; this.commitSha=""; return this;
+this.parentFakeFileId=-1; this.hours=0; this.maxHours=0; this.name=""; this.commitSha=""; this.commitTime=null; return this;
 }
 
 /**
@@ -223,10 +246,10 @@ Creates and returns an object that can be added to this table. <br>
 - This method will NOT add the object to the table. <br>
 - This is useful for objects that may never be added to the table, otherwise createAndAdd() is recommended. <br>
 */
-public static FakeFile create(int parentFakeFileId, int hours, int maxHours, String name, String commitSha)  {
+public static FakeFile create(int parentFakeFileId, int hours, int maxHours, String name, String commitSha, Timestamp commitTime)  {
 int id = Database.defaultInMemoryOnlyObjId;
 FakeFile obj = new FakeFile();
-obj.id=id; obj.parentFakeFileId=parentFakeFileId; obj.hours=hours; obj.maxHours=maxHours; obj.name=name; obj.commitSha=commitSha; 
+obj.id=id; obj.parentFakeFileId=parentFakeFileId; obj.hours=hours; obj.maxHours=maxHours; obj.name=name; obj.commitSha=commitSha; obj.commitTime=commitTime;
 onCreate.forEach(code -> code.accept(obj));
 return obj;
 }
@@ -246,10 +269,10 @@ return obj;
 /**
 Convenience method for creating and directly adding a new object to the table.
 */
-public static FakeFile createAndAdd(int parentFakeFileId, int hours, int maxHours, String name, String commitSha)  {
+public static FakeFile createAndAdd(int parentFakeFileId, int hours, int maxHours, String name, String commitSha, Timestamp commitTime)  {
 int id = Database.defaultInMemoryOnlyObjId;
 FakeFile obj = new FakeFile();
-obj.id=id; obj.parentFakeFileId=parentFakeFileId; obj.hours=hours; obj.maxHours=maxHours; obj.name=name; obj.commitSha=commitSha; 
+obj.id=id; obj.parentFakeFileId=parentFakeFileId; obj.hours=hours; obj.maxHours=maxHours; obj.name=name; obj.commitSha=commitSha; obj.commitTime=commitTime;
 onCreate.forEach(code -> code.accept(obj));
 add(obj);
 return obj;
@@ -290,7 +313,7 @@ get("WHERE username=? AND age=?", "Peter", 33);  <br>
 if that statement is null, returns all the contents of this table.
 */
 public static List<FakeFile> get(String where, Object... whereValues)  {
-String sql = "SELECT `id`,`parentFakeFileId`,`hours`,`maxHours`,`name`,`commitSha`" +
+String sql = "SELECT `id`,`parentFakeFileId`,`hours`,`maxHours`,`name`,`commitSha`,`commitTime`" +
 " FROM `fakefile`" +
 (where != null ? where : "");
 List<FakeFile> list = new ArrayList<>();
@@ -311,6 +334,7 @@ obj.hours = rs.getInt(3);
 obj.maxHours = rs.getInt(4);
 obj.name = rs.getString(5);
 obj.commitSha = rs.getString(6);
+obj.commitTime = rs.getTimestamp(7);
 }
 }catch(Exception e){throw new RuntimeException(e);}
 finally{Database.freeCon(con);}
@@ -407,18 +431,18 @@ return list;
 
 
 /**
-Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
-We are using this approach because its universal to all databases. 
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead.
+We are using this approach because its universal to all databases.
 */
 public static int count(){ return count(null, (Object[]) null); }
 
 /**
-Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead. 
-We are using this approach because its universal to all databases. 
+Note that this literally counts the rows thus its extremely slow in larger tables, its recommendedto use a workaround specific to your database instead.
+We are using this approach because its universal to all databases.
 */
 public static int count(String where, Object... whereValues)  {
 String sql = "SELECT COUNT(`id`) FROM `fakefile`" +
-(where != null ? where : ""); 
+(where != null ? where : "");
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
 if(where!=null && whereValues!=null)
@@ -440,7 +464,7 @@ and updates all its fields.
 @throws Exception when failed to find by id or other SQL issues.
 */
 public static void update(FakeFile obj)  {
-String sql = "UPDATE `fakefile` SET `id`=?,`parentFakeFileId`=?,`hours`=?,`maxHours`=?,`name`=?,`commitSha`=? WHERE id="+obj.getId();
+String sql = "UPDATE `fakefile` SET `id`=?,`parentFakeFileId`=?,`hours`=?,`maxHours`=?,`name`=?,`commitSha`=?,`commitTime`=? WHERE id="+obj.getId();
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql)) {
 ps.setInt(1, obj.id);
@@ -449,6 +473,7 @@ ps.setInt(3, obj.hours);
 ps.setInt(4, obj.maxHours);
 ps.setString(5, obj.name);
 ps.setString(6, obj.commitSha);
+ps.setTimestamp(7, obj.commitTime);
 ps.executeUpdate();
 }catch(Exception e){throw new RuntimeException(e);}
 finally{Database.freeCon(con);
@@ -460,7 +485,7 @@ onUpdate.forEach(code -> code.accept(obj));
 Adds the provided object to the database (note that the id is not checked for duplicates).
 */
 public static void add(FakeFile obj)  {
-String sql = "INSERT INTO `fakefile` (`parentFakeFileId`,`hours`,`maxHours`,`name`,`commitSha`) VALUES (?,?,?,?,?)";
+String sql = "INSERT INTO `fakefile` (`parentFakeFileId`,`hours`,`maxHours`,`name`,`commitSha`,`commitTime`) VALUES (?,?,?,?,?,?)";
 Connection con = Database.getCon();
 try (PreparedStatement ps = con.prepareStatement(sql, new String[]{"id"})) {
 ps.setInt(1, obj.parentFakeFileId);
@@ -468,8 +493,9 @@ ps.setInt(2, obj.hours);
 ps.setInt(3, obj.maxHours);
 ps.setString(4, obj.name);
 ps.setString(5, obj.commitSha);
+ps.setTimestamp(6, obj.commitTime);
 ps.executeUpdate();
-    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { 
+    try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
         if (generatedKeys.next()) { // Retrieve the first auto-generated ID
             int generatedId = generatedKeys.getInt(1);
             obj.id = generatedId;
@@ -528,21 +554,21 @@ getLazySync(objs -> {for(FakeFile obj : objs) {obj.remove();}});
     }
 
 /**
-     * @see #remove(FakeFile, boolean, boolean) 
+     * @see #remove(FakeFile, boolean, boolean)
      */
 public static void unsetRefs(FakeFile obj, Class<TagEntry> fakeFileId_in_TagEntry, boolean remove_fakeFileId_in_TagEntry)  {
-if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> { 
+if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> {
   for(TagEntry refObj : results) {refObj.fakeFileId = -1; refObj.update();};
 }, totalCount -> {}, 100, TagEntry.whereFakeFileId().is(obj.id));}
 
     }
 
 /** !!! EXTREME CAUTION REQUIRED, MAJOR DATA-LOSS POSSIBLE !!!
-     * @see #remove(FakeFile, boolean, boolean) 
+     * @see #remove(FakeFile, boolean, boolean)
      */
 public static void removeRefs(FakeFile obj, Class<TagEntry> fakeFileId_in_TagEntry, boolean remove_fakeFileId_in_TagEntry)  {
 // Take care of direct refs and indirect refs
-if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> { 
+if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> {
   for(TagEntry refObj : results) {TagEntry.removeRefs(refObj);refObj.remove();};
 }, totalCount -> {}, 100, TagEntry.whereFakeFileId().is(obj.id));}
 
@@ -551,7 +577,7 @@ if (remove_fakeFileId_in_TagEntry) {TagEntry.getLazySync(results -> {
     }
 
 public FakeFile clone(){
-return new FakeFile(this.id,this.parentFakeFileId,this.hours,this.maxHours,this.name,this.commitSha);
+return new FakeFile(this.id,this.parentFakeFileId,this.hours,this.maxHours,this.name,this.commitSha,this.commitTime);
 }
 public void add(){
 FakeFile.add(this);
@@ -566,7 +592,7 @@ public void remove(boolean unsetRefs, boolean removeRefs){
 FakeFile.remove(this, unsetRefs, removeRefs);
 }
 public String toPrintString(){
-return  ""+"id="+this.id+" "+"parentFakeFileId="+this.parentFakeFileId+" "+"hours="+this.hours+" "+"maxHours="+this.maxHours+" "+"name="+this.name+" "+"commitSha="+this.commitSha+" ";
+return  ""+"id="+this.id+" "+"parentFakeFileId="+this.parentFakeFileId+" "+"hours="+this.hours+" "+"maxHours="+this.maxHours+" "+"name="+this.name+" "+"commitSha="+this.commitSha+" "+"commitTime="+this.commitTime+" ";
 }
 public String toMinimalPrintString(){ return toMinimalPrintString(true); }
 public String toMinimalPrintString(boolean isFirstFieldOnly){
@@ -708,6 +734,11 @@ public static TextField newTfCommitSha(){
 return tfCommitSha;
 }
 
+public static DateTimePicker newDfCommitTime(){
+         DateTimePicker dfCommitTime = new DateTimePicker("CommitTime");
+return dfCommitTime;
+}
+
     /**
      * Gets executed later if {@link #isOnlyInMemory()}, otherwise provided
      * code gets executed directly.
@@ -728,6 +759,7 @@ return tfCommitSha;
         public NumberField nfMaxHours = new NumberField("MaxHours");
         public TextField tfName = new TextField("Name");
         public TextField tfCommitSha = new TextField("CommitSha");
+        public DateTimePicker dfCommitTime = new DateTimePicker("CommitTime");
         // Buttons
 
         {btnAdd.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}
@@ -738,7 +770,7 @@ return tfCommitSha;
                 e.unregisterListener(); // Make sure it gets only executed once
                 updateButtons();
 };
-        
+
         {btnSave.addThemeVariants(ButtonVariant.LUMO_PRIMARY);}
         public Consumer<ClickEvent<Button>> onBtnSaveClick = (e) -> {
                 btnSave.setEnabled(false);
@@ -747,7 +779,7 @@ return tfCommitSha;
                 btnSave.setEnabled(true);
                 updateButtons();
 };
-        
+
         {btnDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);}
         public Consumer<ClickEvent<Button>> onBtnDeleteClick = (e) -> {
                 btnDelete.setEnabled(false);
@@ -774,6 +806,7 @@ return tfCommitSha;
             form.add(nfMaxHours);
             form.add(tfName);
             form.add(tfCommitSha);
+            form.add(dfCommitTime);
 
 
             // Tooltips
@@ -784,6 +817,7 @@ return tfCommitSha;
             nfMaxHours.setTooltipText(t.comments[3]);
             tfName.setTooltipText(t.comments[4]);
             tfCommitSha.setTooltipText(t.comments[5]);
+            dfCommitTime.setTooltipText(t.comments[6]);
 
 
             // Add buttons
@@ -805,6 +839,7 @@ return tfCommitSha;
             nfMaxHours.setValue(0.0 + data.maxHours);
             tfName.setValue(data.name);
             tfCommitSha.setValue(data.commitSha);
+            dfCommitTime.setValue(data.commitTime == null ? null : data.commitTime.toLocalDateTime());
         }
         public void updateData(){
             data.id = (int) nfId.getValue().doubleValue();
@@ -813,6 +848,7 @@ return tfCommitSha;
             data.maxHours = (int) nfMaxHours.getValue().doubleValue();
             data.name = tfName.getValue();
             data.commitSha = tfCommitSha.getValue();
+            data.commitTime = dfCommitTime.getValue() == null ? null : new java.sql.Timestamp(dfCommitTime.getValue().toEpochSecond(OffsetDateTime.now().getOffset()) * 1000);
         }
 
         public void updateButtons(){
@@ -855,6 +891,9 @@ return new WHERE<String>("`name`");
 }
 public static WHERE<String> whereCommitSha() {
 return new WHERE<String>("`commitSha`");
+}
+public static WHERE<Timestamp> whereCommitTime() {
+return new WHERE<Timestamp>("`commitTime`");
 }
 public static class WHERE<T> {
         /**
@@ -1163,7 +1202,15 @@ public static class WHERE<T> {
 
     }
 // The code below will not be removed when re-generating this class.
-// Additional code start -> 
+// Additional code start ->
+    public static int DELETED_PARENT_ID = -1;
+    static{
+        final var name = "Entries with a deleted parent";
+        var obj = whereName().is(name).getFirstOrNull();
+        if(obj == null) obj = FakeFile.createAndAdd(-1, 0, 0, name, "", null);
+        DELETED_PARENT_ID = obj.id;
+
+}
     private FakeFile(){}
-// Additional code end <- 
+// Additional code end <-
 }

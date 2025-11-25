@@ -6,7 +6,6 @@ import com.osiris.jsqlgen.jsqlgen.TimerTask;
 import com.osiris.jlib.logger.AL;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -17,13 +16,13 @@ import com.vaadin.flow.component.textfield.TextField;
 public class SlidersPopup extends Dialog { // Changed from Desku Popup to Vaadin Dialog
 
     // Spring injected components
-    private final LayoutSliders layoutSliders;
-    private final LayoutButtonsTasks layoutButtonsTasks;
+    private final Sliders sliders;
+    private final ButtonsTasks buttonsTasks;
 
-    public SlidersPopup(boolean isBackFromAFK, Timer timer, LayoutSliders layoutSliders, LayoutButtonsTasks layoutButtonsTasks) {
+    public SlidersPopup(boolean isBackFromAFK, Timer timer, Sliders sliders, ButtonsTasks buttonsTasks) {
         // Constructor injection for dependencies
-        this.layoutSliders = layoutSliders;
-        this.layoutButtonsTasks = layoutButtonsTasks;
+        this.sliders = sliders;
+        this.buttonsTasks = buttonsTasks;
 
         setHeaderTitle(isBackFromAFK ? "Welcome back!" : "Good job!"); // Vaadin Dialog header
 
@@ -53,7 +52,7 @@ public class SlidersPopup extends Dialog { // Changed from Desku Popup to Vaadin
             Task.createAndAdd(v);
             tfTaskName.clear(); // Clear text field after creation
             // Re-render buttons layout via its setValue method
-            layoutButtonsTasks.setValue(timer);
+            buttonsTasks.setValue(timer);
         });
 
         HorizontalLayout hlNewTask = new HorizontalLayout(tfTaskName, createButton);
@@ -65,10 +64,10 @@ public class SlidersPopup extends Dialog { // Changed from Desku Popup to Vaadin
 
 
         // Initialize and set value for the layouts (they are Spring-scoped, so inject them)
-        this.layoutSliders.setValue(timer);
-        this.layoutButtonsTasks.setValue(timer);
+        this.sliders.setValue(timer);
+        this.buttonsTasks.setValue(timer);
 
-        content.add(hlNewTask, this.layoutButtonsTasks, this.layoutSliders); // Add sub-layouts
+        content.add(hlNewTask, this.buttonsTasks, this.sliders); // Add sub-layouts
 
         add(content); // Add the content layout to the dialog
 
@@ -95,8 +94,8 @@ public class SlidersPopup extends Dialog { // Changed from Desku Popup to Vaadin
                     TimerTask.createAndAdd(timer.id, Task.PAUSE.id, isBackFromAFK ? 90 : 10);
             }
             // After creating initial tasks, refresh the slider and button layouts
-            this.layoutSliders.setValue(timer);
-            this.layoutButtonsTasks.setValue(timer);
+            this.sliders.setValue(timer);
+            this.buttonsTasks.setValue(timer);
         }
 
         open(); // Open the dialog immediately

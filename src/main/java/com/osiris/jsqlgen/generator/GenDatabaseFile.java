@@ -9,11 +9,10 @@ import org.apache.commons.collections4.map.LinkedMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.osiris.jsqlgen.generator.GenReferences.getAllDirectRefs;
 import static com.osiris.jsqlgen.generator.GenReferences.getRefTable;
 import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
 
@@ -26,6 +25,8 @@ public class GenDatabaseFile {
         importsList.add("import java.sql.*;");
         importsList.add("import java.util.*;");
         importsList.add("import java.io.File;");
+        importsList.add("import java.util.concurrent.CopyOnWriteArrayList;");
+        importsList.add("import java.util.function.Consumer;");
 
         StringBuilder s = new StringBuilder(
                 "/**\n" +
@@ -44,15 +45,23 @@ public class GenDatabaseFile {
                 "public static String password = " + password + ";\n" +
                 "/** \n" +
                 "* False by default to ensure minimal data loss when using default remove() function.\n" +
-                "* If true rows containing a reference/id of the deleted row, will be deleted too.\n" +
+                "* If true, complete rows containing a reference/id of the deleted row, will be deleted too.\n" +
                 "*/\n" +
                 "public static boolean isRemoveRefs = false;\n" +
+                "/** \n" +
+                "* True by default to ensure no old references are kept in other rows after a removal.\n" +
+                "* If true rows with fields containing a reference/id of the deleted row, will be set to -1.\n" +
+                "* If you want almost no data loss and granular control set this to false too.\n" +
+                "*/\n" +
+                "public static boolean isUnsetRefs = true;\n" +
                 "/** \n" +
                 "* Use synchronized on this before doing changes to it. \n" +
                 "*/\n" +
                 "public static final List<Connection> availableConnections = new ArrayList<>();\n" +
-                    "public static final int defaultInMemoryOnlyObjId = -1;\n" +
-                "public static final TableMetaData[] tables = new TableMetaData[]{");
+                    "public static final List<Consumer<TableMetaData>> beforeTableChange = new CopyOnWriteArrayList<>();\n" +
+                    "public static final List<Consumer<TableMetaData>> afterTableChange = new CopyOnWriteArrayList<>();\n" +
+                    "public static final int defaultInMemoryOnlyObjId = -1;\n"
+                );
 
         CopyOnWriteArrayList<Table> tables = db.tables;
         for (int i = 0; i < tables.size(); i++) {
@@ -60,10 +69,17 @@ public class GenDatabaseFile {
             int latestTableVersion = t.changes.size(); // TODO t.changes has not latest change included at this point yet
             // TODO since this gets generated before the tables get generated.
             // id, tableVersion, steps
-            s.append("new TableMetaData("+t.id+", "+latestTableVersion+", 0, \""+t.name+"\", ");
+            s.append("public static TableMetaData t"+t.name+" = new TableMetaData("+t.id+", "+latestTableVersion+", 0, \""+t.name+"\", ");
             s.append("new String[]{");
             for (int j = 0; j < t.columns.size(); j++) {
                 s.append("\""+t.columns.get(j).name+"\"");
+                if(j != t.columns.size() - 1) s.append(", ");
+            }
+            s.append("}, new long[]{");
+            for (int j = 0; j < t.columns.size(); j++) {
+                s.append(
+                    t.columns.get(j).id
+                    );
                 if(j != t.columns.size() - 1) s.append(", ");
             }
             s.append("}, new String[]{");
@@ -89,6 +105,7 @@ public class GenDatabaseFile {
             s.append("public Class<?> getTableClass(){return "+t.name+".class;}");
             s.append("public List<Database.Row> get(){List<Database.Row> l = new ArrayList<>(); for("+t.name+" obj : "+t.name+".get()) l.add(obj); return l;}");
             s.append("public Database.Row get(Object id){return "+t.name+".get(("+idCol.type.inJava+") id);}");
+            s.append("public List<Database.Row> get(String where, Object... values){List<Database.Row> l = new ArrayList<>(); for("+t.name+" obj : "+t.name+".get(where, values)) l.add(obj); return l;}");
             s.append("public void update(Database.Row obj){"+t.name+".update(("+ t.name +")obj);}");
 
             String initialValues = "";
@@ -96,7 +113,9 @@ public class GenDatabaseFile {
             for (int j = 1; j < columns.size(); j++) { // skip id column, since we are trying to create params for the minimal create method
                 Column col = columns.get(j);
                 if (containsIgnoreCase(col.definition, "NOT NULL")) {
-                    if (col.type.isNumber() || col.type.isDecimalNumber()) { // Potential id field with ref to another table
+                    if(col.type.isBigDecimal())
+                        initialValues += "null, ";
+                    else if (col.type.isNumber() || col.type.isDecimalNumber()) { // Potential id field with ref to another table
                         var refTable = getRefTable(db, col.name);
                         if (refTable != null) initialValues += "defaultInMemoryOnlyObjId, ";
                         else initialValues += "0, ";
@@ -112,6 +131,71 @@ public class GenDatabaseFile {
             s.append("public void remove(Database.Row obj){"+t.name+".remove(("+ t.name +")obj);}");
             s.append("}");
 
+            s.append("; ");
+        }
+
+        /* TODO delete dialog to allow unsetting/deletion of references/rows.
+
+            public static class RowDeleteDialogVaadinComponent<ROW extends Row> extends Dialog {
+        public ROW data;
+        public Button btnDelete = new Button("Confirm Delete");
+        public static class Ref{
+            public TableMetaData table;
+            public int columnIndex;
+
+            public Ref(TableMetaData table, int columnIndex) {
+                this.table = table;
+                this.columnIndex = columnIndex;
+            }
+        }
+        public RowDeleteDialogVaadinComponent(TableMetaData t){
+            var idOfRowToDelete = data.getId();
+            // TODO Check if this row/id is used/referenced in other tables rows
+            for (TableMetaData t1 : Database.tables) {
+                if(t1 == t) continue; // Skip self
+                var potentialColumns = new ArrayList<Ref>();
+                for (int i = 0; i < t1.columns.length; i++) {
+                    TableMetaData colRefTable = t1.columnsRefs[i];
+                    if(colRefTable == t){
+                        // Found column containing a row with a potential reference of our data.id!
+                        potentialColumns.add(new Ref(colRefTable, i));
+                    }
+                }
+                // TODO fetch rows lazy and check potential columns
+                for (Row row : t1.get()) {
+                    // TODO display each row with all its data after 2 checkboxes where
+                    // the first checkbox is named "Unset" and the other "Delete"
+                    // "Unset" if checked will set the reference to -1
+                    // "Delete" will delete the complete row, which must be used with caution
+                }
+            }
+        }
+    }
+
+         */
+
+        s.append("\n//Set table metadata references after all objects have been created\n" +
+            "static {");
+        for (Table t : tables) {
+            s.append("t"+t.name+".columnsRefs = new TableMetaData[]{");
+            for (int j = 0; j < t.columns.size(); j++) {
+                var col = t.columns.get(j);
+                if (col.type.isNumber() || col.type.isDecimalNumber()) { // Potential id field with ref to another table
+                    var refTable = getRefTable(db, col.name);
+                    if (refTable != null) s.append("t"+refTable.name);
+                    else s.append("null");
+                }
+                else s.append("null");
+                if(j != t.columns.size() - 1) s.append(", ");
+            }
+            s.append("};");
+        }
+        s.append("}\n");
+
+        s.append("public static final TableMetaData[] tables = new TableMetaData[]{");
+        for (int i = 0; i < tables.size(); i++) {
+            Table t = tables.get(i);
+            s.append("t"+t.name);
             if(i != tables.size() - 1) s.append(", ");
         }
 
@@ -286,12 +370,12 @@ public class GenDatabaseFile {
                 "            System.exit(1);\n" +
                 "        }\n" +
                 "    }\n" +
-                "    public interface Row{\n" +
+                "    public interface Row<T>{\n" +
                 "        Object getId();\n" +
-                "        void setId(Object id);\n" +
-                "        void update();\n" +
-                "        void add();\n" +
-                "        void remove();\n" +
+                "        T setId(Object id);\n" +
+                "        T update();\n" +
+                "        T add();\n" +
+                "        T remove();\n" +
                 "        String toPrintString();\n" +
                 "        String toMinimalPrintString();\n" +
                 "    }\n" +
@@ -301,16 +385,22 @@ public class GenDatabaseFile {
                 "        public int version;\n" +
                 "        public int steps;\n" +
                 "        public String name;\n" +
+                "/** The column names of this table. */\n" +
                 "        public String[] columns;\n" +
+                "/** The internal identifiers used for each column. For example relevant to find the correct translation. */\n" +
+                "        public long[] columnsIds;\n" +
+                "/** If a column is an id referencing another table its TableMetaData object is given, otherwise null is inserted. */\n" +
+                "        public TableMetaData[] columnsRefs;\n" +
                 "        public String[] definitions;\n" +
                 "        public String[] comments;\n" +
                 "\n" +
-                "        public TableMetaData(int id, int version, int steps, String name, String[] columns, String[] definitions, String[] comments) {\n" +
+                "        public TableMetaData(int id, int version, int steps, String name, String[] columns, long[] columnsIds, String[] definitions, String[] comments) {\n" +
                 "            this.id = id;\n" +
                 "            this.version = version;\n" +
                 "            this.steps = steps;\n" +
                 "            this.name = name;\n" +
                 "            this.columns = columns;\n" +
+                "            this.columnsIds = columnsIds;\n" +
                 "            this.definitions = definitions;\n" +
                 "            this.comments = comments;\n" +
                 "        }\n" +
@@ -320,12 +410,172 @@ public class GenDatabaseFile {
                 "        public Class<?> getTableClass(){throw new RuntimeException(\"Not implemented!\");}\n" + // Class is not provided as field to prevent static constructor execution
                 "        public List<Database.Row> get(){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public Database.Row get(Object id){throw new RuntimeException(\"Not implemented!\");}\n" +
+                "        public List<Database.Row> get(String where, Object... values){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void update(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void add(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "/** Creates a row object for this table by initialising default fields if any present. Note that NOT NULL fields without default values will be initialised as null or defaultInMemoryOnlyObjId if an id field or with 0 if simply a number/decimal. */\n"+
                 "        public Database.Row createWithNulls(){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "        public void remove(Database.Row obj){throw new RuntimeException(\"Not implemented!\");}\n" +
                 "    }\n");
+
+        importsList.add("import com.vaadin.flow.component.UI;");
+        importsList.add("import java.lang.reflect.Field;");
+        importsList.add("import java.util.HashMap;");
+        importsList.add("import java.util.Locale;");
+        importsList.add("import java.util.Map;");
+        importsList.add("import java.util.function.Function;");
+        importsList.add("import java.util.concurrent.CopyOnWriteArrayList;");
+        s.append("""
+                    public static final List<TranslationBase> translations = new CopyOnWriteArrayList<>();
+                    /**
+                     * Logic to get the current locale object. String that will be translated is given for extra info.
+                     * */
+                    public static Function<TranslationBase.TString, Locale> fnGetLocaleForTString = (s) -> {
+                        // For example: return UI.getCurrent().getSession().getLocale();
+                        return Locale.getDefault();
+                    };
+
+                    public static TranslationBase defaultTranslation = new TranslationBase("en");
+
+                    static{
+                        translations.add(defaultTranslation);
+                        // Examples:
+                        // z_internal_translations.add(new AdditionalEnglishTranslation("en"));
+                        // z_internal_translations.add(new GermanTranslation("de"));
+                    }
+
+                /**
+                 * Translator.
+                 * Example LLM prompt for your App: <br>
+                 * <br>
+                 * Extract all english/translatable strings from the provided MainView.java file below, and return 3 fully editted files:
+                 * The first file (T.java, short for Translate.java) should contain all strings in english in public static fields
+                 * like these public static TString EXAMPLE = new TString("EXAMPLE", "example-string");,
+                 * do not implement TString just know that it expects the fieldName and stringValue in its constructor.
+                 * The second file (TGerman.java) should contain all german translations in the same format as T.java,
+                 * like public static TString EXAMPLE = new TString("EXAMPLE", "beispiel-text");.
+                 * The third file (MainView.java) should be almost exactly the same as shown below,
+                 * however replace all extracted strings like "example-string" with ""+T.EXAMPLE, for longer strings pick a shorter name.
+                 */
+                public static class TranslationBase {
+
+
+                    public String z_internal_localeString = "en";
+                    public TranslationBase(String localeString){
+                      this.z_internal_localeString = localeString;
+                    }
+
+                    /**
+                     * Short for translate.
+                     */
+                    public static String t(TString s){
+                        Locale locale;
+                        try{
+                            locale = fnGetLocaleForTString.apply(s);
+                        } catch (Exception ignored) {
+                            locale = Locale.getDefault();
+                        }
+                        for(TranslationBase translation : translations){
+                            if(!translation.z_internal_localeString.equals(locale.getLanguage())) continue;
+                            try {
+                                Field tField = translation.getClass().getDeclaredField(s.fieldName);
+                                tField.setAccessible(true); // Allow access to private fields
+                                return ((TString) tField.get(translation)).value;
+                            } catch (NoSuchFieldException | IllegalAccessException e) {
+                                // try next translation object if exists, or default
+                            }
+                        }
+                        return getFieldValueString(s.fieldName, defaultTranslation);
+                    }
+
+                    public static String getFieldValueString(String fieldName, Object translation){
+                        try{
+                            Field field = translation.getClass().getDeclaredField(fieldName);
+                            field.setAccessible(true);
+                            return ((TString) field.get(translation)).value;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return fieldName;
+                        }
+                    }
+
+                    /**
+                     * Util function.
+                     */
+                    public static String tByFieldName(String fieldName, Object translation){
+                        try{
+                            Field field = translation.getClass().getDeclaredField(fieldName);
+                            field.setAccessible(true);
+                            return t(((TString) field.get(translation)));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return fieldName;
+                        }
+                    }
+
+                    /**
+                     * Util function.
+                     */
+                    public static String tByFieldName(String fieldName){
+                        Locale locale;
+                        try{
+                            locale = fnGetLocaleForTString.apply(new TString(fieldName, ""));
+                        } catch (Exception ignored) {
+                            locale = Locale.getDefault();
+                        }
+                        for(TranslationBase translation : translations){
+                            if(!translation.z_internal_localeString.equals(locale.getLanguage())) continue;
+                            try {
+                                Field tField = translation.getClass().getDeclaredField(fieldName);
+                                tField.setAccessible(true); // Allow access to private fields
+                                return ((TString) tField.get(translation)).value;
+                            } catch (NoSuchFieldException | IllegalAccessException e) {
+                                // try next translation object if exists, or default
+                            }
+                        }
+                        return getFieldValueString(fieldName, defaultTranslation);
+                    }
+
+                    public static class TString {
+                        public String fieldName;
+                        public String value;
+
+                        public TString(String fieldName, String value) {
+                            this.fieldName = fieldName;
+                            this.value = value;
+                        }
+
+                        // LLMs are a bit crazy sometimes
+                        public TString(String fieldName, String value, String valueCopy) {
+                            this.fieldName = fieldName;
+                            this.value = value;
+                        }
+
+                        @Override
+                        public String toString() {
+                            try{
+                                return TranslationBase.t(this);
+                            } catch (Exception e) {
+                                return value;
+                            }
+                        }
+                    }
+
+            """);
+
+        for (Table t : tables) {
+            for (Column col : t.columns) {
+                s.append("public static TString colName"+col.id+
+                    " = /* "+t.name+"."+col.name+" */ new TString(\"colName"+col.id+"\", \""+col.name+"\");");
+                if(col.comment != null && !col.comment.isEmpty()){
+                    s.append("public static TString colComment"+col.id+
+                        " = /*"+t.name+"."+col.name+" (comment) */ new TString(\"colComment"+col.id+"\", \""+col.comment.replace("\"", "\\\"") + "\");");
+                }
+            }
+        }
+
+        s.append("\n}\n");
+
         for (Table t : tables) {
             if(t.isDebug){
                 s.append("""

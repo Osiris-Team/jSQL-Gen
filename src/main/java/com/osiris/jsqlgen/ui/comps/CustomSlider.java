@@ -52,12 +52,12 @@ public class CustomSlider extends Div {
         setWidth("100%");
         addClassName("custom-slider-wrapper");
 
-        label.set(String.valueOf((int) value));
         progressBar.setMin(min);
         progressBar.setMax(max);
         progressBar.setValue(value);
         progressBar.setWidthFull();
         progressBar.addClassName("custom-slider-bar");
+        progressBar.setHeight("50px");
 
         add(label, progressBar);
 

@@ -8,8 +8,6 @@ import com.osiris.jsqlgen.ui.comps.CustomSlider;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.HasComponents;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -21,12 +19,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 
-public class LayoutSliders extends VerticalLayout { // Changed from Desku Component to Vaadin VerticalLayout
+public class Sliders extends VerticalLayout { // Changed from Desku Component to Vaadin VerticalLayout
 
     public List<TimerTask> timerTasks;
     private Timer currentTimer; // Added to hold the current timer
 
-    public LayoutSliders() {
+    public Sliders() {
         setPadding(false); // Equivalent to Desku's padding(false)
         setSpacing(true); // Equivalent to Desku's childGap
         setAlignItems(FlexComponent.Alignment.STRETCH); // To make sliders grow horizontally
@@ -40,8 +38,9 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
         // Registering listeners when component is attached
         Consumer<TimerTask> onAddListener = (timerTask -> {
             getUI().ifPresent(ui -> ui.access(() -> {
-                add(getTimerTaskUI(timerTask));
-                ensureSlidersTotal100(); // Re-balance after adding
+                var timerTaskUI = getTimerTaskUI(timerTask);
+                add(timerTaskUI);
+                ensureSlidersTotal100(timerTaskUI); // Re-balance after adding
             }));
         });
         TimerTask.onAdd.add(onAddListener);
@@ -56,7 +55,7 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
                     }
                 }
                 remove(toRemove.toArray(new Component[0]));
-                ensureSlidersTotal100(); // Re-balance after removing
+                ensureSlidersTotal100(null); // Re-balance after removing
             }));
         });
         TimerTask.onRemove.add(onRemoveListener);
@@ -73,7 +72,7 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
         // as they are typically static in the provided code, but in a large app, you'd manage this carefully.
     }
 
-    public LayoutSliders setValue(@Nullable Timer timer) {
+    public Sliders setValue(@Nullable Timer timer) {
         this.currentTimer = timer; // Store the current timer
         this.removeAll();
 
@@ -90,7 +89,7 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
 
         // Ensure sliders total 100% only if there are sliders
         if (!timerTasks.isEmpty()) {
-            ensureSlidersTotal100();
+            ensureSlidersTotal100(null);
         }
 
         return this;
@@ -109,7 +108,7 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
         // to implement custom client-side extensions or attach JavaScript using Element.executeJs().
         // For simplicity and common use, ValueChangeListener is sufficient for a slider.
 
-        AtomicReference<Double> refValueBefore = new AtomicReference<>();
+        AtomicReference<Double> refValueBefore = new AtomicReference<>(0.0);
 //        slider.addFocusListner(event -> {
 //            // When slider gets focus (e.g., before dragging starts), capture its value
 //            refValueBefore.set(slider.getValue());
@@ -139,86 +138,60 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
                     AL.info("Updated: " + timerTask.toPrintString());
 
                     // Re-balance all sliders to ensure they total 100%
-                    ensureSlidersTotal100();
+                    ensureSlidersTotal100(comp);
                 }));
             }
         });
         return comp;
     }
 
-    private void ensureSlidersTotal100() {
-        if (this.getChildren().count() == 0) return;
+    private void ensureSlidersTotal100(@Nullable TimerTaskUI changedSlider) {
+        List<TimerTaskUI> sliders = getAllSliders();
+        double total = sliders.stream().mapToDouble(s -> s.slider.getValue()).sum();
+        double diff = 100 - total;
 
-        double currentTotal = 0.0;
-        List<TimerTaskUI> activeSliders = new ArrayList<>();
-        for (Component obj : this.getChildren().toList()) {
-            if (obj instanceof TimerTaskUI) {
-                TimerTaskUI child = (TimerTaskUI) obj;
-                currentTotal += child.slider.getValue();
-                activeSliders.add(child);
+        if (Math.abs(diff) < 0.0001) return;
+
+        // distribute diff across all sliders EXCEPT the one that changed
+        List<TimerTaskUI> others = sliders.stream()
+            .filter(s -> s != changedSlider)
+            .toList();
+
+        if (others.isEmpty())
+            return;
+
+        double sumOther = others.stream()
+            .mapToDouble(s -> s.slider.getValue())
+            .sum();
+
+        if (sumOther == 0) {
+            // when other sliders are 0, allocate everything proportionally
+            double part = diff / others.size();
+            for (TimerTaskUI s : others) {
+                updateSlider(s, s.slider.getValue() + part);
             }
-        }
-
-        if (activeSliders.isEmpty()) return;
-
-        double difference = 100.0 - currentTotal;
-
-        // If total is already 100 (or very close due to double precision), no adjustment needed
-        if (Math.abs(difference) < 0.001) {
             return;
         }
 
-        // Distribute the difference proportionally among all sliders
-        // or just apply to the first non-zero slider if the total is less than 100
-        // and to the slider that changed if total is greater than 100 (this is more complex)
-
-        // Simpler approach:
-        // If total > 100, reduce all proportionally, starting from largest.
-        // If total < 100, add to first non-zero, or distribute proportionally.
-
-        // Let's adopt a simple approach: if total is off, adjust the LAST slider (or first)
-        // to make it 100%, and then potentially redistribute proportionally if it's too aggressive.
-        // The original Desku code adjusted the first child if total < 100.
-
-        if (difference != 0.0) {
-            // Find a slider to apply the difference to.
-            // A common strategy is to apply to the last slider that's not zero,
-            // or the first if all are zero.
-            TimerTaskUI sliderToAdjust = null;
-            if (difference > 0) { // Total is less than 100, need to add
-                // Add to the first active slider that's not the one that was just changed, or any if only one
-                sliderToAdjust = activeSliders.get(0);
-            } else { // Total is greater than 100, need to subtract
-                // Subtract from the slider that just moved if it caused the overshoot, or the last one
-                sliderToAdjust = activeSliders.get(activeSliders.size() - 1); // Or more complex logic
-            }
-
-            if (sliderToAdjust != null) {
-                double oldValue = sliderToAdjust.slider.getValue();
-                double newValue = oldValue + difference;
-                if (newValue < 0) { // Prevent negative percentages, redistribute
-                    // This scenario means the adjustment is too large for one slider.
-                    // A more robust solution would distribute the difference across multiple sliders.
-                    AL.warn("Calculated negative slider value for " + sliderToAdjust.taskName + ". Recalculating distribution.");
-                    // Reset and redistribute:
-                    // For example, if total is 105, and one slider is 100, another 5.
-                    // If the 100 slider goes to 90 (total 95), then this code would still be fine.
-                    // But if the 5 slider goes to 0 (total 95), then first one becomes 105 - 95 = 100.
-                    // If a slider goes from 5 to 10 (total 100), the first will be 90.
-                    // If a slider goes from 5 to 20 (total 115), the first will be 80 -> needs 15 subtracted
-                    // It's crucial that `ensureSlidersTotal100` always results in valid states.
-                    redistributeSlidersProportionally();
-                } else {
-                    sliderToAdjust.slider.setValue( newValue);
-                    sliderToAdjust.internalValue.percentageOfTimer = newValue;
-                    sliderToAdjust.internalValue.update();
-                }
-            }
+        // distribute proportionally
+        for (TimerTaskUI s : others) {
+            double share = (s.slider.getValue() / sumOther) * diff;
+            updateSlider(s, s.slider.getValue() + share);
         }
-        // After an initial adjustment, if the total is still slightly off due to rounding,
-        // we can re-evaluate.
-        // For robustness, call this again, or ensure the proportional distribution handles it.
-        // Calling it again without specific logic to prevent infinite loops means simple adjustment.
+    }
+
+    private void updateSlider(TimerTaskUI ui, double newVal) {
+        ui.slider.setValue(newVal);
+        ui.internalValue.percentageOfTimer = newVal;
+        ui.internalValue.update();
+    }
+
+    private List<TimerTaskUI> getAllSliders() {
+        List<TimerTaskUI> list = new ArrayList<>();
+        getChildren().forEach(c -> {
+            if (c instanceof TimerTaskUI) list.add((TimerTaskUI)c);
+        });
+        return list;
     }
 
     private void redistributeSlidersProportionally() {
@@ -285,7 +258,9 @@ public class LayoutSliders extends VerticalLayout { // Changed from Desku Compon
 
             // Vaadin Slider: label is part of the component, range 0-100, step 0.1 for precision
             slider = new CustomSlider(0, 100, 0);
-            slider.label.set(taskName);
+            slider.addValueChangeListener(e -> {
+                slider.label.set(taskName+" " +String.valueOf((int) e.getValue())+"%");
+            });
             slider.setMin(0);
             slider.setMax(100);
             //slider.setStep(0.1);

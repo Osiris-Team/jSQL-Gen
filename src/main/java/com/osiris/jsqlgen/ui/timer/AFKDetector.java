@@ -1,5 +1,8 @@
 package com.osiris.jsqlgen.ui.timer;
 
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef;
+
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
@@ -31,40 +34,65 @@ public class AFKDetector implements AutoCloseable {
         this.onBack = onBack;
 
         if (t != null) t.interrupt();
-        t = new Thread(() -> {
+        Thread t = new Thread(() -> {
             try {
-                Point lastMousePosition = MouseInfo.getPointerInfo().getLocation();
+                WinDef.POINT lastMouse = new WinDef.POINT();
+                User32.INSTANCE.GetCursorPos(lastMouse);
 
                 while (true) {
-                    // Check keyboard activity
-                    boolean keyPressed = com.sun.jna.platform.KeyboardUtils.isPressed(KeyEvent.KEY_PRESSED); // This method should check if any key is pressed
+                    boolean active = false;
 
-                    // Check mouse activity
-                    Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
-                    boolean mouseMoved = !currentMousePosition.equals(lastMousePosition);
-                    lastMousePosition = currentMousePosition;
+                    // 1) Check mouse movement
+                    WinDef.POINT current = new WinDef.POINT();
+                    User32.INSTANCE.GetCursorPos(current);
+
+                    boolean mouseMoved = (current.x != lastMouse.x ||
+                        current.y != lastMouse.y);
+
+                    if (mouseMoved) {
+                        active = true;
+                        lastMouse.x = current.x;
+                        lastMouse.y = current.y;
+                    }
+
+                    // 2) Check keyboard activity
+                    if (isAnyKeyPressed()) {
+                        active = true;
+                    }
 
                     long now = System.currentTimeMillis();
-                    if (keyPressed || mouseMoved) {
+
+                    if (active) {
                         if (wasAFK && onBack != null) {
-                            onBack.accept(lastActivityTime); // User returned from AFK
+                            onBack.accept(lastActivityTime);
                         }
                         lastActivityTime = now;
                         wasAFK = false;
                     } else if (!wasAFK && now - lastActivityTime > INACTIVITY_THRESHOLD) {
-                        onAFK.accept(lastActivityTime); // User became AFK
+                        if (onAFK != null) {
+                            onAFK.accept(lastActivityTime);
+                        }
                         wasAFK = true;
                     }
 
-                    Thread.sleep(500); // Check every 500ms
+                    Thread.sleep(300);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
             }
         });
+
+        t.setDaemon(true);
         t.start();
+    }
+
+    private boolean isAnyKeyPressed() {
+        for (int key = 0x08; key <= 0xFE; key++) {
+            if ((User32.INSTANCE.GetAsyncKeyState(key) & 0x8000) != 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

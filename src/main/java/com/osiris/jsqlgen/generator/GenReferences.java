@@ -33,7 +33,7 @@ public class GenReferences {
             if(t2.name.equals(t.name)) continue;
             for (Column col : t2.columns) {
                 String colName = col.name.toLowerCase();
-                if(colName.equalsIgnoreCase(t.name+"id")){
+                if(containsIgnoreCase(colName, t.name) && colName.endsWith("id")){
                     List<Column> columns = map.get(t2);
                     if(columns == null) {
                         columns = new ArrayList<>();
@@ -93,7 +93,7 @@ public class GenReferences {
 
             for (Column col : columns) {
                 String paramName = getParamName(t1, col);
-                paramsBuilder.append("Class<"+ t1.name + "> " + paramName + ", boolean remove_"+paramName+", ");
+                paramsBuilder.append("Class<"+ t1.name + "> " + paramName + ", boolean remove_row_with_same_"+paramName+", ");
             }
         });
         String params = paramsBuilder.toString();

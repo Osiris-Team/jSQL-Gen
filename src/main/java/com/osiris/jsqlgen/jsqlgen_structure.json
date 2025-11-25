@@ -311,6 +311,12 @@
           "name": "commitSha",
           "definition": "TEXT DEFAULT \u0027\u0027",
           "comment": ""
+        },
+        {
+          "id": 391856,
+          "name": "commitTime",
+          "definition": "DATETIME DEFAULT NULL",
+          "comment": ""
         }
       ],
       "isDebug": false,
@@ -362,6 +368,25 @@
           ],
           "addedColumnDefinitions": [
             "INT DEFAULT 0"
+          ]
+        },
+        {
+          "oldTableName": "FakeFile",
+          "newTableName": "FakeFile",
+          "oldColumnNamesIds": [],
+          "oldColumnNames": [],
+          "newColumnNames": [],
+          "newColumnNames_Definitions": [],
+          "oldColumnDefinitionsIds": [],
+          "oldColumnDefinitions": [],
+          "newColumnDefinitions": [],
+          "newColumnDefinitions_Names": [],
+          "deletedColumnNames": [],
+          "addedColumnNames": [
+            "commitTime"
+          ],
+          "addedColumnDefinitions": [
+            "DATETIME DEFAULT NULL"
           ]
         }
       ],

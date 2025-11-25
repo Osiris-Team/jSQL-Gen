@@ -17,12 +17,13 @@ import com.osiris.jsqlgen.model.Table;
 import com.osiris.jsqlgen.model.TableChange;
 import com.osiris.jsqlgen.ui.LayoutDatabaseOptions;
 import com.osiris.jsqlgen.ui.hours.HoursOrganizerView;
-import com.osiris.jsqlgen.ui.timer.LayoutButtonsTasks;
-import com.osiris.jsqlgen.ui.timer.LayoutSliders;
-import com.osiris.jsqlgen.ui.timer.LayoutTimer;
+import com.osiris.jsqlgen.ui.timer.ButtonsTasks;
+import com.osiris.jsqlgen.ui.timer.Sliders;
+import com.osiris.jsqlgen.ui.timer.Timer;
 import com.osiris.jsqlgen.utils.UFile;
 import com.osiris.osiris_vaadin_utils.ui.popups.Popup;
 import com.osiris.osiris_vaadin_utils.ui.tabs.LayoutTabs;
+import com.osiris.osiris_vaadin_utils.ui.texts.Text;
 import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -35,7 +36,6 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
@@ -50,7 +50,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -108,9 +107,9 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
     // Injected Spring components
     private final LayoutDatabaseOptions lyDatabaseOptions = new LayoutDatabaseOptions();
 
-    private final LayoutSliders layoutSliders = new LayoutSliders(); // For SlidersPopup constructor
-    private final LayoutButtonsTasks layoutButtonsTasks = new LayoutButtonsTasks(layoutSliders); // For SlidersPopup constructor
-    private final LayoutTimer layoutTimer = new LayoutTimer(layoutSliders, layoutButtonsTasks);
+    private final Sliders sliders = new Sliders(); // For SlidersPopup constructor
+    private final ButtonsTasks buttonsTasks = new ButtonsTasks(sliders); // For SlidersPopup constructor
+    private final Timer timer = new Timer(sliders, buttonsTasks);
 
     public MainView() {
         // Vaadin CSS is typically handled in shared-styles.html or themes
@@ -160,10 +159,13 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
         tabsCode.getStyle().set("display", "flex"); // Ensure children fill horizontal space
         tabsCode.getStyle().set("flex-direction", "column"); // Ensure children fill vertical space
 
+        for (String seriousWarning : Data.seriousWarnings) {
+            add(new Text(seriousWarning).setColor("red"));
+        }
 
         LayoutTabs mainTabs = new LayoutTabs();
         mainTabs.addTabAndPage("Home", lyHome);
-        mainTabs.addTabAndPage("Timer", layoutTimer);
+        mainTabs.addTabAndPage("Timer", timer);
         mainTabs.addTabAndPage("Hours", new HoursOrganizerView());
         add(mainTabs); // Put all content in a div and control visibility
 
@@ -307,7 +309,14 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
                 "If a database with the same name exists its replaced by the imported one, thus proceed with caution.\n" +
                 "A backup of the current structure will be created though.");
         btnImportDatabase.addClickListener(e -> showComingSoonPopup("Import Database"));
-        btnExportDatabase.addClickListener(e -> showComingSoonPopup("Export Database"));
+        btnExportDatabase.addClickListener(e -> {
+            Database db = Data.getDatabase(dbSelector.getValue());
+            if (db == null) {
+                AL.warn("Database '" + dbName + "' not found.");
+                return;
+            }
+            new DatabaseExportDialog(db).open();
+        });
         btnMergeDatabasesFromDir.addClickListener(this::handleMergeDatabasesFromDir);
         btnShowData.addClickListener(e -> {
             try {

@@ -1,3 +1,4 @@
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -17,7 +18,7 @@ import java.util.function.Consumer;
 class ThisProject extends JPM.Project {
 
     public ThisProject(List<String> args) {
-        // Override default configurations
+// Override default configurations
         this.groupId = "com.example";
         this.artifactId = "vaadin-boot-example-maven";
         this.version = "1.0-SNAPSHOT";
@@ -28,48 +29,67 @@ class ThisProject extends JPM.Project {
         this.javaVersionTarget = "21";
         String vaadinVersion = "24.4.7";
 
-        // Add repositories
+// Add repositories
         addRepository("https://repo.maven.apache.org/maven2", false);
         addRepository("https://maven.vaadin.com/vaadin-addons", false);
         addRepository("https://jitpack.io");
 
-        // Force dependencies versions for duplicates
-        forceImplementation("com.vaadin:vaadin-bom:" + vaadinVersion+":import").type = "pom";
+// =========================
+// FORCE VERSIONS (FIXED)
+// =========================
+
+// Vaadin BOM
+        forceImplementation("com.vaadin:vaadin-bom:" + vaadinVersion + ":import").type = "pom";
+
+// Other BOM / important overrides
         forceImplementation("com.vaadin:open:8.5.0.1");
         forceImplementation("commons-io:commons-io:2.16.1");
         forceImplementation("jakarta.annotation:jakarta.annotation-api:2.1.1");
         forceImplementation("org.eclipse.jetty.ee10:jetty-ee10-annotations:12.0.10");
 
-        // Add dependencies
+// Dependency convergence fixes
+        forceImplementation("org.apache.commons:commons-lang3:3.14.0");
+        forceImplementation("com.google.code.gson:gson:2.11.0");
+        forceImplementation("com.fasterxml.jackson.core:jackson-core:2.18.2");
+        forceImplementation("com.fasterxml.jackson.core:jackson-annotations:2.18.2");
+        forceImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.2");
+        forceImplementation("com.github.javaparser:javaparser-core:3.25.10");
+        forceImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10");
+        forceImplementation("commons-codec:commons-codec:1.16.1");
+
+// Those you explicitly requested
+        forceImplementation("org.checkerframework:checker-qual:3.43.0");
+        forceImplementation("com.google.errorprone:error_prone_annotations:2.26.1");
+        forceImplementation("org.jetbrains:annotations:24.1.0");
+
+
+// =========================
+// DEPENDENCIES
+// =========================
+
         implementation("com.vaadin:vaadin-core")
             .exclude("javax.annotation:javax.annotation-api");
+
         implementation("com.github.mvysny.vaadin-boot:vaadin-boot:12.3");
         implementation("org.slf4j:slf4j-simple:2.0.13");
-        implementation("org.jetbrains:annotations:24.1.0").scope = "provided";
-        implementation("com.github.Osiris-Team:Osiris-Vaadin-Utils:ebbb4e7f44");
 
-        implementation("org.apache.commons:commons-lang3:3.12.0");
-        implementation("com.github.javaparser:javaparser-core:3.24.4");
-        implementation("com.google.code.gson:gson:2.9.0");
+// Provided
+        implementation("org.jetbrains:annotations:24.1.0").scope = "provided";
+
+// Utilities
+        implementation("com.github.Osiris-Team:Osiris-Vaadin-Utils:ebbb4e7f44");
         implementation("org.apache.commons:commons-collections4:4.4");
         implementation("org.apache.maven:maven-model:3.3.9");
         implementation("com.github.Osiris-Team:Dyml:9.8.3");
         implementation("com.github.Osiris-Team:Desku:1.3.0");
         implementation("com.github.jsqlparser:jsqlparser:4.9");
-        implementation("ch.vorburger.mariaDB4j:mariaDB4j:3.0.1"); // used in testing and in the project itself
+        implementation("ch.vorburger.mariaDB4j:mariaDB4j:3.0.1");
         implementation("mysql:mysql-connector-java:8.0.24");
         implementation("net.java.dev.jna:jna:5.14.0");
         implementation("net.java.dev.jna:jna-platform:5.14.0");
         implementation("ru.lanwen.verbalregex:java-verbal-expressions:1.8");
         implementation("org.mariadb.jdbc:mariadb-java-client:3.5.0");
-        // https://mvnrepository.com/artifact/org.kohsuke/github-api
         implementation("org.kohsuke:github-api:1.329");
-
-        forceImplementation("org.checkerframework:checker-qual:3.43.0");
-        forceImplementation("org.apache.commons:commons-lang3:3.14.0");
-        forceImplementation("com.google.errorprone:error_prone_annotations:2.26.1");
-        forceImplementation("com.github.javaparser:javaparser-core:3.25.10");
-        forceImplementation("org.jetbrains:annotations:24.1.0");
 
 
         //testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.0");
@@ -114,7 +134,55 @@ class ThisProject extends JPM.Project {
         List<String> args = Arrays.asList(_args);
         ThisProject project = new ThisProject(args);
         project.generatePom();
-        JPM.executeMaven("clean", "package");
+        JPM.executeMaven("clean", "package", "-DskipTests");
+
+        // Path to the built ZIP archive
+        String zipPath = System.getProperty("user.dir")
+            + "/target/vaadin-boot-example-maven-1.0-SNAPSHOT-zip.zip";
+
+        File zip = new File(zipPath);
+        if (!zip.exists()) {
+            throw new FileNotFoundException("ZIP not found: " + zip.getAbsolutePath());
+        }
+
+        File extractDir = new File(System.getProperty("user.dir") + "/target/extracted");
+        if (!extractDir.exists()) extractDir.mkdirs();
+
+        // -------------------------------------------------------
+        // Extraction logic using ProcessBuilder (CROSS-PLATFORM)
+        // -------------------------------------------------------
+        List<String> command;
+// Windows → use PowerShell Expand-Archive
+        command = Arrays.asList(
+            "powershell.exe",
+            "-NoLogo",
+            "-NoProfile",
+            "-Command",
+            "Expand-Archive -Force \"" + zip.getAbsolutePath() + "\" \"" + extractDir.getAbsolutePath() + "\""
+        );
+
+        System.out.println("Running extraction: " + command);
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+
+        try (BufferedReader reader = new BufferedReader(
+            new InputStreamReader(process.getInputStream()))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+        }
+
+        int exit = process.waitFor();
+        if (exit != 0) {
+            throw new RuntimeException("Extraction failed with exit code " + exit);
+        }
+
+        System.out.println("✔ ZIP extracted to: " + extractDir.getAbsolutePath());
     }
 }
 

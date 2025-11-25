@@ -3,6 +3,7 @@ package com.osiris.jsqlgen.generator;
 import com.osiris.jlib.logger.AL;
 import com.osiris.jsqlgen.Data;
 import com.osiris.jsqlgen.model.*;
+import com.osiris.jsqlgen.utils.UString;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -88,7 +89,7 @@ public class GenTableFile {
                 "<br>\n");
         classContentBuilder.append(
             "*/\n" +
-                "public class " + t.name + " implements Database.Row{\n" +
+                "public class " + t.name + " implements Database.Row<"+t.name+">{\n" +
                 "  public static final int TABLE_ID = "+t.id+";\n"); // Open class
 
         // Append public inner enum classes
@@ -133,7 +134,7 @@ public class GenTableFile {
                 "    }\n");
         classContentBuilder.append(
             "public Object getId(){return "+idCol.name+";}\n" +
-            "public void setId(Object id){this."+idCol.name+" = ("+idCol.type.inJava+") id;}\n");
+            "public "+t.name+" setId(Object id){this."+idCol.name+" = ("+idCol.type.inJava+") id; return this;}\n");
 
         // STATIC TABLE INIT METHOD
         // TODO also check if a type conversion was made and check if that conversion is valid.
@@ -220,7 +221,7 @@ public class GenTableFile {
         classContentBuilder.append("}\n\n"); // Close create method
 
         // CREATE CREATE METHODS:
-        classContentBuilder.append(GenCreateMethods.s(t, tNameQuoted, constructor, minimalConstructor, hasMoreFields));
+        classContentBuilder.append(GenCreateAndGetMethods.s(db, t, tNameQuoted, constructor, minimalConstructor, hasMoreFields));
 
 
         // CREATE COUNT METHOD:
@@ -300,19 +301,48 @@ public class GenTableFile {
         );
         classContentBuilder.append("}\n\n"); // Close update method
 
+        // CREATE UPDATE BY ID METHOD:
+        classContentBuilder.append("/**\n" +
+            "Updates the primary key (id) of the object in the database.\n" +
+            "@param oldId the current id of the row\n" +
+            "@param newId the new id value to set\n" +
+            "@throws Exception when failed to find by id or other SQL issues.\n" +
+            "*/\n" +
+            "public static void updateId(int oldId, int newId) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
+            "String sql = \"UPDATE " + tNameQuoted + " SET " + idCol.nameQuoted + "=? WHERE " + idCol.nameQuoted + "=?\";\n" +
+            (t.isDebug ? "long msGetCon = System.currentTimeMillis(); long msJDBC = 0;\n" : "") +
+            "Connection con = Database.getCon();\n" +
+            (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
+            (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
+            "try (PreparedStatement ps = con.prepareStatement(sql)) {\n" +
+            "ps.setInt(1, newId);\n" +
+            "ps.setInt(2, oldId);\n" +
+            "ps.executeUpdate();\n" +
+            (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
+            (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +
+            "finally{\n" +
+            (t.isDebug ? "System.err.println(sql+\" /* //// msGetCon=\"+msGetCon+\" msJDBC=\"+msJDBC+\" con=\"+con+\" minimalStack=\"+minimalStackString()+\" */\");\n" : "") +
+            "Database.freeCon(con);\n" +
+            (t.isCache ? "clearCache();\n" : "") +
+            "}\n" +
+            "}\n\n");
+
+
 
         // CREATE ADD METHOD:
+        var isAutoIncrement = UString.containsIgnoreCase(idCol.definition, "AUTO_INCREMENT");
+        var iStart = isAutoIncrement ? 1 : 0; // start=1 to ignore id
         classContentBuilder.append("/**\n" +
             "Adds the provided object to the database (note that the id is not checked for duplicates).\n" +
             "*/\n" +
             "public static void add(" + t.name + " obj) " + (t.isNoExceptions ? "" : "throws Exception") + " {\n" +
             "String sql = \"INSERT INTO " + tNameQuoted + " (");
-        for (int i = 1; i < t.columns.size() - 1; i++) { // start=1 to ignore id
+        for (int i = iStart; i < t.columns.size() - 1; i++) { // start=1 to ignore id
             classContentBuilder.append(t.columns.get(i).nameQuoted + ",");
         }
-        classContentBuilder.append(t.columns.get(t.columns.size() - 1).nameQuoted);
+        classContentBuilder.append(t.columns.getLast().nameQuoted);
         classContentBuilder.append(") VALUES (");
-        for (int i = 1; i < t.columns.size() - 1; i++) { // start=1 to ignore id
+        for (int i = iStart; i < t.columns.size() - 1; i++) { // start=1 to ignore id
             classContentBuilder.append("?,");
         }
         classContentBuilder.append("?)\";\n");
@@ -321,24 +351,25 @@ public class GenTableFile {
                 "Connection con = Database.getCon();\n" +
                 (t.isDebug ? "msGetCon = System.currentTimeMillis() - msGetCon;\n" : "") +
                 (t.isDebug ? "msJDBC = System.currentTimeMillis();\n" : "") +
-                "try (PreparedStatement ps = con.prepareStatement(sql, new String[]{\""+idCol.name+"\"})) {\n" // Open try/catch
+                "try (PreparedStatement ps = con.prepareStatement(sql"+
+                (isAutoIncrement ? ", new String[]{\""+idCol.name+"\"}" : "")+")) {\n" // Open try/catch
         );
-        for (int i = 1; i < t.columns.size(); i++) { // start=1 to ignore id
+        for (int i = iStart; i < t.columns.size(); i++) {
             Column c = t.columns.get(i);
-            classContentBuilder.append(JavaCodeGenerator.genJDBCSet(c, i - 1)); // -1 since we ignore id
+            classContentBuilder.append(JavaCodeGenerator.genJDBCSet(c, isAutoIncrement ? i - 1 : i)); // -1 since we ignore id
         }
         classContentBuilder.append(
             "ps.executeUpdate();\n" +
-                "" +
-                "    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { \n" +
-                "        if (generatedKeys.next()) { // Retrieve the first auto-generated ID\n" +
-                "            "+idCol.type.inJava+" generatedId = generatedKeys.get"+firstToUpperCase(idCol.type.inJava)+"(1);\n" +
-                "            obj."+idCol.name+" = generatedId;\n" +
-                "        } else {\n" +
-                "            //System.out.println(\"No ID generated.\"); This should never happen...\n" +
-                "        }\n" +
-                "    }" +
-                "" +
+                (isAutoIncrement ? "" +
+                    "    try (ResultSet generatedKeys = ps.getGeneratedKeys()) { \n" +
+                    "        if (generatedKeys.next()) { // Retrieve the first auto-generated ID\n" +
+                    "            "+idCol.type.inJava+" generatedId = generatedKeys.get"+firstToUpperCase(idCol.type.inJava)+"(1);\n" +
+                    "            obj."+idCol.name+" = generatedId;\n" +
+                    "        } else {\n" +
+                    "            //System.out.println(\"No ID generated.\"); This should never happen...\n" +
+                    "        }\n" +
+                    "    }\n" +
+                    "" : "") +
                 (t.isDebug ? "msJDBC = System.currentTimeMillis() - msJDBC;\n" : "") +
                 (t.isNoExceptions ? "}catch(Exception e){throw new RuntimeException(e);}\n" : "}\n") +// Close try/catch
                 "finally{" +
@@ -367,21 +398,24 @@ public class GenTableFile {
         classContentBuilder.append(");\n}\n");
 
         // CREATE OBJ ADD METHOD
-        classContentBuilder.append("public void add(){\n" +
-            t.name + ".add(this);\n" +
+        classContentBuilder.append("public "+t.name+" add(){\n" +
+            t.name + ".add(this); return this;\n" +
             "}\n");
 
         // CREATE OBJ UPDATE METHOD
-        classContentBuilder.append("public void update(){\n" +
-            t.name + ".update(this);\n" +
+        classContentBuilder.append("public "+t.name+" update(){\n" +
+            t.name + ".update(this); return this;\n" +
+            "}\n");
+        classContentBuilder.append("public "+t.name+" updateId(int newId){\n" +
+            t.name + ".updateId(this.id, newId); this.id = newId; return this;\n" +
             "}\n");
 
         // CREATE OBJ REMOVE METHOD
-        classContentBuilder.append("public void remove(){\n" +
-            t.name + ".remove(this);\n" +
+        classContentBuilder.append("public "+t.name+" remove(){\n" +
+            t.name + ".remove(this); return this;\n" +
             "}\n");
-        classContentBuilder.append("public void remove(boolean unsetRefs, boolean removeRefs){\n" +
-            t.name + ".remove(this, unsetRefs, removeRefs);\n" +
+        classContentBuilder.append("public "+t.name+" remove(boolean unsetRefs, boolean removeRefs){\n" +
+            t.name + ".remove(this, unsetRefs, removeRefs); return this;\n" +
             "}\n");
 
         // CREATE OBJ TOPRINTSTRING METHOD

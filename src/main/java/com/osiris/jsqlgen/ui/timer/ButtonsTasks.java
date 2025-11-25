@@ -5,7 +5,6 @@ import com.osiris.jsqlgen.jsqlgen.Task;
 import com.osiris.jsqlgen.jsqlgen.Timer;
 import com.osiris.jsqlgen.jsqlgen.TimerTask;
 import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -15,13 +14,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-public class LayoutButtonsTasks extends FlexLayout { // Changed from Desku Component to Vaadin FlexLayout
+public class ButtonsTasks extends FlexLayout { // Changed from Desku Component to Vaadin FlexLayout
     private Timer currentTimer; // Added to hold the current timer
 
-    private final LayoutSliders layoutSliders; // Kept as it's a dependency
+    private final Sliders sliders; // Kept as it's a dependency
 
-    public LayoutButtonsTasks(LayoutSliders layoutSliders) {
-        this.layoutSliders = layoutSliders;
+    public ButtonsTasks(Sliders sliders) {
+        this.sliders = sliders;
         setFlexDirection(FlexDirection.ROW); // Equivalent to Desku's childHorizontal or row
         setFlexWrap(FlexWrap.WRAP); // Allows buttons to wrap
         setJustifyContentMode(JustifyContentMode.START);
@@ -59,7 +58,7 @@ public class LayoutButtonsTasks extends FlexLayout { // Changed from Desku Compo
 
     private static final Object dbLock = new Object();
 
-    public LayoutButtonsTasks setValue(@Nullable Timer timer) {
+    public ButtonsTasks setValue(@Nullable Timer timer) {
         this.currentTimer = timer; // Store the current timer
         this.removeAll();
 
@@ -85,7 +84,7 @@ public class LayoutButtonsTasks extends FlexLayout { // Changed from Desku Compo
                             timerTask.remove();
                             AL.info("Disabled: " + task.toPrintString());
                             // Trigger re-evaluation of sliders if needed (e.g., total percentage)
-                            layoutSliders.getUI().ifPresent(ui -> ui.access(() -> layoutSliders.setValue(currentTimer)));
+                            sliders.getUI().ifPresent(ui -> ui.access(() -> sliders.setValue(currentTimer)));
                         }
 
                     } else {
@@ -103,7 +102,7 @@ public class LayoutButtonsTasks extends FlexLayout { // Changed from Desku Compo
                         TimerTask.createAndAdd(timer.id, task.id, 0); // Initial percentage can be 0 or adjusted later
                         AL.info("Enabled: " + task.toPrintString());
                         // Trigger re-evaluation of sliders
-                        layoutSliders.getUI().ifPresent(ui -> ui.access(() -> layoutSliders.setValue(currentTimer)));
+                        sliders.getUI().ifPresent(ui -> ui.access(() -> sliders.setValue(currentTimer)));
                     }
                 }
             });

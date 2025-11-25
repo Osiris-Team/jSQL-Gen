@@ -82,7 +82,10 @@ public class JavaCodeGenerator {
 
             // MAKE ALL IDS REQUIRE AUTO_INCREMENT
             // TODO support other db dialects for this feature
-            if (containsIgnoreCase(idCol.definition, "AUTO_INCREMENT")) continue;
+            if (containsIgnoreCase(idCol.definition, "AUTO_INCREMENT"))
+                continue;
+            if(!containsIgnoreCase(idCol.definition, "PRIMARY KEY")) // Must be a primary key
+                continue;
             System.out.println("Found suspicious definition without AUTO_INCREMENT in id, inserted it for "+db.name+"."+t.name+"."+idCol.name);
             int firstSpaceI = idCol.definition.indexOf(" ");
             String newDef;
@@ -150,7 +153,13 @@ public class JavaCodeGenerator {
                 try(Statement stmt = conn.createStatement()){
                     // Create dummy table for testing column addition
                     var idCol = t.columns.get(0);
-                    stmt.execute("CREATE TABLE `"+t.name+"` ("+idCol.nameQuoted+" "+idCol.definition+")");
+                    String createSQL = "CREATE TABLE `"+t.name+"` ("+idCol.nameQuoted+" "+idCol.definition+")";
+                    try {
+                        stmt.execute(createSQL);
+                    } catch (Exception e) {
+                        throw new RuntimeException("[MySQL-Check] Invalid create table SQL for " + t.name + ", failed SQL: " + createSQL+", details: "+e.getMessage(), e);
+                    }
+
                     ArrayList<Column> columns = t.columns;
                     for (int i = 1; i < columns.size(); i++) { // Skip id/first col
                         Column col = columns.get(i);
@@ -158,7 +167,7 @@ public class JavaCodeGenerator {
                         try {
                             stmt.execute(sql); // Run it against real MariaDB
                         } catch (Exception e) {
-                            throw new RuntimeException("[MySQL-Check] Invalid SQL for column " + t.name + "." + col.name + ", failed SQL: " + sql, e);
+                            throw new RuntimeException("[MySQL-Check] Invalid SQL for column " + t.name + "." + col.name + ", failed SQL: " + sql+", details: "+e.getMessage(), e);
                         }
                     }
                 }

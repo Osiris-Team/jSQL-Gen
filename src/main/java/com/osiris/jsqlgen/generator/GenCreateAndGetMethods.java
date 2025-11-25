@@ -1,13 +1,19 @@
 package com.osiris.jsqlgen.generator;
 
 import com.osiris.jsqlgen.model.Column;
+import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
 
-import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.osiris.jsqlgen.generator.GenReferences.*;
 import static com.osiris.jsqlgen.utils.UString.firstToUpperCase;
 
-public class GenCreateMethods {
-    public static String s(Table t, String tNameQuoted, JavaCodeGenerator.Constructor constructor, JavaCodeGenerator.Constructor minimalConstructor, boolean hasMoreFields) {
+public class GenCreateAndGetMethods {
+    public static String s(Database db, Table t, String tNameQuoted, JavaCodeGenerator.Constructor constructor, JavaCodeGenerator.Constructor minimalConstructor, boolean hasMoreFields) {
         StringBuilder sb = new StringBuilder();
         sb.append("""
                 /**
@@ -209,7 +215,7 @@ public class GenCreateMethods {
                 "// Your code will not compile here, because your id is not a numeric type!\n" : "")+
                 "            long count = 0;\n" +
                 "            while(true){\n" +
-                "                results = where"+firstToUpperCase(idCol.name)+"().biggerThan(lastId).and(finalWhere).limit(limit).get();\n" +
+                "                results = where"+firstToUpperCase(idCol.name)+"().biggerThan(lastId).and(finalWhere).and(where"+firstToUpperCase(idCol.name)+"().smallestFirst()).limit(limit).get();\n" +
                 "                if(results.isEmpty()) break;\n" +
                 "                lastId = ("+idCol.type.inJava+") results.get(results.size() - 1).getId();\n" +
                 "                count += results.size();\n" +
@@ -255,6 +261,49 @@ public class GenCreateMethods {
                 "        while(thread.isAlive()) Thread.yield();\n" +
                 "        return thread;\n" +
                 "    }\n\n");
+
+        LinkedHashMap<Table, List<Column>> allRefs = getAllRefs(db, t);
+        LinkedHashMap<Table, List<Column>> allDirectRefs = getAllDirectRefs(db, t);
+
+
+        // TODO create getRefs method for object/row
+        sb.append("" +
+            "public static abstract class RowRef{" +
+            "public Database.Row row;\n" +
+            "public Database.TableMetaData table;\n" +
+            "public String refFieldName;\n"+
+            "public RowRef(Database.Row row, Database.TableMetaData table, String refFieldName){this.row = row; this.table = table; this.refFieldName = refFieldName;}\n" +
+            "public abstract Object getRefFieldValue();\n" +
+            "public abstract void setRefFieldValue(Object val);\n" +
+            "}\n" +
+            "public static class Refs{\n" +
+            "public "+t.name+" data;\n" +
+            "public List<RowRef> all = new ArrayList<>();\n");
+        List<String> fnCalls = new ArrayList<>();
+        allDirectRefs.forEach((t1, columns) -> {
+            for (Column refCol : columns) {
+                String param = getParamName(t1, refCol);
+                String s = "public List<RowRef> rows_with_same_"+ param + ";\n";
+
+                s += "public List<RowRef> update_rows_with_same_"+ param + "(){ List<"+t1.name+"> list = "+t1.name+".where"+firstToUpperCase(refCol.name)
+                    +"().is(data."+idCol.name+").get();\n" +
+                    "List<RowRef> results = new ArrayList<>();\n" +
+                    "for(var obj : list)" +
+                    "{ results.add(new RowRef(obj, Database.t"+t1.name+", \""+refCol.name+"\"){ public Object getRefFieldValue(){return obj."+refCol.name+";}" +
+                    "public void setRefFieldValue(Object val){ obj."+refCol.name+" = ("+refCol.type.inJava+") val; } });\n" +
+                    "}\n" +
+                    "rows_with_same_"+ param + " = results; return results;\n" +
+                    "}";
+                if(!refCol.type.equals(idCol.type)) s = "/* Possibly not a primary id, since types do not match, thus ignored! " +
+                    t1.name+"."+refCol.name+" "+refCol.type.inJava +" != "+t.name+"."+idCol.name+" "+idCol.type.inJava+" \n" + s + "*/";
+                else
+                    fnCalls.add("all.addAll(update_rows_with_same_"+ param+"());\n");
+                sb.append(s + "\n");
+            }
+        });
+        sb.append("public Refs("+t.name+" data){this.data=data;\n"+(String.join("", fnCalls))+"}\n");
+        sb.append("}");
+
         return sb.toString();
     }
 }
