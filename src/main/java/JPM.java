@@ -1,4 +1,4 @@
-import org.apache.commons.compress.archivers.zip.ZipFile;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -134,7 +134,7 @@ class ThisProject extends JPM.Project {
         List<String> args = Arrays.asList(_args);
         ThisProject project = new ThisProject(args);
         project.generatePom();
-        JPM.executeMaven("clean", "package", "-DskipTests");
+        JPM.executeMaven("clean", "package", "-DskipTests", "-Pproduction");
 
         // Path to the built ZIP archive
         String zipPath = System.getProperty("user.dir")
@@ -145,7 +145,7 @@ class ThisProject extends JPM.Project {
             throw new FileNotFoundException("ZIP not found: " + zip.getAbsolutePath());
         }
 
-        File extractDir = new File(System.getProperty("user.dir") + "/target/extracted");
+        File extractDir = new File(System.getProperty("user.dir"));
         if (!extractDir.exists()) extractDir.mkdirs();
 
         // -------------------------------------------------------

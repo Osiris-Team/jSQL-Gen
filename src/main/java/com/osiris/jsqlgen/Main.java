@@ -24,6 +24,10 @@ import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
+    // TODO cannot run main from IDE anymore after extracting zip and moving /libs to project root?
+    // now this error:
+    // Fehler: Hauptklasse com.osiris.jsqlgen.Main konnte nicht gefunden oder geladen werden
+    //Ursache: java.lang.ClassNotFoundException: com.osiris.jsqlgen.Main
     public static AsyncFileTailReader asyncIn;
     public static AsyncFileTailReader asyncInErr;
 

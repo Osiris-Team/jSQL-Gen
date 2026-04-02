@@ -135,9 +135,9 @@ public class GenStaticTableConstructor {
                             "                    BEGIN\n" +
                             "                        EXEC('ALTER TABLE ["+t.name+"] DROP CONSTRAINT [' + @pk_name + ']');\n" +
                             "                    END\n" +
-                            "                    \"\"\");} catch (Exception e3){" +
+                            "                    \"\"\");} catch (Exception e3){ if(e1.getMessage().contains(\"it exists\")) System.out.println(\"Ignored exception \"+e1.getMessage()); else {" +
                             "e1.printStackTrace();e2.printStackTrace();e3.printStackTrace(); throw new Exception(\"Failed to drop primary key constraint." +
-                            " Your specific SQL database might not be supported, in this case create a PR on Github for jSQL-Gen and do it manually for now.\");\n" +
+                            " Your specific SQL database might not be supported, in this case create a PR on Github for jSQL-Gen and do it manually for now.\");}\n" +
                             "}}}");
                     }
 

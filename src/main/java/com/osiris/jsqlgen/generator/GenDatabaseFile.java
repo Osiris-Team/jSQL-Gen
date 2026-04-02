@@ -115,10 +115,13 @@ public class GenDatabaseFile {
                 if (containsIgnoreCase(col.definition, "NOT NULL")) {
                     if(col.type.isBigDecimal())
                         initialValues += "null, ";
+                    else if(col.type.isBitOrBoolean()){
+                        initialValues += "false, ";
+                    }
                     else if (col.type.isNumber() || col.type.isDecimalNumber()) { // Potential id field with ref to another table
                         var refTable = getRefTable(db, col.name);
                         if (refTable != null) initialValues += "defaultInMemoryOnlyObjId, ";
-                        else initialValues += "0, ";
+                        else initialValues += "("+col.type.inJava+") 0, ";
                     } else {
                         initialValues += "null, ";
                     }
@@ -536,7 +539,7 @@ public class GenDatabaseFile {
                         return getFieldValueString(fieldName, defaultTranslation);
                     }
 
-                    public static class TString {
+                    public static class TString implements CharSequence{
                         public String fieldName;
                         public String value;
 
@@ -552,12 +555,34 @@ public class GenDatabaseFile {
                         }
 
                         @Override
+                        public int length() {
+                            if(cachedValue == null) toString();
+                            return cachedValue.length();
+                        }
+
+                        @Override
+                        public char charAt(int index) {
+                            if(cachedValue == null) toString();
+                            return cachedValue.charAt(index);
+                        }
+
+                        @Override
+                        public CharSequence subSequence(int start, int end) {
+                            if(cachedValue == null) toString();
+                            return cachedValue.subSequence(start, end);
+                        }
+                        public String cachedValue = null;
+
+                        @Override
                         public String toString() {
+                            var val = "";
                             try{
-                                return TranslationBase.t(this);
+                                val = TranslationBase.t(this);
                             } catch (Exception e) {
-                                return value;
+                                val = value;
                             }
+                            this.cachedValue = val;
+                            return val;
                         }
                     }
 

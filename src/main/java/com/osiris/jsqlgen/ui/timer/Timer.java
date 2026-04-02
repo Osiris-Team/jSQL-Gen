@@ -102,6 +102,8 @@ public class Timer extends VerticalLayout implements Refreshable { // Changed fr
                     AL.info("Stopped at "+ existingTimer.end);
                     btnStartStop.setText("Start");
                     add(new SlidersPopup(false, existingTimer, sliders, buttonsTasks)); // Add popup to the current layout
+                } else{
+                    AL.warn("Failed to stop weird timer with end = "+existingTimer.end);
                 }
             }
             afk.startActivityMonitorIfNeeded();

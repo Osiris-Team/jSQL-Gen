@@ -52,53 +52,33 @@ public class GenVaadinFlow {
         importsList.add("import java.util.function.Function;");
         importsList.add("import java.util.function.Consumer;");
         importsList.add("import com.vaadin.flow.component.UI;");
+        importsList.add("import com.vaadin.flow.component.UIDetachedException;");
 
         // Generate needed classes
         s.append(genBooleanSelectClass(importsList));
 
 
+        var listenerCode = "/** Executed for all objects */\n" +
+            "public static Consumer<"+t.name+"> on_PLACEHOLDER_V(Consumer<"+t.name+"> code){\n" +
+            "UI ui = UI.getCurrent(); " +
+            "Consumer<"+t.name+"> code2 = (obj) -> {try { ui.access(() -> {code.accept(obj);});} catch (UIDetachedException ignored) {/*Assumes race condition and that the detach listener will execute a little later*/}};" +
+            " ui.addDetachListener(e -> {"+t.name+".on_PLACEHOLDER_.remove(code2);});" +
+            " "+t.name+".on_PLACEHOLDER_.add(code2); return code2;\n}\n";
+
         s.append("" +
-                "// Executed for all objects\n" +
-                "public static Consumer<"+t.name+"> onCreateV(Consumer<"+t.name+"> code){\n" +
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onCreate.remove(code2);}); "+t.name+".onCreate.add(code2); return code2;\n}\n"+
-
-                "// Executed for all objects\n" +
-                "public static Consumer<"+t.name+"> onAddV(Consumer<"+t.name+"> code){\n"+
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onAdd.remove(code2);}); "+t.name+".onAdd.add(code2); return code2;\n}\n"+
-
-                "// Executed for all objects\n" +
-                "public static Consumer<"+t.name+"> onUpdateV(Consumer<"+t.name+"> code){\n"+
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onUpdate.remove(code2);}); "+t.name+".onUpdate.add(code2); return code2;\n}\n"+
-
-                "// Executed for all objects\n" +
-                "public static Consumer<"+t.name+"> onRemoveV(Consumer<"+t.name+"> code){\n"+
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
+                listenerCode.replace("_PLACEHOLDER_", "Create")+
+                listenerCode.replace("_PLACEHOLDER_", "Add")+
+                listenerCode.replace("_PLACEHOLDER_", "Update")+
+                listenerCode.replace("_PLACEHOLDER_", "Remove")+
                 "\n\n");
+
         s.append("" +
-                "// Executed only for this object\n" +
-                "public Consumer<"+t.name+"> onCreateThisV(Consumer<"+t.name+"> code){\n" +
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onCreate.remove(code2);}); "+t.name+".onCreate.add(code2); return code2;\n}\n"+
-
-                "// Executed only for this object\n" +
-                "public Consumer<"+t.name+"> onAddThisV(Consumer<"+t.name+"> code){\n"+
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onAdd.remove(code2);}); "+t.name+".onAdd.add(code2); return code2;\n}\n"+
-
-                "// Executed only for this object\n" +
-                "public Consumer<"+t.name+"> onUpdateThisV(Consumer<"+t.name+"> code){\n"+
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onUpdate.remove(code2);}); "+t.name+".onUpdate.add(code2); return code2;\n}\n"+
-
-                "// Executed only for this object\n" +
-                "public Consumer<"+t.name+"> onRemoveThisV(Consumer<"+t.name+"> code){\n"+
-                "UI ui = UI.getCurrent(); Consumer<"+t.name+"> code2 = (obj) -> {if(!isEqual(this, obj)) return; ui.access(() -> {code.accept(obj);});};" +
-                " ui.addDetachListener(e -> {"+t.name+".onRemove.remove(code2);}); "+t.name+".onRemove.add(code2); return code2;\n}\n"+
-                "\n\n");
+            (listenerCode.replace("_PLACEHOLDER_", "Create").replaceFirst("static", "").replace("onCreateV", "onCreateThisV").replace("ui.access(()", "if(!isEqual(this, obj)) return; ui.access(()")+
+                listenerCode.replace("_PLACEHOLDER_", "Add").replaceFirst("static", "").replace("onAddV", "onAddThisV").replace("ui.access(()", "if(!isEqual(this, obj)) return; ui.access(()")+
+                listenerCode.replace("_PLACEHOLDER_", "Update").replaceFirst("static", "").replace("onUpdateV", "onUpdateThisV").replace("ui.access(()", "if(!isEqual(this, obj)) return; ui.access(()")+
+                listenerCode.replace("_PLACEHOLDER_", "Remove").replaceFirst("static", "").replace("onRemoveV", "onRemoveThisV").replace("ui.access(()", "if(!isEqual(this, obj)) return; ui.access(()")
+            ).replace("Executed for all objects", "Executed for only this object") +
+            "\n\n");
 
         // Create static, table related components
         s.append(getComboBoxWithTableContent(db, t, "comboBox", t.name));
