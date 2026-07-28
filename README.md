@@ -1,13 +1,3 @@
-# TODO
-// TODO implement simple drag and drop via this lib: https://github.com/jcgueriaud1/sortable-layout
-// TODO implement for table sorting and column sorting
-// TODO add option to insert new table above/below an existing table
-// TODO make colors more transparent or increase contrast by changing the components accent, or move color to another place maybe table name only
-// TODO implement as desktop app via: https://github.com/Osiris-Team/Vaadin-Desktop-App
-// TODO compile-safe ids to avoid using wrong ids/references, instead create
-a sub-class "CompileSafeId" for each table which wraps around the actual id object/number
-and use that sub-class in all other functions that currently expect the raw id as object/number.
-
 # jSQL-Gen
 Java SQL (JDBC) code generator with GUI. Removes 100% of the boilerplate code and makes
 it possible to use SQL databases without writing one line of SQL (compile-safe SQL).
@@ -163,5 +153,21 @@ PRs for these issues are greatly appreciated (sorted from most important, to lea
   be generally less error prone.
 - If you want a list of items as a field or mappings between tables, create a new table named something like `PersonAndOrder` add fields for personId and orderId, and optionally any additional fields that are relevant for that relation.
 
+
+# TODO
+
+// TODO implement simple drag and drop via this lib: https://github.com/jcgueriaud1/sortable-layout
+
+// TODO implement for table sorting and column sorting
+
+// TODO add option to insert new table above/below an existing table
+
+// TODO make colors more transparent or increase contrast by changing the components accent, or move color to another place maybe table name only
+
+// TODO implement as desktop app via: https://github.com/Osiris-Team/Vaadin-Desktop-App
+
+// TODO compile-safe ids to avoid using wrong ids/references, instead create
+a sub-class "CompileSafeId" for each table which wraps around the actual id object/number
+and use that sub-class in all other functions that currently expect the raw id as object/number.
 
 Logos provided by [icons8.com](https://icons8.com/icons/).
