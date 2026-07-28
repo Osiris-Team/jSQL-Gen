@@ -344,7 +344,7 @@ public class GenVaadinFlow {
     }
 
     private static String t(String colName) {
-        return "\"+Database.TranslationBase.tByFieldName(\""+colName+"\")+\"";
+        return "\"+DatabaseTranslationBase.tByFieldName(\""+colName+"\")+\"";
     }
 
     private record Result(String generatedCode, String compType, String fieldName, boolean isColumnRef, Table refTable) {
@@ -392,20 +392,23 @@ public class GenVaadinFlow {
 
         StringBuilder s = new StringBuilder();
 
-        // Create extra method with no arguments where all strings are included by default
+// Create extra method with no arguments where all strings are included by default
         s.append("public static ComboBox<"+t.name+"> newTableComboBox(){ return newTableComboBox("+refsBooleanDefValues+"); }\n");
         s.append("public static ComboBox<"+t.name+"> newTableComboBox("+refsBooleansMethodArgs+"){\n");
-        s.append("        ComboBox<"+ t.name+"> " + fieldName + " = new ComboBox<"+ t.name+">(\"" + colName + "\");\n");
-        s.append("        {"+ fieldName +".setItems("+ t.name+".get());\n" +
-                "            "+ fieldName +".setRenderer(new ComponentRenderer<>(obj -> {\n" +
-                "                Div div = new Div();\n"+
-                "                div.setText("+sObj+");\n" +
-                "            return div;}));\n" +
-                "            "+ fieldName +".setItemLabelGenerator(obj -> {\n" +
-                "                return "+sObj+";\n" +
-                "            });\n" +
-                "        }\n");
-        s.append("return "+fieldName+";\n" +
+        s.append("    ComboBox<"+ t.name+"> " + fieldName + " = new ComboBox<>(\"" + colName + "\");\n");
+
+        s.append("    Database.LazyInitializingList<" + t.name + "> lazyList = new Database.LazyInitializingList<>(() -> " + t.name + ".get());\n");
+        s.append("    " + fieldName + ".setItems(lazyList);\n");
+
+        s.append("    " + fieldName + ".setRenderer(new ComponentRenderer<>(obj -> {\n" +
+            "        Div div = new Div();\n" +
+            "        div.setText(" + sObj + ");\n" +
+            "        return div;\n" +
+            "    }));\n");
+
+        s.append("    " + fieldName + ".setItemLabelGenerator(obj -> " + sObj + ");\n");
+
+        s.append("    return " + fieldName + ";\n" +
             "}\n\n");
         return s.toString();
     }

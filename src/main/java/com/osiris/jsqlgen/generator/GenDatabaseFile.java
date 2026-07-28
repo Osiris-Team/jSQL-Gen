@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.osiris.jsqlgen.generator.GenReferences.getAllDirectRefs;
 import static com.osiris.jsqlgen.generator.GenReferences.getRefTable;
+import static com.osiris.jsqlgen.generator.TranslationsHelper.appendJavaTranslation;
 import static com.osiris.jsqlgen.utils.UString.containsIgnoreCase;
 
 public class GenDatabaseFile {
@@ -428,24 +429,19 @@ public class GenDatabaseFile {
         importsList.add("import java.util.Map;");
         importsList.add("import java.util.function.Function;");
         importsList.add("import java.util.concurrent.CopyOnWriteArrayList;");
+
         s.append("""
-                    public static final List<TranslationBase> translations = new CopyOnWriteArrayList<>();
-                    /**
-                     * Logic to get the current locale object. String that will be translated is given for extra info.
-                     * */
-                    public static Function<TranslationBase.TString, Locale> fnGetLocaleForTString = (s) -> {
-                        // For example: return UI.getCurrent().getSession().getLocale();
-                        return Locale.getDefault();
-                    };
 
-                    public static TranslationBase defaultTranslation = new TranslationBase("en");
+            """);
 
-                    static{
-                        translations.add(defaultTranslation);
-                        // Examples:
-                        // z_internal_translations.add(new AdditionalEnglishTranslation("en"));
-                        // z_internal_translations.add(new GermanTranslation("de"));
-                    }
+        StringBuilder s2 = new StringBuilder();
+        s2.append((!db.getJavaProjectDirs().isEmpty() ? "package com.osiris.jsqlgen." + db.name + ";\n" : ""));
+        s2.append("""
+                import java.lang.reflect.Field;
+                import java.util.Locale;
+                import java.util.function.Function;
+                import java.util.concurrent.CopyOnWriteArrayList;
+                import java.util.List;
 
                 /**
                  * Translator.
@@ -460,11 +456,27 @@ public class GenDatabaseFile {
                  * The third file (MainView.java) should be almost exactly the same as shown below,
                  * however replace all extracted strings like "example-string" with ""+T.EXAMPLE, for longer strings pick a shorter name.
                  */
-                public static class TranslationBase {
+                public class DatabaseTranslationBase {
+                    public static final List<DatabaseTranslationBase> translations = new CopyOnWriteArrayList<>();
+                    /**
+                     * Logic to get the current locale object. String that will be translated is given for extra info.
+                     * */
+                    public static Function<DatabaseTranslationBase.TString, Locale> fnGetLocaleForTString = (s) -> {
+                        // For example: return UI.getCurrent().getSession().getLocale();
+                        return Locale.getDefault();
+                    };
 
+                    public static DatabaseTranslationBase defaultTranslation = new DatabaseTranslationBase("en");
+
+                    static{
+                        translations.add(defaultTranslation);
+                        // Examples:
+                        // z_internal_translations.add(new AdditionalEnglishTranslation("en"));
+                        // z_internal_translations.add(new GermanTranslation("de"));
+                    }
 
                     public String z_internal_localeString = "en";
-                    public TranslationBase(String localeString){
+                    public DatabaseTranslationBase(String localeString){
                       this.z_internal_localeString = localeString;
                     }
 
@@ -478,7 +490,7 @@ public class GenDatabaseFile {
                         } catch (Exception ignored) {
                             locale = Locale.getDefault();
                         }
-                        for(TranslationBase translation : translations){
+                        for(DatabaseTranslationBase translation : translations){
                             if(!translation.z_internal_localeString.equals(locale.getLanguage())) continue;
                             try {
                                 Field tField = translation.getClass().getDeclaredField(s.fieldName);
@@ -526,7 +538,7 @@ public class GenDatabaseFile {
                         } catch (Exception ignored) {
                             locale = Locale.getDefault();
                         }
-                        for(TranslationBase translation : translations){
+                        for(DatabaseTranslationBase translation : translations){
                             if(!translation.z_internal_localeString.equals(locale.getLanguage())) continue;
                             try {
                                 Field tField = translation.getClass().getDeclaredField(fieldName);
@@ -577,7 +589,7 @@ public class GenDatabaseFile {
                         public String toString() {
                             var val = "";
                             try{
-                                val = TranslationBase.t(this);
+                                val = DatabaseTranslationBase.t(this);
                             } catch (Exception e) {
                                 val = value;
                             }
@@ -589,17 +601,18 @@ public class GenDatabaseFile {
             """);
 
         for (Table t : tables) {
+            s2.append("\n\n// "+t.name+"\n");
             for (Column col : t.columns) {
-                s.append("public static TString colName"+col.id+
-                    " = /* "+t.name+"."+col.name+" */ new TString(\"colName"+col.id+"\", \""+col.name+"\");");
-                if(col.comment != null && !col.comment.isEmpty()){
-                    s.append("public static TString colComment"+col.id+
-                        " = /*"+t.name+"."+col.name+" (comment) */ new TString(\"colComment"+col.id+"\", \""+col.comment.replace("\"", "\\\"") + "\");");
-                }
+                appendJavaTranslation(t, col, s2);
             }
         }
 
-        s.append("\n}\n");
+        s2.append("\n}\n");
+
+        var dbTranslationFile = new File(databaseFile.getParentFile(), "DatabaseTranslationBase.java");
+        dbTranslationFile.getParentFile().mkdirs();
+        dbTranslationFile.createNewFile();
+        Files.writeString(dbTranslationFile.toPath(), s2.toString());
 
         for (Table t : tables) {
             if(t.isDebug){
@@ -678,8 +691,48 @@ public class GenDatabaseFile {
     """);
         }
 
+        importsList.add("import com.vaadin.flow.data.provider.CallbackDataProvider;");
+        importsList.add("import com.vaadin.flow.data.provider.Query;");
+        importsList.add("import java.util.stream.Stream;");
+        importsList.add("import java.util.AbstractList;");
+        importsList.add("import java.util.List;");
+        importsList.add("import java.util.function.Supplier;");
+        s.append("""
+            // We use a custom LazyInitializingList to fetch the size and items exactly once upon first access,\s
+            // avoiding Vaadin's default setItems(FetchCallback, CountCallback) or setItemsWithFilterConverter,
+            // because Client & Server-Side filtering seems to be break when we use those
+            public static class LazyInitializingList<T> extends AbstractList<T> {
+                private List<T> internalList = null;
+                private final Supplier<List<T>> fetcher;
+
+                public LazyInitializingList(Supplier<List<T>> fetcher) {
+                    this.fetcher = fetcher;
+                }
+
+                private void initialize() {
+                    if (internalList == null) {
+                        // This happens only once, the first time size() or get() is called
+                        internalList = fetcher.get();
+                    }
+                }
+
+                @Override
+                public T get(int index) {
+                    initialize();
+                    return internalList.get(index);
+                }
+
+                @Override
+                public int size() {
+                    if(internalList == null) return 1;
+                    return internalList.size();
+                }
+            }
+            """);
+
         // Add other dependencies
         s.append(GenDefBlobClass.s(importsList));
+        s.append(GenAsyncListClass.s(importsList));
 
         s.append("}\n");
 
@@ -701,4 +754,5 @@ public class GenDatabaseFile {
 
         Files.writeString(databaseFile.toPath(), finalS.toString());
     }
+
 }

@@ -101,10 +101,10 @@ public class GenTableFile {
 
         // Add listeners
         classContentBuilder.append("/** Limitation: Not executed in constructor, but only the create methods. */\n" +
-            "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onCreate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
-            "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onAdd = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
-            "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
-            "public static CopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new CopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+            "public static Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">> onCreate = new Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+            "public static Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">> onAdd = new Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+            "public static Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">> onUpdate = new Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
+            "public static Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">> onRemove = new Database.AsyncCopyOnWriteArrayList<Consumer<" + t.name + ">>();\n" +
             "\n" +
             "private static boolean isEqual("+t.name+" obj1, "+t.name+" obj2){ return obj1.equals(obj2) || obj1.getId() == obj2.getId(); }\n");
 

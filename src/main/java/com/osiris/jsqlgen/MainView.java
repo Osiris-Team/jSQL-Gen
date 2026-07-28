@@ -7,10 +7,7 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
 import com.osiris.jlib.logger.AL;
-import com.osiris.jsqlgen.generator.GenDatabaseFile;
-import com.osiris.jsqlgen.generator.GenTableFile;
-import com.osiris.jsqlgen.generator.GetTableChange;
-import com.osiris.jsqlgen.generator.JavaCodeGenerator;
+import com.osiris.jsqlgen.generator.*;
 import com.osiris.jsqlgen.model.Column;
 import com.osiris.jsqlgen.model.Database;
 import com.osiris.jsqlgen.model.Table;
@@ -733,6 +730,17 @@ public class MainView extends VerticalLayout { // Changed from Desku Vertical to
                 databaseFile.createNewFile();
                 GenDatabaseFile.s(db, databaseFile, rawUrl, url, name, username, password);
                 files.add(databaseFile);
+
+                new Thread(() -> {
+                    try{
+                        AL.info("Running translation check in async... - "+javaProjectGenDir);
+                        TranslationsHelper.check(javaProjectGenDir, db);
+                        AL.info("Finished translation check! - "+javaProjectGenDir);
+                    } catch (Exception e) {
+                        AL.warn(e);
+                    }
+                }).start();
+
 
                 for (Table t : db.tables) {
                     File javaFile = new File(javaProjectGenDir + "/" + t.name + ".java");
